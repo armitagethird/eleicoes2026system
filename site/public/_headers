@@ -2,6 +2,10 @@
 /data/*
   Cache-Control: public, max-age=15, must-revalidate
 
+# Índice da busca: só muda a cada build.
+/busca.json
+  Cache-Control: public, max-age=3600
+
 # Assets com hash no nome: cache eterno.
 /_astro/*
   Cache-Control: public, max-age=31536000, immutable
