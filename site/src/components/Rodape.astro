@@ -1,0 +1,82 @@
+---
+// Rodapé: fonte dos números, link para os rankings e, enquanto as fixtures estiverem no ar, o aviso de dados fictícios.
+import { AVISO_FICTICIO, FONTE_TSE } from '../lib/copy.ts';
+import { SITE_NAME } from '../lib/site.ts';
+
+interface Props {
+  /** Liga o aviso de dados fictícios. Padrão ligado: esquecer de desligar é melhor do que publicar fixture como resultado. */
+  ficticio?: boolean;
+}
+
+const { ficticio = true } = Astro.props;
+---
+
+<footer class="rodape">
+  {ficticio && <p class="aviso">{AVISO_FICTICIO}</p>}
+  <div class="linha">
+    <p class="fonte">{FONTE_TSE}</p>
+    <a class="link" href="/rankings">Rankings</a>
+  </div>
+  <p class="marca">{SITE_NAME}</p>
+</footer>
+
+<style>
+  .rodape {
+    display: grid;
+    gap: var(--sp-2);
+    padding-block: var(--sp-3) var(--sp-5);
+    border-top: var(--stroke-2) solid var(--ink);
+  }
+
+  .aviso {
+    padding: var(--sp-1) var(--sp-2);
+    border: var(--stroke-1) solid var(--ink-2);
+    color: var(--ink);
+    font-size: var(--fs-1);
+  }
+
+  .linha {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--sp-2);
+  }
+
+  .fonte,
+  .link,
+  .marca {
+    font-family: var(--font-display);
+    font-weight: 900;
+    letter-spacing: var(--track-caps);
+    text-transform: uppercase;
+  }
+
+  .fonte {
+    font-size: var(--fs-1);
+    color: var(--ink-2);
+  }
+
+  /* Alvo de toque de 48 px sem aumentar a letra. */
+  .link {
+    display: inline-flex;
+    align-items: center;
+    min-height: 48px;
+    font-size: var(--fs-2);
+    text-decoration: underline;
+    text-decoration-thickness: 3px;
+    text-underline-offset: 4px;
+  }
+
+  @media (hover: hover) {
+    .link:hover {
+      text-decoration-color: var(--ink-2);
+    }
+  }
+
+  .marca {
+    font-size: var(--fs-1);
+    font-stretch: 125%;
+    color: var(--ink-2);
+  }
+</style>

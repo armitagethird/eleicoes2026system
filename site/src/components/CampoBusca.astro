@@ -1,0 +1,185 @@
+---
+// Campo de busca como letreiro (design/DIRECTION.md, Home): faixa de largura total, filete de 3 px em --ink, texto 900
+// em caixa-alta; no foco o filete engrossa (nunca inverte para fundo --ink, que significa "líder").
+// Combobox ARIA 1.2 com sugestões em linhas de destino. A ilha busca.ts só baixa /busca.json no primeiro foco do campo
+// (ou no primeiro toque em "usar minha localização"), nunca no carregamento da página.
+import Botao from './Botao.astro';
+
+interface Props {
+  /** id do elemento visível que rotula o campo (na home, o título "Qual é a sua cidade?"). */
+  rotulo: string;
+}
+
+const { rotulo } = Astro.props;
+// O id da lista sai do rótulo: único por campo, e busca.ts deriva dele os ids das opções.
+const idLista = `${rotulo}-lista`;
+---
+
+<div class="busca" role="search" data-busca>
+  <div class="letreiro">
+    <input
+      class="campo"
+      type="text"
+      role="combobox"
+      aria-labelledby={rotulo}
+      aria-autocomplete="list"
+      aria-expanded="false"
+      aria-controls={idLista}
+      autocomplete="off"
+      autocapitalize="words"
+      spellcheck="false"
+      enterkeyhint="go"
+      placeholder="Digite o nome"
+      data-busca-campo
+    />
+    <div class="gaveta" hidden data-busca-gaveta>
+      <ul id={idLista} class="lista" role="listbox" aria-label="Cidades" data-busca-lista></ul>
+      <p class="aviso" hidden data-busca-aviso></p>
+    </div>
+  </div>
+  <p class="sr-only" role="status" data-busca-status></p>
+  <Botao variante="secundario" data-busca-geo>Usar minha localização</Botao>
+  <p class="geo-aviso" role="status" data-busca-geo-aviso></p>
+</div>
+
+<script>
+  import './busca.ts';
+</script>
+
+<style>
+  .busca {
+    display: grid;
+    gap: var(--sp-2);
+  }
+
+  .letreiro {
+    position: relative;
+  }
+
+  .campo {
+    display: block;
+    width: 100%;
+    height: var(--sp-7);
+    padding: 0 var(--sp-2);
+    border: 3px solid var(--ink);
+    border-radius: var(--radius);
+    background: var(--bg);
+    font-family: var(--font-display);
+    font-size: var(--fs-4);
+    font-weight: 900;
+    font-stretch: 75%;
+    text-transform: uppercase;
+    caret-color: var(--ink);
+    appearance: none;
+  }
+
+  .campo::placeholder {
+    color: var(--ink-2);
+    opacity: 1;
+  }
+
+  /* Foco = filete mais grosso, para dentro (3 px de borda + 3 px de contorno), sem mexer no layout nem desalinhar da
+     gaveta, que no foco usa o mesmo filete de 6 px. */
+  .campo:focus {
+    outline: 3px solid var(--ink);
+    outline-offset: -6px;
+  }
+
+  .busca[data-aberto] .campo {
+    border-bottom-right-radius: 0;
+    border-bottom-left-radius: 0;
+  }
+
+  /* A gaveta cobre o que vem embaixo em vez de empurrar a página. */
+  .gaveta {
+    position: absolute;
+    top: 100%;
+    right: 0;
+    left: 0;
+    z-index: 2;
+    max-height: min(60dvh, 456px);
+    overflow-y: auto;
+    border: 6px solid var(--ink);
+    border-top: 0;
+    border-radius: 0 0 var(--radius) var(--radius);
+    background: var(--bg);
+    overscroll-behavior: contain;
+  }
+
+  .lista {
+    margin: 0;
+    padding: 0;
+    list-style: none;
+  }
+
+  /* Linhas de destino (criadas por busca.ts): nome ajustado à largura pelo eixo wdth, e a sigla da UF numa placa. */
+  .lista :global([role='option']) {
+    position: relative;
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) var(--sp-6);
+    align-items: center;
+    gap: var(--sp-2);
+    min-height: 56px;
+    padding: var(--sp-1) var(--sp-2);
+    border-top: var(--stroke-1) solid var(--surface-2);
+    cursor: pointer;
+  }
+
+  .lista :global([role='option']:first-child) {
+    border-top: 0;
+  }
+
+  .lista :global([role='option'][aria-selected='true']),
+  .lista :global([role='option']:hover) {
+    background: var(--surface-1);
+  }
+
+  .lista :global([role='option'][aria-selected='true'])::before {
+    content: '';
+    position: absolute;
+    inset: 0 auto 0 0;
+    width: var(--stroke-2);
+    background: var(--ink);
+  }
+
+  .lista :global(.nome) {
+    font-family: var(--font-display);
+    font-weight: 900;
+    line-height: 1;
+    text-transform: uppercase;
+    white-space: nowrap;
+  }
+
+  .lista :global(.uf) {
+    display: grid;
+    place-items: center;
+    min-height: var(--sp-3);
+    border: var(--stroke-1) solid var(--ink-2);
+    font-family: var(--font-display);
+    font-size: var(--fs-1);
+    font-weight: 900;
+    letter-spacing: var(--track-caps);
+    text-align: center;
+    color: var(--ink-2);
+  }
+
+  .aviso {
+    padding: var(--sp-2);
+    font-family: var(--font-display);
+    font-size: var(--fs-1);
+    font-weight: 900;
+    letter-spacing: var(--track-caps);
+    text-transform: uppercase;
+    color: var(--ink-2);
+  }
+
+  .geo-aviso:empty {
+    display: none;
+  }
+
+  .geo-aviso {
+    margin-top: calc(-1 * var(--sp-1));
+    font-size: var(--fs-1);
+    color: var(--ink-2);
+  }
+</style>

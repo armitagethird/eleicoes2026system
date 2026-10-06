@@ -1,0 +1,112 @@
+---
+// Painel do modo pre (design/DIRECTION.md, gesto 4): contagem regressiva em placas que viram até status.inicio.
+// O HTML sai com "--" (nunca um número calculado no build, que ficaria velho); a ilha painel.ts calcula no cliente
+// e vira as placas a cada minuto.
+import { CONTAGEM_ROTULO } from '../lib/copy.ts';
+
+interface Props {
+  /** status.inicio (ISO 8601). Sem ele não há o que contar e o painel não aparece. */
+  inicio: string | null;
+}
+
+const { inicio } = Astro.props;
+const unidades = [
+  { chave: 'd', rotulo: 'd' },
+  { chave: 'h', rotulo: 'h' },
+  { chave: 'min', rotulo: 'min' },
+] as const;
+---
+
+{
+  inicio && (
+    <section class="painel" data-painel data-inicio={inicio} aria-labelledby="painel-rotulo">
+      <h2 class="rotulo" id="painel-rotulo">
+        {CONTAGEM_ROTULO}
+      </h2>
+      <div class="placas" role="timer" aria-labelledby="painel-rotulo">
+        <span class="sr-only" data-painel-falado />
+        {unidades.map(({ chave, rotulo }) => (
+          <span class="grupo" aria-hidden="true">
+            {/* Sem espaço entre as células: montarFlap lê o textContent. */}
+            <span class="flap" data-painel-unidade={chave}><span data-flap-c="-">-</span><span data-flap-c="-">-</span></span>
+            <span class="unidade">{rotulo}</span>
+          </span>
+        ))}
+      </div>
+    </section>
+  )
+}
+
+<script>
+  import './painel.ts';
+</script>
+
+<style>
+  .painel {
+    container-type: inline-size;
+    display: grid;
+    gap: var(--sp-2);
+  }
+
+  .rotulo {
+    font-size: var(--fs-1);
+    line-height: 1.2;
+    letter-spacing: var(--track-caps);
+    text-transform: uppercase;
+    color: var(--ink-2);
+  }
+
+  /* Letreiro de rodoviária: a largura toda é do painel, então o tamanho das placas sai da largura do container. */
+  .placas {
+    --placa: min(14.5cqi, 96px);
+    display: flex;
+    align-items: flex-end;
+    justify-content: space-between;
+    font-family: var(--font-display);
+    font-weight: 900;
+    line-height: 1;
+  }
+
+  .grupo {
+    display: flex;
+    align-items: baseline;
+    gap: calc(var(--placa) * 0.08);
+  }
+
+  .flap {
+    --flap-fundo: var(--surface-1);
+    display: flex;
+    gap: calc(var(--placa) * 0.05);
+    font-size: var(--placa);
+    font-stretch: 75%;
+  }
+
+  /* Células (as do HTML e as que lib/flap.ts cria): placa reta (papel cortado) com a costura no meio, em --bg.
+     A mesma caixa antes e depois da ilha montar, para não haver deslocamento de layout. */
+  /* O respiro vertical vem do line-height (herdado pelas metades), não de padding: as metades sobrepostas medem a caixa
+     inteira da célula, então só ficam alinhadas se a célula não tiver padding. */
+  .flap :global([data-flap-c]) {
+    position: relative;
+    display: inline-block;
+    text-align: center;
+    min-width: 0.78em;
+    line-height: 1.24;
+    background: var(--flap-fundo);
+  }
+
+  .flap :global([data-flap-c])::after {
+    content: '';
+    position: absolute;
+    inset: calc(50% - 1px) 0 auto;
+    height: var(--stroke-1);
+    background: var(--bg);
+  }
+
+  .unidade {
+    padding-bottom: 0.15em;
+    font-size: calc(var(--placa) * 0.42);
+    font-stretch: 100%;
+    text-transform: uppercase;
+    color: var(--ink-2);
+  }
+</style>

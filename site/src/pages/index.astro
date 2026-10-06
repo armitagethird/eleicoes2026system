@@ -1,11 +1,185 @@
 ---
-// PROVISÓRIO: a home é construída pelo agente da home (design/DIRECTION.md).
+// Home (design/DIRECTION.md, Home): o caminho mais curto até o card da cidade.
+// Mobile: cabeçalho, destino, busca, localização e o começo do painel na primeira dobra.
+// Desktop (≥ 1024 px): 12 colunas; à esquerda (5) busca, painel e placar; à direita (7) o mapa, sticky.
+// Como página, o modo vem de contracts/fixtures/status.json no build. /design/home importa esta página como componente
+// e passa `status` e `placar` para mostrar os modos live e final com as fixtures.
+import brFixture from '../../../contracts/fixtures/br.json';
+import statusFixture from '../../../contracts/fixtures/status.json';
+import CampoBusca from '../components/CampoBusca.astro';
+import Cabecalho from '../components/Cabecalho.astro';
+import Mapa from '../components/Mapa.astro';
+import Painel from '../components/Painel.astro';
+import Placar from '../components/Placar.astro';
+import Rodape from '../components/Rodape.astro';
 import Base from '../layouts/Base.astro';
+import type { Hist, Placar as PlacarJson } from '../lib/contratos.ts';
+import { histBr } from '../lib/dados.ts';
+import { ajustarDestino } from '../lib/destino.ts';
 import { SITE_NAME } from '../lib/site.ts';
+import { parseStatus, type Status } from '../lib/status.ts';
+
+interface Props {
+  /** Só /design/home: força o modo. */
+  status?: Status;
+  /** Só /design/home: o placar BR ao vivo (br.json). Na página, o modo live espera a ilha da Fase 3. */
+  placar?: PlacarJson;
+  /** Só /design/home: hist BR do modo pre enquanto src/data/hist-br.json não existe. */
+  hist?: Hist;
+  /** Só /design/home: sem o <html> do Base, para empilhar os modos numa página só (ids levam o modo). */
+  embutida?: boolean;
+}
+
+const status = Astro.props.status ?? parseStatus(statusFixture);
+const { placar, hist = histBr(), embutida = false } = Astro.props;
+const Moldura = embutida ? Fragment : Base;
+const idTitulo = embutida ? `titulo-${status.modo}` : 'titulo-home';
+const presidente = placar?.presidente;
+
+// O hist só tem percentuais; nome e partido de 13 e 22 vêm do contrato (nomes reais, iguais em todos os arquivos).
+const nomes = brFixture.presidente.cand.map(({ n, nome, partido }) => ({ n, nome, partido }));
+
+// DESTINO: ajustado no build numa largura de referência e escrito em cqi, então o título encosta nas duas margens em
+// qualquer largura, sem JS. Duas linhas até 1023 px; no desktop, uma faixa só, de margem a margem da página.
+// O ajuste mede a caixa-alta; o HTML guarda a caixa normal (o CSS põe em caixa-alta).
+const TITULO = 'Qual é a sua cidade?';
+const REFERENCIA = 1000;
+const emCqi = (px: number): string => `${(px / REFERENCIA) * 100}cqi`;
+const maiusculo = TITULO.toLocaleUpperCase('pt-BR');
+const [faixa] = ajustarDestino(maiusculo, { largura: REFERENCIA, tamMax: 140, tamMin: 60, maxLinhas: 1 }).linhas;
+const { linhas } = ajustarDestino(maiusculo, { largura: REFERENCIA, tamMax: 230, tamMin: 205 });
+const palavras = TITULO.split(' ');
+let usadas = 0;
+// O espaço entre as linhas fica dentro da primeira: no desktop as duas viram uma faixa no mesmo tamanho.
+const linhasTitulo = linhas.map((l, i) => {
+  const quantas = l.texto.split(' ').length;
+  const texto = palavras.slice(usadas, (usadas += quantas)).join(' ') + (i < linhas.length - 1 ? ' ' : '');
+  return { texto, estilo: `--t:${emCqi(l.tamanho)};--w:${l.wdth}%;--t1:${emCqi(faixa.tamanho)};--w1:${faixa.wdth}%` };
+});
 ---
 
-<Base titulo={SITE_NAME} descricao="Resultado do 2º turno 2026 na sua cidade, comparado com 2022." caminho="/">
-  <main>
-    <h1>{SITE_NAME}</h1>
-  </main>
-</Base>
+<Moldura
+  titulo={`${SITE_NAME}: o 2º turno 2026 na sua cidade`}
+  descricao="Veja como a sua cidade está votando no 2º turno de 2026 e quanto ela mudou desde 2022."
+  caminho="/"
+>
+  <div class="pagina">
+    <Cabecalho modo={status.modo} secoesPct={placar?.secoes_pct} atualizado={placar?.atualizado} />
+
+    <main class="home">
+      <h1 class="destino" id={idTitulo}>
+        {linhasTitulo.map((l) => <span class="linha" style={l.estilo}>{l.texto}</span>)}
+      </h1>
+
+      <div class="principal">
+        <CampoBusca rotulo={idTitulo} />
+
+        {
+          status.modo === 'pre' ? (
+            <>
+              <Painel inicio={status.inicio} />
+              <Placar modo="pre" lugar="Brasil" bandeira="br" cand={nomes} hist={hist} />
+            </>
+          ) : (
+            <Placar
+              modo={status.modo === 'live' ? 'parcial' : 'final'}
+              lugar="Brasil"
+              bandeira="br"
+              cand={presidente?.cand}
+              variacao={presidente?.variacao_2022}
+              secoesPct={placar?.secoes_pct}
+              atualizado={placar?.atualizado}
+            />
+          )
+        }
+      </div>
+
+      <div class="lateral">
+        <Mapa />
+      </div>
+    </main>
+
+    <Rodape />
+  </div>
+</Moldura>
+
+<style>
+  .pagina {
+    max-width: 1440px;
+    margin-inline: auto;
+    padding-inline: var(--sp-2);
+  }
+
+  .home {
+    display: grid;
+    row-gap: var(--sp-3);
+    padding-bottom: var(--sp-7);
+  }
+
+  .principal {
+    display: grid;
+    align-content: start;
+    gap: var(--sp-4);
+  }
+
+  /* As linhas medem a largura do h1 (container): font-size em cqi vindo do ajuste do build. */
+  .destino {
+    container-type: inline-size;
+    padding-top: var(--sp-1);
+    line-height: 0.9;
+    text-transform: uppercase;
+    /* Antes da fonte carregar, a substituta pode ser mais larga: corta na horizontal em vez de criar rolagem. */
+    overflow-x: clip;
+  }
+
+  .linha {
+    display: block;
+    font-size: var(--t);
+    font-stretch: var(--w);
+    white-space: nowrap;
+  }
+
+  .lateral {
+    margin-top: var(--sp-3);
+  }
+
+  @media (min-width: 768px) {
+    .pagina {
+      padding-inline: var(--sp-4);
+    }
+  }
+
+  @media (min-width: 1024px) {
+    .pagina {
+      padding-inline: var(--sp-6);
+    }
+
+    .home {
+      grid-template-columns: repeat(12, minmax(0, 1fr));
+      align-items: start;
+      gap: var(--sp-4) var(--sp-3);
+    }
+
+    /* Letreiro de margem a margem: as duas linhas viram uma faixa só, no tamanho do ajuste de uma linha. */
+    .destino {
+      grid-column: 1 / -1;
+    }
+
+    .linha {
+      display: inline;
+      font-size: var(--t1);
+      font-stretch: var(--w1);
+    }
+
+    .principal {
+      grid-column: 1 / span 5;
+    }
+
+    .lateral {
+      position: sticky;
+      top: var(--sp-3);
+      grid-column: 6 / span 7;
+      margin-top: 0;
+    }
+  }
+</style>

@@ -1,0 +1,83 @@
+---
+// Cabeçalho do site: wordmark (900, wdth 125, caixa-alta) e a pílula de estado (design/DIRECTION.md, Home).
+// O indicador "ao vivo" não usa acento: o acento é só da variação vs 2022 e do selo.
+import { pilula } from '../lib/copy.ts';
+import { SITE_NAME } from '../lib/site.ts';
+import type { Modo } from '../lib/status.ts';
+
+interface Props {
+  modo: Modo;
+  /** live/final: seções apuradas do placar BR. */
+  secoesPct?: number;
+  /** live/final: hora da última atualização (ISO 8601). */
+  atualizado?: string | null;
+}
+
+const { modo, secoesPct, atualizado } = Astro.props;
+const naHome = Astro.url.pathname === '/';
+---
+
+<header class="cabecalho">
+  <a class="marca" href="/" aria-current={naHome ? 'page' : undefined}>{SITE_NAME}</a>
+  <p class="pilula" data-modo={modo}>
+    {modo === 'live' && <span class="sinal" aria-hidden="true" />}
+    <span data-pilula>{pilula(modo, secoesPct, atualizado)}</span>
+  </p>
+</header>
+
+<style>
+  .cabecalho {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--sp-1) var(--sp-2);
+    padding-block: var(--sp-2);
+  }
+
+  .marca {
+    font-family: var(--font-display);
+    font-size: var(--fs-3);
+    font-weight: 900;
+    font-stretch: 125%;
+    line-height: 1;
+    text-decoration: none;
+    text-transform: uppercase;
+  }
+
+  .pilula {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--sp-1);
+    min-height: 32px;
+    padding-inline: var(--sp-1);
+    border: var(--stroke-1) solid var(--ink-2);
+    border-radius: var(--radius);
+    font-family: var(--font-display);
+    font-size: var(--fs-1);
+    font-weight: 900;
+    font-stretch: 87.5%;
+    line-height: 1;
+    letter-spacing: var(--track-caps);
+    text-transform: uppercase;
+    white-space: nowrap;
+  }
+
+  .pilula[data-modo='live'] {
+    border-color: var(--ink);
+  }
+
+  /* Placa quadrada que pisca em degrau, como lâmpada de painel; com reduced-motion fica acesa. */
+  .sinal {
+    width: var(--sp-1);
+    height: var(--sp-1);
+    background: var(--ink);
+    animation: pisca 1.2s steps(1, end) infinite;
+  }
+
+  @keyframes pisca {
+    50% {
+      opacity: 0;
+    }
+  }
+</style>

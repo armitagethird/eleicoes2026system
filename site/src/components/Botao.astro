@@ -1,0 +1,106 @@
+---
+// Botão do sistema (design/DIRECTION.md). Com href vira <a>; sem href, <button type="button">.
+// Primário: fundo --ink, texto --bg. Secundário: contorno de 3 px em --ink-2. Os dois em 900, caixa-alta, ≥ 48 px, raio 8.
+import type { HTMLAttributes } from 'astro/types';
+
+type Props = Omit<HTMLAttributes<'button'>, 'type'> & {
+  variante?: 'primario' | 'secundario';
+  /** Com href, renderiza um link com cara de botão. Desabilitado, o link perde o href. */
+  href?: string;
+  type?: 'button' | 'submit';
+  disabled?: boolean;
+};
+
+const { variante = 'primario', href, type = 'button', disabled = false, class: classe, ...resto } = Astro.props;
+---
+
+{
+  href ? (
+    <a
+      class:list={['botao', variante, classe]}
+      href={disabled ? undefined : href}
+      aria-disabled={disabled ? 'true' : undefined}
+      {...resto}
+    >
+      <slot />
+    </a>
+  ) : (
+    <button class:list={['botao', variante, classe]} type={type} disabled={disabled} {...resto}>
+      <slot />
+    </button>
+  )
+}
+
+<style>
+  .botao {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: var(--sp-1);
+    min-height: 48px;
+    padding: 0 var(--sp-3);
+    border: 3px solid transparent;
+    border-radius: var(--radius);
+    background: none;
+    font-family: var(--font-display);
+    font-size: var(--fs-2);
+    font-weight: 900;
+    line-height: 1.1;
+    letter-spacing: var(--track-caps);
+    text-align: center;
+    text-decoration: none;
+    text-transform: uppercase;
+    cursor: pointer;
+    touch-action: manipulation;
+    -webkit-tap-highlight-color: transparent;
+    transition:
+      border-color var(--dur-1) var(--ease),
+      color var(--dur-1) var(--ease),
+      transform var(--dur-1) var(--ease);
+  }
+
+  .primario {
+    border-color: var(--ink);
+    background: var(--ink);
+    color: var(--bg);
+  }
+
+  .secundario {
+    border-color: var(--ink-2);
+    color: var(--ink);
+  }
+
+  /* Hover tipográfico: sublinhado grosso, como fita colada. Sem mudar a cor de fundo (cor é posição). */
+  @media (hover: hover) {
+    .botao:not(:disabled, [aria-disabled='true']):hover {
+      text-decoration: underline;
+      text-decoration-thickness: 3px;
+      text-underline-offset: 4px;
+    }
+
+    .secundario:not(:disabled, [aria-disabled='true']):hover {
+      border-color: var(--ink);
+    }
+  }
+
+  .botao:not(:disabled, [aria-disabled='true']):active {
+    transform: translateY(1px);
+  }
+
+  .botao:focus-visible {
+    outline-offset: 3px;
+  }
+
+  .botao:disabled,
+  .botao[aria-disabled='true'] {
+    border-color: var(--surface-2);
+    background: none;
+    color: var(--ink-2);
+    cursor: not-allowed;
+  }
+
+  .primario:disabled,
+  .primario[aria-disabled='true'] {
+    background: var(--surface-2);
+  }
+</style>

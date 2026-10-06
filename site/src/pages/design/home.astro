@@ -1,0 +1,188 @@
+---
+// Playground da home (só em dev; o build apaga /design), para aprovação do Romero: a home real empilhada em três modos,
+// com as fixtures. Âncoras #modo-live, #modo-final e #modo-pre. (Query string não serve: página estática não a recebe.)
+//   live:  placar BR de contracts/fixtures/br.json e a pílula AO VIVO
+//   final: o mesmo placar com 100% das seções e a hora de status.final.json; `eleito` segue false (a fixture não marca
+//          eleito e o front nunca infere de percentual)
+//   pre:   igual a /, com um hist BR fictício enquanto src/data/hist-br.json não existe
+// Depois dos modos: casos de borda do Placar (fixtures de cidade e UF) e os estados do Botao.
+import brFixture from '../../../../contracts/fixtures/br.json';
+import statusFinal from '../../../../contracts/fixtures/status.final.json';
+import statusLive from '../../../../contracts/fixtures/status.live.json';
+import statusPre from '../../../../contracts/fixtures/status.json';
+import Botao from '../../components/Botao.astro';
+import Placar from '../../components/Placar.astro';
+import Base from '../../layouts/Base.astro';
+import type { Cidade, Hist, Placar as PlacarJson, UF } from '../../lib/contratos.ts';
+import { histBr, histCidade, municipios } from '../../lib/dados.ts';
+import { parseStatus } from '../../lib/status.ts';
+import Home from '../index.astro';
+
+// Média das cidades do stub ponderada pelo eleitorado (o hist delas também é fictício). Só para ver o placar pre.
+function brFicticio(): Hist {
+  const linhas = municipios.flatMap((m) => {
+    const h = histCidade(m.slug);
+    return h ? [{ h, peso: m.eleitores }] : [];
+  });
+  const media = (valor: (h: Hist) => number | undefined): number => {
+    const validas = linhas.filter(({ h }) => valor(h) !== undefined);
+    const total = validas.reduce((s, { peso }) => s + peso, 0);
+    return Math.round((validas.reduce((s, { h, peso }) => s + (valor(h) ?? 0) * peso, 0) / total) * 100) / 100;
+  };
+  return {
+    t2_2022: {
+      pct: { '13': media((h) => h.t2_2022?.pct['13']), '22': media((h) => h.t2_2022?.pct['22']) },
+      comparecimento_pct: media((h) => h.t2_2022?.comparecimento_pct),
+    },
+    t1_2026: {
+      pct: {
+        '13': media((h) => h.t1_2026.pct['13']),
+        '22': media((h) => h.t1_2026.pct['22']),
+        outros: media((h) => h.t1_2026.pct.outros),
+      },
+      comparecimento_pct: media((h) => h.t1_2026.comparecimento_pct),
+    },
+  };
+}
+
+const br = brFixture as PlacarJson;
+const cidades = import.meta.glob<Cidade>('../../../../contracts/fixtures/c/*.json', { eager: true, import: 'default' });
+const ufs = import.meta.glob<PlacarJson>('../../../../contracts/fixtures/uf/*.json', { eager: true, import: 'default' });
+const cidade = (slug: string): Cidade => cidades[`../../../../contracts/fixtures/c/${slug}.json`];
+const rj = ufs['../../../../contracts/fixtures/uf/rj.json'];
+const minuscula = (uf: UF) => uf.toLowerCase() as Lowercase<UF>;
+
+// Casos de borda do placar (reaproveitado nas páginas de UF e cidade), todos de fixtures.
+const variantes = [
+  { titulo: 'aguardando (secoes_pct < 1)', c: cidade('bora-sp') },
+  { titulo: '100% para um lado', c: cidade('serra-da-saudade-mg') },
+  { titulo: 'margem de 0,2 ponto', c: cidade('santa-barbara-doeste-sp') },
+  { titulo: 'sem 2022: sem seta, monocromático', c: cidade('boa-esperanca-do-norte-mt') },
+].map(({ titulo, c }) => ({
+  titulo,
+  props: {
+    lugar: c.nome,
+    bandeira: minuscula(c.uf),
+    cand: c.presidente.cand,
+    variacao: c.presidente.variacao_2022,
+    secoesPct: c.secoes_pct,
+    atualizado: c.atualizado,
+  },
+}));
+// Só aqui: eleito: true marcado à mão no 22 para ver o rótulo do modo final (a fixture nunca marca eleito).
+const comEleito = br.presidente.cand.map((c) => ({ ...c, eleito: c.n === 22 }));
+const modos = [
+  { chave: 'live', props: { status: parseStatus(statusLive), placar: br } },
+  {
+    chave: 'final',
+    props: { status: parseStatus(statusFinal), placar: { ...br, secoes_pct: 100, atualizado: statusFinal.atualizado } },
+  },
+  { chave: 'pre', props: { status: parseStatus(statusPre), hist: histBr() ?? brFicticio() } },
+];
+---
+
+<Base titulo="Home: playground" descricao="A home em live, final e pre, com as fixtures." caminho="/design/home">
+  <nav class="modos" aria-label="Modos">
+    {modos.map(({ chave }) => <a href={`#modo-${chave}`}>{chave}</a>)}
+  </nav>
+  {
+    modos.map(({ chave, props }) => (
+      <section class="modo" id={`modo-${chave}`} aria-label={`Modo ${chave}`}>
+        <p class="etiqueta">modo {chave}</p>
+        <Home embutida {...props} />
+      </section>
+    ))
+  }
+
+  <section class="modo componentes" aria-label="Componentes">
+    <p class="etiqueta">placar: casos de borda</p>
+    <div class="grade">
+      {
+        variantes.map(({ titulo, props }) => (
+          <div class="caso">
+            <p class="caso-titulo">{titulo}</p>
+            <Placar modo="parcial" {...props} />
+          </div>
+        ))
+      }
+      <div class="caso">
+        <p class="caso-titulo">governador (fictício), sem 2022</p>
+        <Placar
+          modo="parcial"
+          lugar="Rio de Janeiro"
+          bandeira="rj"
+          cargo="governador"
+          cand={rj.governador?.cand}
+          secoesPct={rj.secoes_pct}
+          atualizado={rj.atualizado}
+        />
+      </div>
+      <div class="caso">
+        <p class="caso-titulo">final com eleito: true (simulado aqui)</p>
+        <Placar
+          modo="final"
+          lugar="Brasil"
+          bandeira="br"
+          cand={comEleito}
+          variacao={br.presidente.variacao_2022}
+          secoesPct={100}
+          atualizado={statusFinal.atualizado}
+        />
+      </div>
+    </div>
+
+    <p class="etiqueta">botões</p>
+    <div class="botoes">
+      <Botao>Compartilhar</Botao>
+      <Botao disabled>Compartilhar</Botao>
+      <Botao variante="secundario">Usar minha localização</Botao>
+      <Botao variante="secundario" disabled>Usar minha localização</Botao>
+      <Botao href="/rankings">Link primário</Botao>
+      <Botao href="/rankings" variante="secundario">Link secundário</Botao>
+    </div>
+  </section>
+</Base>
+
+<style>
+  .modos,
+  .etiqueta {
+    display: flex;
+    gap: var(--sp-2);
+    padding: var(--sp-1) var(--sp-2);
+    background: var(--surface-2);
+    font-family: var(--font-display);
+    font-size: var(--fs-1);
+    font-weight: 900;
+    letter-spacing: var(--track-caps);
+    text-transform: uppercase;
+  }
+
+  .modo + .modo {
+    margin-top: var(--sp-8);
+  }
+
+  .grade {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(min(100%, 340px), 1fr));
+    gap: var(--sp-6) var(--sp-4);
+    padding: var(--sp-4) var(--sp-2) var(--sp-7);
+  }
+
+  .caso {
+    display: grid;
+    align-content: start;
+    gap: var(--sp-2);
+  }
+
+  .caso-titulo {
+    font-size: var(--fs-1);
+    color: var(--ink-2);
+  }
+
+  .botoes {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--sp-2);
+    padding: var(--sp-4) var(--sp-2) var(--sp-8);
+  }
+</style>

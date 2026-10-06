@@ -1,0 +1,529 @@
+---
+// A FOLHA (design/DIRECTION.md, gestos 2 e 3): placar de dois candidatos para Brasil, UF ou cidade.
+// Menor número de urna sempre à esquerda (13 antes de 22); quem lidera veste --ink e o segundo --ink-2: a cor troca de
+// dono, as colunas nunca trocam de lugar. A seta de deslocamento vs 2022 é o único acento. Tolera dados ausentes.
+import Bandeira from './Bandeira.astro';
+import {
+  AGUARDANDO_SECOES,
+  CARGO_GOVERNADOR,
+  LINHA_PRIMEIRO_TURNO,
+  OUTROS_CANDIDATOS,
+  PRIMEIRO_TURNO_2026,
+  SEGUNDO_TURNO_2022,
+  TURNO_CARD,
+  linhaApuracao,
+  rotuloPosicao,
+  variacao2022,
+} from '../lib/copy.ts';
+import type { Candidato, Hist, UF } from '../lib/contratos.ts';
+import { percentual } from '../lib/format.ts';
+
+/** Nome e partido de um candidato (no modo pre os percentuais vêm do hist, que não tem nomes). */
+type Identidade = Pick<Candidato, 'n' | 'nome' | 'partido'>;
+
+interface Comum {
+  /** Nome do lugar no cabeçalho, como deve aparecer: "Brasil", "Maranhão", "São Luís". */
+  lugar: string;
+  /** Bandeira do lugar ("br" ou a UF em minúsculas). Omitida, o cabeçalho fica sem ícone. */
+  bandeira?: Lowercase<UF> | 'br';
+  /** Largura da bandeira em px. Padrão: a das placas do mapa (o Brasil nunca maior que as UFs). */
+  larguraBandeira?: number;
+  /** Cargo no cabeçalho. Padrão: presidente. */
+  cargo?: 'presidente' | 'governador';
+}
+
+/** pre: 1º turno 2026 (13 · outros · 22), com o 2º turno de 2022 como referência embaixo. Sem "lidera" e sem seta. */
+interface PropsPre extends Comum {
+  modo: 'pre';
+  /** Nome e partido de 13 e 22. */
+  cand?: Identidade[];
+  /** hist do lugar (src/data/hist*). Ausente: o placar sai sem números. */
+  hist?: Hist;
+}
+
+/** parcial e final: 2º turno a partir do JSON ao vivo (br.json, uf/{uf}.json ou c/{slug}.json). */
+interface PropsApuracao extends Comum {
+  modo: 'parcial' | 'final';
+  /** Candidatos em qualquer ordem: o placar ordena pelo número de urna. */
+  cand?: Candidato[];
+  /** Variação vs 2022 em pontos, por número de urna. Vazia ou ausente: sem seta e sem acento. */
+  variacao?: Record<string, number>;
+  /** secoes_pct do JSON. Abaixo de 1: "aguardando primeiras seções". */
+  secoesPct?: number;
+  atualizado?: string | null;
+}
+
+type Props = PropsPre | PropsApuracao;
+
+interface Lado {
+  n: number;
+  nome?: string;
+  partido?: string;
+  pct: number | null;
+  eleito: boolean;
+}
+
+// Placa do mapa no mobile (design/DIRECTION.md, Mapa e Bandeiras): o Brasil do placar tem exatamente esse tamanho.
+const LARGURA_PLACA = 40;
+
+const props = Astro.props;
+const { modo, lugar, bandeira, larguraBandeira = LARGURA_PLACA, cargo = 'presidente' } = props;
+const numeroValido = (x: unknown): x is number => typeof x === 'number' && Number.isFinite(x);
+
+let lados: Lado[];
+let outros: number | null = null;
+let referencia2022: [number, number] | null = null;
+if (props.modo === 'pre') {
+  const t1 = props.hist?.t1_2026.pct;
+  const t2 = props.hist?.t2_2022?.pct;
+  lados = (['13', '22'] as const).map((n) => {
+    const quem = props.cand?.find((c) => String(c.n) === n);
+    return { n: Number(n), nome: quem?.nome, partido: quem?.partido, pct: t1?.[n] ?? null, eleito: false };
+  });
+  outros = t1?.outros ?? null;
+  referencia2022 = t2 ? [t2['13'], t2['22']] : null;
+} else {
+  lados = [...(props.cand ?? [])]
+    .sort((a, b) => a.n - b.n)
+    .slice(0, 2)
+    .map((c) => ({ n: c.n, nome: c.nome, partido: c.partido, pct: numeroValido(c.pct) ? c.pct : null, eleito: c.eleito === true }));
+}
+
+const secoesPct = props.modo === 'pre' ? undefined : props.secoesPct;
+const completo = lados.length === 2 && lados.every((l) => l.pct !== null);
+const aguardando = modo !== 'pre' && (!completo || (numeroValido(secoesPct) && secoesPct < 1));
+const comNumeros = completo && !aguardando;
+
+// Empate não tem líder: as duas colunas ficam em --ink-2.
+const [p0, p1] = lados.map((l) => l.pct ?? 0);
+const lider = comNumeros && p0 !== p1 ? (p0 > p1 ? 0 : 1) : null;
+const posicao = (i: number): string => (lider === null ? 'segundo' : i === lider ? 'lider' : 'segundo');
+
+// Rótulo dentro da folha: "lidera" só em parcial; em final, "eleito" só com eleito: true no JSON (nunca inferido).
+const rotuloDaFolha = (i: number): string | null => {
+  if (!comNumeros) return null;
+  if (modo === 'parcial') return i === lider ? rotuloPosicao(false) : null;
+  if (modo === 'final') return lados[i].eleito ? rotuloPosicao(true) : null;
+  return null;
+};
+
+const segmentos = comNumeros
+  ? [
+      { classe: posicao(0), p: p0, rotulo: rotuloDaFolha(0) },
+      ...(outros !== null && outros > 0 ? [{ classe: 'outros', p: outros, rotulo: null }] : []),
+      { classe: `${posicao(1)} dir`, p: p1, rotulo: rotuloDaFolha(1) },
+    ].filter((s) => s.p > 0)
+  : [];
+
+// Seta para o lado de quem ganhou terreno desde 2022 (◀ = coluna da esquerda, ▶ = da direita).
+const variacoes =
+  props.modo === 'pre' || !comNumeros
+    ? []
+    : lados
+        .map((l, i) => ({ i, v: props.variacao?.[String(l.n)] }))
+        .filter((x): x is { i: number; v: number } => numeroValido(x.v) && x.v >= 0.05)
+        .sort((a, b) => b.v - a.v);
+function setaDe({ i, v }: { i: number; v: number }) {
+  const [numero, ...resto] = variacao2022(lados[i].nome ?? String(lados[i].n), v).split(' ');
+  return { lado: i === 0 ? 'esq' : 'dir', numero, resto: resto.join(' ') };
+}
+const seta = variacoes[0] ? setaDe(variacoes[0]) : null;
+
+let linha: string | null = null;
+if (props.modo === 'pre') linha = completo ? LINHA_PRIMEIRO_TURNO : null;
+else if (numeroValido(secoesPct)) linha = linhaApuracao(props.modo, secoesPct, props.atualizado);
+
+const semSinal = (pct: number): string => percentual(pct).replace('%', '');
+const longo = comNumeros && lados.some((l) => (l.pct ?? 0) >= 99.95);
+const turno = modo === 'pre' ? PRIMEIRO_TURNO_2026 : TURNO_CARD;
+const nomeCargo = cargo === 'governador' ? CARGO_GOVERNADOR : 'presidente';
+const lider2022 = referencia2022 && referencia2022[0] !== referencia2022[1] ? (referencia2022[0] > referencia2022[1] ? 0 : 1) : null;
+---
+
+<section class:list={['placar', modo, { longo }]} aria-label={`${lugar}: ${nomeCargo}, ${turno}`}>
+  <header class:list={['topo', { 'com-bandeira': bandeira }]}>
+    {bandeira && <Bandeira uf={bandeira} largura={larguraBandeira} />}
+    <h2 class="lugar">{lugar}</h2>
+    <p class="meta">{nomeCargo} · {turno}</p>
+  </header>
+
+  {
+    seta && (
+      <p class:list={['seta', seta.lado]}>
+        <svg class="triangulo" viewBox="0 0 10 12" aria-hidden="true">
+          <path d={seta.lado === 'esq' ? 'M0 6 10 0v12z' : 'M10 6 0 0v12z'} />
+        </svg>
+        <strong class="pts">{seta.numero}</strong>
+        <span class="resto">{seta.resto}</span>
+      </p>
+    )
+  }
+
+  <div class="trilho">
+    {
+      comNumeros && outros !== null && outros > 0 && (
+        <p class="legenda-outros" style={`--meio:${p0 + outros / 2}`}>
+          {OUTROS_CANDIDATOS} <span class="outros-pct">{percentual(outros)}</span>
+        </p>
+      )
+    }
+    <div class="barra" aria-hidden="true">
+      {
+        segmentos.map((s) => (
+          <span class:list={['folha', s.classe]} style={`--p:${s.p}`}>
+            {s.rotulo && <span class="rotulo">{s.rotulo}</span>}
+          </span>
+        ))
+      }
+    </div>
+  </div>
+
+  {
+    lados.length === 2 && (
+      <div class="colunas">
+        {lados.map((l, i) => (
+          <div class:list={['coluna', i === 0 ? 'esq' : 'dir', posicao(i)]}>
+            <p class="quem">
+              <span class="placa-n">{l.n}</span>
+              {l.nome && <span class="nome">{l.nome}</span>}
+              {rotuloDaFolha(i) && <span class="sr-only">, {rotuloDaFolha(i)}</span>}
+            </p>
+            {l.partido && <p class="partido">{l.partido}</p>}
+            {comNumeros && l.pct !== null && (
+              <p class="pct">
+                {semSinal(l.pct)}
+                <span class="sinal">%</span>
+              </p>
+            )}
+          </div>
+        ))}
+      </div>
+    )
+  }
+
+  {!comNumeros && modo !== 'pre' && <p class="aguardando">{AGUARDANDO_SECOES}</p>}
+
+  {
+    comNumeros && referencia2022 && (
+      <div class="ref">
+        <p class="ref-rotulo">{SEGUNDO_TURNO_2022}</p>
+        <div class="ref-linha">
+          {referencia2022.map((pct, i) => (
+            <span class:list={['ref-pct', { dir: i === 1 }, lider2022 === i ? 'lider' : 'segundo']}>
+              <span class="sr-only">{lados[i].n}: </span>
+              {percentual(pct)}
+            </span>
+          ))}
+          <span class="ref-barra" aria-hidden="true">
+            {referencia2022.map((pct, i) => (
+              <span class:list={['folha', lider2022 === i ? 'lider' : 'segundo']} style={`--p:${pct}`} />
+            ))}
+          </span>
+        </div>
+      </div>
+    )
+  }
+
+  {linha && <p class="linha">{linha}</p>}
+</section>
+
+<style>
+  .placar {
+    container-type: inline-size;
+    display: grid;
+    gap: var(--sp-2);
+  }
+
+  .lider {
+    --cor: var(--ink);
+  }
+
+  .segundo {
+    --cor: var(--ink-2);
+  }
+
+  /* Bandeira à esquerda, lugar e cargo empilhados ao lado. */
+  .topo {
+    display: grid;
+    grid-template-columns: auto 1fr;
+    align-items: center;
+    column-gap: var(--sp-2);
+  }
+
+  .topo :global(.bandeira) {
+    grid-row: span 2;
+  }
+
+  .topo:not(.com-bandeira) {
+    grid-template-columns: 1fr;
+  }
+
+  .lugar {
+    font-size: var(--fs-3);
+    line-height: 1.1;
+    text-transform: uppercase;
+  }
+
+  .meta,
+  .linha,
+  .aguardando,
+  .legenda-outros,
+  .partido,
+  .ref-rotulo {
+    font-family: var(--font-display);
+    font-size: var(--fs-1);
+    font-weight: 900;
+    line-height: 1.2;
+    letter-spacing: var(--track-caps);
+    text-transform: uppercase;
+    color: var(--ink-2);
+  }
+
+  /* Gesto 3: a seta aponta para o lado de quem ganhou terreno; número e texto acompanham o lado. */
+  .seta {
+    display: grid;
+    grid-template-columns: auto auto minmax(0, 1fr);
+    align-items: center;
+    gap: var(--sp-1);
+    font-family: var(--font-display);
+    font-size: var(--fs-1);
+    font-weight: 900;
+    line-height: 1.15;
+    letter-spacing: var(--track-caps);
+    text-transform: uppercase;
+    color: var(--accent);
+  }
+
+  /* À direita a frase continua lida na ordem (número, texto) e só a seta vai para a borda. */
+  .seta.dir {
+    grid-template-columns: auto minmax(0, max-content) auto;
+    justify-content: end;
+  }
+
+  .seta.dir .triangulo {
+    order: 1;
+  }
+
+  .triangulo {
+    width: 20px;
+    height: 24px;
+    fill: currentColor;
+  }
+
+  .pts {
+    font-size: var(--fs-4);
+    font-stretch: 87.5%;
+    letter-spacing: 0;
+    line-height: 1;
+  }
+
+  .resto {
+    text-wrap: balance;
+  }
+
+  /* As folhas: dois segmentos proporcionais com a costura de 4 px em --bg e a marca de 50% acima e abaixo. */
+  .trilho {
+    position: relative;
+  }
+
+  .pre .trilho:has(.legenda-outros) {
+    padding-top: var(--sp-4);
+  }
+
+  .barra {
+    position: relative;
+    display: flex;
+    gap: var(--stroke-2);
+    height: var(--sp-6);
+    margin-block: var(--sp-1);
+    background: var(--surface-1);
+  }
+
+  .barra:has(.folha) {
+    background: none;
+  }
+
+  .barra::before,
+  .barra::after {
+    content: '';
+    position: absolute;
+    left: calc(50% - 1px);
+    width: var(--stroke-1);
+    height: var(--sp-1);
+    background: var(--ink-2);
+  }
+
+  .barra::before {
+    bottom: 100%;
+  }
+
+  .barra::after {
+    top: 100%;
+  }
+
+  .folha {
+    display: flex;
+    align-items: center;
+    flex: var(--p) 1 0%;
+    min-width: 0;
+    background: var(--cor);
+  }
+
+  .folha.outros {
+    background: var(--surface-2);
+  }
+
+  .folha.dir {
+    justify-content: flex-end;
+  }
+
+  .rotulo {
+    padding-inline: var(--sp-2);
+    font-family: var(--font-display);
+    font-size: var(--fs-1);
+    font-weight: 900;
+    letter-spacing: var(--track-caps);
+    text-transform: uppercase;
+    white-space: nowrap;
+    color: var(--bg);
+  }
+
+  .legenda-outros {
+    position: absolute;
+    top: 0;
+    left: clamp(25%, calc(var(--meio) * 1%), 75%);
+    translate: -50% 0;
+    white-space: nowrap;
+  }
+
+  .outros-pct {
+    color: var(--ink);
+  }
+
+  /* As duas colunas dividem as linhas (nome, partido, percentual): se um nome quebrar, os percentuais seguem alinhados. */
+  .colunas {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    column-gap: var(--sp-2);
+  }
+
+  .coluna {
+    display: contents;
+    color: var(--cor);
+  }
+
+  .coluna.esq > * {
+    grid-column: 1;
+  }
+
+  .coluna.dir > * {
+    grid-column: 2;
+    justify-self: end;
+    text-align: right;
+  }
+
+  .quem {
+    grid-row: 1;
+  }
+
+  .partido {
+    grid-row: 2;
+  }
+
+  .pct {
+    grid-row: 3;
+  }
+
+  /* Número de urna em plaquinha e nome na mesma linha; o tamanho acompanha a coluna e o wdth 62 faz
+     "Flávio Bolsonaro" caber ao lado da placa até em 360 px. */
+  .quem {
+    display: flex;
+    align-items: center;
+    gap: var(--sp-1);
+    font-family: var(--font-display);
+    font-size: min(var(--fs-3), 4.6cqi);
+    font-weight: 900;
+    font-stretch: 62%;
+    line-height: 1.1;
+    text-transform: uppercase;
+  }
+
+  .dir .quem {
+    flex-direction: row-reverse;
+  }
+
+  .placa-n {
+    flex: none;
+    padding-inline: 0.3em;
+    background: var(--cor);
+    color: var(--bg);
+  }
+
+  .partido {
+    margin-top: var(--sp-1);
+  }
+
+  .pct {
+    margin-top: var(--sp-1);
+    font-family: var(--font-display);
+    font-size: min(var(--fs-6), 21cqi);
+    font-weight: 900;
+    font-stretch: 75%;
+    line-height: 0.9;
+    white-space: nowrap;
+  }
+
+  .longo .pct {
+    font-size: min(var(--fs-6), 18cqi);
+  }
+
+  .sinal {
+    margin-left: 0.04em;
+    font-size: 0.4em;
+  }
+
+  .aguardando {
+    padding-block: var(--sp-2);
+    color: var(--ink);
+  }
+
+  /* 2º turno de 2022 como régua fina: mesma ordem e mesma regra de cor, posição de 2022. */
+  .ref {
+    display: grid;
+    gap: var(--sp-1);
+    padding-top: var(--sp-2);
+    border-top: var(--stroke-1) solid var(--surface-2);
+  }
+
+  .ref-linha {
+    display: grid;
+    grid-template-columns: auto 1fr auto;
+    align-items: center;
+    gap: var(--sp-2);
+  }
+
+  .ref-pct {
+    font-family: var(--font-display);
+    font-size: var(--fs-2);
+    font-weight: 900;
+    color: var(--cor);
+  }
+
+  .ref-pct.dir {
+    grid-column: 3;
+    grid-row: 1;
+  }
+
+  .ref-barra {
+    display: flex;
+    gap: var(--stroke-1);
+    grid-column: 2;
+    grid-row: 1;
+    height: var(--sp-1);
+  }
+
+  .linha {
+    padding-top: var(--sp-1);
+    text-wrap: balance;
+  }
+</style>
