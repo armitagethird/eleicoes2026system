@@ -1,0 +1,209 @@
+---
+// Playground das pesquisas registradas (só em dev; o build apaga /design), para aprovação do Romero.
+// Os exemplos vêm de contracts/fixtures/pesquisas.exemplo.json: institutos, contratantes, registros e números INVENTADOS, todos
+// com ficticio: true. Eles só existem aqui; src/data/pesquisas.json fica vazio até haver pesquisa real. No desktop o bloco
+// ocupa as 5 colunas da esquerda, como na home; no celular, a largura toda.
+import exemplos from '../../../../contracts/fixtures/pesquisas.exemplo.json';
+import Pesquisas from '../../components/Pesquisas.astro';
+import Base from '../../layouts/Base.astro';
+import { pesquisasDeExemplo } from '../../lib/pesquisas.ts';
+
+const NOTAS: Record<string, string> = {
+  'vale-aberto-2026-10-09': 'Votos totais, com brancos e nulos e indecisos e com contratante.',
+  'rio-fundo-2026-10-08': 'Votos válidos, com decimal. O 22 tem mais e o 13 continua primeiro.',
+  'meridiano-2026-10-07': 'Sem contratante. A coleta atravessa o mês. Só os indecisos foram divulgados.',
+  'praca-aberta-2026-10-06': 'Os dois dentro da margem (46 e 45, margem de 3). Coleta de um dia só.',
+  'litoral-norte-2026-10-05': 'Nomes longos. Só 13 e 22 foram divulgados: o resto da barra fica vazio.',
+  'norte-sul-2026-09-26': 'O mais antigo: fica de fora pelo limite de 5.',
+};
+
+const todas = pesquisasDeExemplo(exemplos, exemplos.length);
+const mostradas = new Set(pesquisasDeExemplo(exemplos).map((p) => p.id));
+---
+
+<Base titulo="Playground das pesquisas" descricao="Pesquisas registradas no TSE com exemplos fictícios (só em dev)." caminho="/design/pesquisas">
+  <div class="faixa" role="note">
+    <p class="faixa-titulo">Exemplos fictícios</p>
+    <p class="faixa-texto">
+      Institutos, contratantes, registros e números inventados, só para ver o layout. Nada aqui é pesquisa real e nada daqui vai
+      ao ar: o build apaga /design e src/data/pesquisas.json fica vazio.
+    </p>
+  </div>
+
+  <main class="playground">
+    <h1>Pesquisas registradas no TSE: playground</h1>
+
+    <div class="grade">
+      <div class="bloco">
+        <Pesquisas pesquisas={exemplos} />
+      </div>
+
+      <aside class="casos" aria-label="O que cada exemplo testa">
+        <h2>O que cada exemplo testa</h2>
+        <ol class="notas" role="list">
+          {
+            todas.map((p) => (
+              <li class:list={{ cortado: !mostradas.has(p.id) }}>
+                <code>{p.id}</code>
+                <span>{NOTAS[p.id]}</span>
+              </li>
+            ))
+          }
+        </ol>
+        <p class="regras">
+          Em todas: o 13 antes do 22, cada um na sua cor; nada de "lidera", de marca de 50% ou de média. A linha legal sai logo
+          abaixo da barra, sempre à vista, com os seis elementos do art. 10 da Res. TSE 23.600. Cada folha da barra tem o
+          comprimento do percentual divulgado.
+        </p>
+      </aside>
+    </div>
+
+    <section class="vazio" aria-label="Estado real hoje">
+      <h2>Estado real hoje</h2>
+      <p>
+        src/data/pesquisas.json está vazio: o componente não renderiza nada (nem o título). Entre as duas linhas abaixo não há
+        nada.
+      </p>
+      <hr />
+      <Pesquisas />
+      <hr />
+    </section>
+  </main>
+</Base>
+
+<style>
+  .faixa {
+    display: grid;
+    gap: var(--sp-1);
+    padding: var(--sp-3) var(--sp-2);
+    background: var(--ink);
+    color: var(--bg);
+  }
+
+  .faixa-titulo {
+    font-family: var(--font-display);
+    font-size: var(--fs-5);
+    font-stretch: 75%;
+    font-weight: 900;
+    line-height: 0.95;
+    text-transform: uppercase;
+  }
+
+  .faixa-texto {
+    max-width: 62ch;
+    font-size: var(--fs-2);
+    line-height: 1.35;
+  }
+
+  .playground {
+    max-width: 1440px;
+    margin-inline: auto;
+    padding: var(--sp-4) var(--sp-2) var(--sp-8);
+  }
+
+  h1 {
+    font-size: var(--fs-4);
+    font-stretch: 75%;
+    line-height: 1;
+    text-transform: uppercase;
+  }
+
+  .grade {
+    display: grid;
+    gap: var(--sp-6);
+    margin-top: var(--sp-4);
+  }
+
+  .casos {
+    display: grid;
+    align-content: start;
+    gap: var(--sp-2);
+  }
+
+  .casos h2,
+  .vazio h2 {
+    font-size: var(--fs-3);
+    text-transform: uppercase;
+  }
+
+  .notas {
+    display: grid;
+    gap: var(--sp-2);
+    margin: 0;
+    padding: 0;
+    list-style: none;
+  }
+
+  .notas li {
+    display: grid;
+    gap: 2px;
+    padding-top: var(--sp-1);
+    border-top: var(--stroke-1) solid var(--surface-2);
+  }
+
+  .notas code {
+    font-family: var(--font-display);
+    font-size: var(--fs-1);
+    font-weight: 900;
+    letter-spacing: var(--track-caps);
+    text-transform: uppercase;
+    color: var(--ink-2);
+  }
+
+  .cortado {
+    color: var(--ink-2);
+  }
+
+  .regras {
+    max-width: 62ch;
+    color: var(--ink-2);
+  }
+
+  .vazio {
+    display: grid;
+    gap: var(--sp-2);
+    margin-top: var(--sp-8);
+  }
+
+  .vazio p {
+    max-width: 62ch;
+    color: var(--ink-2);
+  }
+
+  .vazio hr {
+    width: 100%;
+    margin: 0;
+    border: 0;
+    border-top: var(--stroke-1) dashed var(--ink-2);
+  }
+
+  @media (min-width: 768px) {
+    .faixa,
+    .playground {
+      padding-inline: var(--sp-4);
+    }
+  }
+
+  @media (min-width: 1024px) {
+    .faixa,
+    .playground {
+      padding-inline: var(--sp-6);
+    }
+
+    .grade {
+      grid-template-columns: repeat(12, minmax(0, 1fr));
+      column-gap: var(--sp-3);
+      align-items: start;
+    }
+
+    .bloco {
+      grid-column: 1 / span 5;
+    }
+
+    .casos {
+      position: sticky;
+      top: var(--sp-3);
+      grid-column: 7 / span 5;
+    }
+  }
+</style>

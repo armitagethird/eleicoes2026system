@@ -1,0 +1,295 @@
+---
+// PESQUISAS REGISTRADAS NO TSE (design/DIRECTION.md, Pesquisas registradas). Base legal: Res. TSE 23.600, art. 10.
+// Cada pesquisa é uma linha de folha: instituto e fim da coleta, o tipo, a barra 13 | brancos, nulos e indecisos | 22 (a mesma
+// língua da barra do Placar: folhas retas, costura de 4 px em --bg, a cor é do candidato por lib/cores.ts), os dois percentuais
+// e, logo abaixo, a linha legal com os seis elementos do art. 10, sempre visível. 13 sempre antes do 22.
+// Pesquisa não é resultado: sem "lidera", sem marca de 50%, sem média, tendência ou série, e nenhum cálculo nosso. A largura de
+// cada folha é o percentual divulgado; o que o instituto não divulgou fica vazio, não é preenchido.
+// Zero JS: renderizado no build a partir de src/data/pesquisas.json. Lista vazia: não renderiza nada.
+import dados from '../data/pesquisas.json';
+import { PESQUISAS_APOIO, PESQUISAS_TITULO, PESQUISA_FICTICIA, PESQUISA_VER_DIVULGACAO, ROTULO_RESULTADO_PESQUISA, TIPO_PESQUISA } from '../lib/copy.ts';
+import { corCandidato } from '../lib/cores.ts';
+import {
+  fimDaColeta,
+  numeroPesquisa,
+  partesLinhaLegal,
+  pesquisasDeExemplo,
+  pesquisasParaExibir,
+  percentualPesquisa,
+  segmentosPesquisa,
+  textoBarra,
+} from '../lib/pesquisas.ts';
+
+interface Props {
+  /** Só /design/pesquisas: injeta outra lista (os exemplos fictícios). Sem ela, vale src/data/pesquisas.json, sem fictícios. */
+  pesquisas?: readonly unknown[];
+}
+
+const { pesquisas } = Astro.props;
+const itens = pesquisas ? pesquisasDeExemplo(pesquisas) : pesquisasParaExibir(dados);
+
+const cor13 = corCandidato(13, 0).css;
+const cor22 = corCandidato(22, 1).css;
+const corDaFolha = { '13': cor13, '22': cor22, brancos_nulos: 'var(--surface-2)', indecisos: 'var(--surface-2)' } as const;
+const folhas = (p: (typeof itens)[number]) => segmentosPesquisa(p).filter((s) => s.pct > 0);
+const meio = (p: (typeof itens)[number]) => segmentosPesquisa(p).filter((s) => s.chave !== '13' && s.chave !== '22');
+---
+
+{
+  itens.length > 0 && (
+    <section class="pesquisas" aria-label={PESQUISAS_TITULO}>
+      <header class="cabeca">
+        <h2 class="titulo">{PESQUISAS_TITULO}</h2>
+        <p class="apoio">{PESQUISAS_APOIO}</p>
+      </header>
+
+      <ol class="lista" role="list">
+        {itens.map((p) => (
+          <li class="pesquisa">
+            {p.ficticio === true && <p class="exemplo">{PESQUISA_FICTICIA}</p>}
+
+            <div class="topo">
+              <div class="quem">
+                <h3 class="instituto">{p.instituto}</h3>
+                <p class="fim">{fimDaColeta(p)}</p>
+              </div>
+              <p class="tipo">{TIPO_PESQUISA[p.tipo]}</p>
+            </div>
+
+            <div class="grafico" role="img" aria-label={textoBarra(p)}>
+              <div class="barra">
+                {folhas(p).map(({ chave, pct }) => (
+                  <span class:list={['folha', { dir: chave === '22' }]} style={`--p:${pct};--cor:${corDaFolha[chave]}`} />
+                ))}
+              </div>
+
+              <div class="pcts">
+                <p class="lado esq" style={`--cor:${cor13}`}>
+                  <span class="placa-n">13</span>
+                  <span class="pct">{numeroPesquisa(p.resultados['13'])}<span class="sinal">%</span></span>
+                </p>
+                <p class="lado dir" style={`--cor:${cor22}`}>
+                  <span class="pct">{numeroPesquisa(p.resultados['22'])}<span class="sinal">%</span></span>
+                  <span class="placa-n">22</span>
+                </p>
+              </div>
+
+              {meio(p).length > 0 && (
+                <p class="divulgados">
+                  {meio(p).map(({ chave, pct }, i, todas) => (
+                    <>
+                      <span class="parte">
+                        {ROTULO_RESULTADO_PESQUISA[chave]} <span class="valor">{percentualPesquisa(pct)}</span>
+                        {i < todas.length - 1 && ' ·'}
+                      </span>
+                      {i < todas.length - 1 && ' '}
+                    </>
+                  ))}
+                </p>
+              )}
+            </div>
+
+            <p class="legal">
+              {partesLinhaLegal(p).map((parte, i, todas) => (
+                <>
+                  <span class="parte">{i < todas.length - 1 ? `${parte} ·` : parte}</span>
+                  {i < todas.length - 1 && ' '}
+                </>
+              ))}
+            </p>
+            <a class="fonte" href={p.fonte_url} rel="noopener noreferrer">{PESQUISA_VER_DIVULGACAO}</a>
+          </li>
+        ))}
+      </ol>
+    </section>
+  )
+}
+
+<style>
+  .pesquisas {
+    container-type: inline-size;
+    display: grid;
+    gap: var(--sp-1);
+  }
+
+  /* O filete grosso separa o bloco do placar acima: aqui nada é resultado. */
+  .cabeca {
+    display: grid;
+    gap: var(--sp-1);
+    padding-top: var(--sp-2);
+    border-top: var(--stroke-2) solid var(--ink);
+  }
+
+  .titulo {
+    font-size: var(--fs-3);
+    font-stretch: 75%;
+    line-height: 1.1;
+    text-transform: uppercase;
+  }
+
+  .apoio {
+    font-size: var(--fs-2);
+    line-height: 1.35;
+    text-wrap: balance;
+    color: var(--ink-2);
+  }
+
+  .lista {
+    display: grid;
+    margin: 0;
+    padding: 0;
+    list-style: none;
+  }
+
+  /* Uma folha por pesquisa, separadas por filete de 2 px. */
+  .pesquisa {
+    display: grid;
+    gap: var(--sp-2);
+    padding-block: var(--sp-3);
+    border-top: var(--stroke-1) solid var(--surface-2);
+  }
+
+  .exemplo,
+  .fim,
+  .tipo,
+  .divulgados,
+  .fonte {
+    font-family: var(--font-display);
+    font-size: var(--fs-1);
+    font-weight: 900;
+    line-height: 1.2;
+    letter-spacing: var(--track-caps);
+    text-transform: uppercase;
+  }
+
+  /* Carimbo só do playground: placa cheia, a coisa mais alta da linha. */
+  .exemplo {
+    justify-self: start;
+    padding: 2px var(--sp-1);
+    background: var(--ink);
+    color: var(--bg);
+  }
+
+  .topo {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    align-items: start;
+    column-gap: var(--sp-2);
+  }
+
+  .instituto {
+    font-size: var(--fs-3);
+    font-stretch: 87.5%;
+    line-height: 1.1;
+    text-transform: uppercase;
+    text-wrap: balance;
+    overflow-wrap: anywhere;
+  }
+
+  .fim {
+    margin-top: var(--sp-1);
+    color: var(--ink-2);
+  }
+
+  /* O tipo muda o que o número quer dizer (votos totais e votos válidos não se comparam): placa com filete, não só texto. */
+  .tipo {
+    padding: 2px var(--sp-1);
+    border: var(--stroke-1) solid var(--ink-2);
+    white-space: nowrap;
+    color: var(--ink);
+  }
+
+  /* Barra na língua do Placar: folhas retas e costura de 4 px em --bg. O comprimento de cada folha é o percentual divulgado
+     (flex-basis em %), então o que o instituto não divulgou fica como vazio. O 22 encosta na direita, o 13 na esquerda. */
+  .barra {
+    display: flex;
+    gap: var(--stroke-2);
+    height: var(--sp-3);
+    background: var(--bg);
+  }
+
+  .folha {
+    flex: 0 1 calc(var(--p) * 1%);
+    min-width: 0;
+    background: var(--cor);
+  }
+
+  .folha.dir {
+    margin-left: auto;
+  }
+
+  .pcts {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    column-gap: var(--sp-2);
+    margin-top: var(--sp-1);
+  }
+
+  .lado {
+    display: flex;
+    align-items: center;
+    gap: var(--sp-1);
+    color: var(--cor);
+  }
+
+  .lado.dir {
+    justify-content: flex-end;
+  }
+
+  .placa-n {
+    flex: none;
+    padding-inline: 0.3em;
+    background: var(--cor);
+    font-family: var(--font-display);
+    font-size: var(--fs-2);
+    font-stretch: 62%;
+    font-weight: 900;
+    line-height: 1.35;
+    color: var(--bg);
+  }
+
+  .pct {
+    font-family: var(--font-display);
+    font-size: var(--fs-4);
+    font-stretch: 75%;
+    font-weight: 900;
+    line-height: 1;
+    white-space: nowrap;
+  }
+
+  .sinal {
+    margin-left: 0.04em;
+    font-size: 0.5em;
+  }
+
+  .divulgados {
+    margin-top: var(--sp-1);
+    color: var(--ink-2);
+  }
+
+  .valor {
+    color: var(--ink);
+  }
+
+  /* A linha legal do art. 10: legível, sempre à vista. Cada elemento é inteiro e leva o "·" colado no fim (espaço não separável
+     no HTML), então a linha nunca começa nem termina num ponto solto; só se o elemento for mais largo que a coluna ele quebra
+     por dentro. */
+  .legal {
+    font-size: var(--fs-1);
+    line-height: 1.55;
+    color: var(--ink-2);
+  }
+
+  .parte {
+    display: inline-block;
+  }
+
+  .fonte {
+    justify-self: start;
+    padding-block: var(--sp-1);
+    text-decoration: underline;
+    text-decoration-thickness: var(--stroke-1);
+    text-underline-offset: 0.25em;
+    color: var(--ink);
+  }
+</style>

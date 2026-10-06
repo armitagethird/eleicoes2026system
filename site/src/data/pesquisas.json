@@ -1,0 +1,47 @@
+[
+  {
+    "id": "gerp-2026-10-03",
+    "instituto": "Gerp",
+    "contratante": null,
+    "registro": "BR-00509/2026",
+    "coleta": { "inicio": "2026-09-30", "fim": "2026-10-02" },
+    "entrevistas": 2400,
+    "margem_pp": 2,
+    "confianca_pct": 95.55,
+    "tipo": "votos_validos",
+    "cenario": "2turno",
+    "resultados": { "13": 47, "22": 53 },
+    "divulgada_em": "2026-10-03",
+    "fonte_url": "https://www.cnnbrasil.com.br/eleicoes/gerp-flavio-tem-53-dos-votos-validos-no-2o-turno-lula-47/"
+  },
+  {
+    "id": "quaest-2026-10-03",
+    "instituto": "Quaest",
+    "contratante": "Editora Globo e Globo Comunicação e Participações",
+    "registro": "BR-02197/2026",
+    "coleta": { "inicio": "2026-10-02", "fim": "2026-10-03" },
+    "entrevistas": 3702,
+    "margem_pp": 2,
+    "confianca_pct": 95,
+    "tipo": "votos_totais",
+    "cenario": "2turno",
+    "resultados": { "13": 42, "22": 44, "brancos_nulos": 13, "indecisos": 1 },
+    "divulgada_em": "2026-10-03",
+    "fonte_url": "https://www.cnnbrasil.com.br/eleicoes/quaest-2-turno/"
+  },
+  {
+    "id": "poderdata-2026-10-03",
+    "instituto": "PoderData",
+    "contratante": null,
+    "registro": "BR-03519/2026",
+    "coleta": { "inicio": "2026-09-30", "fim": "2026-10-02" },
+    "entrevistas": 4000,
+    "margem_pp": 1.5,
+    "confianca_pct": 95,
+    "tipo": "votos_totais",
+    "cenario": "2turno",
+    "resultados": { "13": 46, "22": 46, "brancos_nulos": 7, "indecisos": 1 },
+    "divulgada_em": "2026-10-03",
+    "fonte_url": "https://www.poder360.com.br/poderdata/lula-e-flavio-tem-46-cada-um-no-2o-turno-diz-poderdata-aya/"
+  }
+]

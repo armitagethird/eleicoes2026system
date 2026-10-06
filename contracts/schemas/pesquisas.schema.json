@@ -1,0 +1,85 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "pesquisas.schema.json",
+  "title": "src/data/pesquisas.json",
+  "description": "Pesquisas eleitorais REGISTRADAS NO TSE (PesqEle), cada uma como o instituto divulgou. Base legal: Res. TSE 23.600, art. 10 (período de coleta, margem de erro, nível de confiança, número de entrevistas, instituto e contratante, número de registro). Array vazio = o bloco não aparece. Nunca média, agregação, tendência ou cálculo nosso. Pesquisa fictícia NUNCA entra em src/data/ (divulgar pesquisa falsa é crime): só em contracts/fixtures/pesquisas.exemplo.json, marcada com ficticio: true.",
+  "type": "array",
+  "items": { "$ref": "#/$defs/pesquisa" },
+  "$defs": {
+    "dataIso": {
+      "description": "Data ISO 8601 (AAAA-MM-DD), sem hora.",
+      "type": "string",
+      "format": "date"
+    },
+    "pesquisa": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "id", "instituto", "contratante", "registro", "coleta", "entrevistas", "margem_pp", "confianca_pct",
+        "tipo", "cenario", "resultados", "divulgada_em", "fonte_url"
+      ],
+      "properties": {
+        "id": {
+          "description": "Identificador único no arquivo (minúsculas, hífens). Sugestão: instituto-fim da coleta, ex.: quaest-2026-10-04.",
+          "type": "string",
+          "pattern": "^[a-z0-9]+(-[a-z0-9]+)*$"
+        },
+        "instituto": { "description": "Nome do instituto como consta no registro.", "type": "string", "minLength": 1 },
+        "contratante": {
+          "description": "Quem contratou a pesquisa, como consta no registro. null quando o registro não informa contratante (a propriedade é obrigatória: null é uma decisão, não um esquecimento).",
+          "type": ["string", "null"],
+          "minLength": 1
+        },
+        "registro": {
+          "description": "Número de registro no PesqEle: sigla de 2 letras, 5 dígitos e o ano. Ex.: BR-01234/2026.",
+          "type": "string",
+          "pattern": "^[A-Z]{2}-\\d{5}/\\d{4}$"
+        },
+        "coleta": {
+          "description": "Período de coleta dos dados. fim >= inicio (conferido no teste).",
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["inicio", "fim"],
+          "properties": {
+            "inicio": { "$ref": "#/$defs/dataIso" },
+            "fim": { "$ref": "#/$defs/dataIso" }
+          }
+        },
+        "entrevistas": { "type": "integer", "minimum": 1 },
+        "margem_pp": { "description": "Margem de erro em pontos percentuais (o ± fica no texto).", "type": "number", "exclusiveMinimum": 0, "maximum": 100 },
+        "confianca_pct": { "description": "Nível de confiança, em %.", "type": "number", "exclusiveMinimum": 0, "maximum": 100 },
+        "tipo": {
+          "description": "Base dos percentuais, como o instituto divulgou. Votos totais e votos válidos não são comparáveis entre si.",
+          "enum": ["votos_totais", "votos_validos"]
+        },
+        "cenario": {
+          "description": "Só o 2º turno presidencial, por enquanto.",
+          "enum": ["2turno"]
+        },
+        "resultados": {
+          "description": "Percentuais como divulgados, sem arredondar nem recalcular. 13 e 22 são obrigatórios; brancos e nulos e indecisos só se o instituto os divulgou.",
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["13", "22"],
+          "properties": {
+            "13": { "$ref": "common.schema.json#/$defs/pct" },
+            "22": { "$ref": "common.schema.json#/$defs/pct" },
+            "brancos_nulos": { "$ref": "common.schema.json#/$defs/pct" },
+            "indecisos": { "$ref": "common.schema.json#/$defs/pct" }
+          }
+        },
+        "divulgada_em": { "description": "Dia em que o instituto divulgou os resultados.", "$ref": "#/$defs/dataIso" },
+        "fonte_url": {
+          "description": "URL da divulgação do instituto, ou de veículo que a publicou. Só http(s): vai para um href.",
+          "type": "string",
+          "format": "uri",
+          "pattern": "^https?://"
+        },
+        "ficticio": {
+          "description": "true só nos exemplos do playground. O site descarta qualquer item assim e o teste proíbe o campo em src/data/pesquisas.json.",
+          "type": "boolean"
+        }
+      }
+    }
+  }
+}
