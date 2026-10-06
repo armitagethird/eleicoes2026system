@@ -1,0 +1,168 @@
+---
+// Playground do mapa (só em dev; o build apaga /design), para aprovação do Romero: o muro de 28 em quatro momentos,
+// cada um em quatro larguras de container, as que o mapa tem na home (Mapa.astro se adapta ao container, não à tela):
+//   360 e 390 px de tela: largura total menos o respiro de 16 px de cada lado (328 e 358 px);
+//   768 px: largura total menos 32 px de cada lado (704 px);
+//   1440 px: as 7 das 12 colunas da direita (774 px).
+// pre é o <Mapa /> da home, sem props (hist-uf e hist-br). Os outros partem das fixtures de /data/uf/*.json e br.json:
+//   parcial 87%: os percentuais das fixtures, com as seções esticadas para 80–97% (Brasil 87,3%);
+//   parcial 10%: começo da apuração, com 10% das seções, percentuais desviados até 6 pontos (a liderança muda de dono em
+//                alguns estados) e RR, AP e AC ainda sem seção apurada;
+//   final: os percentuais das fixtures com 100% das seções e a hora de status.final.json.
+import brFixture from '../../../../contracts/fixtures/br.json';
+import statusFinal from '../../../../contracts/fixtures/status.final.json';
+import Mapa from '../../components/Mapa.astro';
+import Base from '../../layouts/Base.astro';
+import { LUGARES, type Lugar } from '../../lib/cartograma.ts';
+import type { Placar } from '../../lib/contratos.ts';
+
+const ufs = import.meta.glob<Placar>('../../../../contracts/fixtures/uf/*.json', { eager: true, import: 'default' });
+const base = (l: Lugar): Placar =>
+  l === 'BR' ? (brFixture as Placar) : ufs[`../../../../contracts/fixtures/uf/${l.toLowerCase()}.json`];
+
+const r2 = (x: number) => Math.round(x * 100) / 100;
+// Desvio determinístico por lugar, de -6 a +6 pontos para o 13.
+const desvio = (l: Lugar) => ((l.charCodeAt(0) * 7 + l.charCodeAt(1) * 13) % 13) - 6;
+
+function cenario(secoes: (l: Lugar, original: number) => number, deslocar: (l: Lugar) => number) {
+  return Object.fromEntries(
+    LUGARES.map((l) => {
+      const p = base(l);
+      const d = deslocar(l);
+      const [a, b] = p.presidente.cand;
+      const p13 = r2(Math.min(100, Math.max(0, a.pct + d)));
+      const v = p.presidente.variacao_2022;
+      return [
+        l,
+        {
+          secoes_pct: secoes(l, p.secoes_pct),
+          presidente: {
+            cand: [
+              { n: a.n, pct: p13 },
+              { n: b.n, pct: r2(100 - p13) },
+            ],
+            variacao_2022: { '13': r2(v['13'] + d), '22': r2(v['22'] - d) },
+          },
+        },
+      ];
+    }),
+  );
+}
+
+const AGUARDANDO: Lugar[] = ['RR', 'AP', 'AC'];
+const cenarios = [
+  { chave: 'pre', titulo: 'pre · 1º turno 2026 (13 · outros · 22), sem seta' },
+  {
+    chave: 'parcial-10',
+    titulo: 'parcial · 10% das seções',
+    fase: 'parcial' as const,
+    apuracao: {
+      placares: cenario(
+        (l, s) => (l === 'BR' ? 10.2 : AGUARDANDO.includes(l) ? 0.4 : r2(4 + (s - 60) / 3)),
+        desvio,
+      ),
+      atualizado: '2026-10-25T17:31:40-03:00',
+    },
+  },
+  {
+    chave: 'parcial-87',
+    titulo: 'parcial · 87% das seções',
+    fase: 'parcial' as const,
+    apuracao: {
+      placares: cenario((l, s) => (l === 'BR' ? 87.3 : r2(80 + ((s - 60) / 38) * 17)), () => 0),
+      atualizado: brFixture.atualizado,
+    },
+  },
+  {
+    chave: 'final',
+    titulo: 'final · 100% das seções',
+    fase: 'final' as const,
+    apuracao: { placares: cenario(() => 100, () => 0), atualizado: statusFinal.atualizado },
+  },
+];
+
+const larguras = [
+  { tela: 360, container: 328 },
+  { tela: 390, container: 358 },
+  { tela: 768, container: 704 },
+  { tela: 1440, container: 774 },
+];
+---
+
+<Base titulo="Playground do mapa" descricao="Variantes do mapa para aprovação (só em dev)." caminho="/design/mapa">
+  <main class="playground">
+    <h1>Mapa: o muro de 28</h1>
+    <p class="nota">
+      Dados fictícios. Cada moldura tem a largura que o mapa ocupa na home naquela tela. Passe o mouse ou use Tab e as setas:
+      o painel acompanha (só nos containers largos).
+    </p>
+    {
+      cenarios.map((c) => (
+        <section class="cenario" id={c.chave}>
+          <h2>{c.titulo}</h2>
+          <div class="molduras">
+            {larguras.map((l) => (
+              <figure class="moldura" style={`width:${l.container}px`} data-moldura={`${c.chave}-${l.tela}`}>
+                <figcaption>
+                  tela {l.tela} px · container {l.container} px
+                </figcaption>
+                <Mapa fase={c.fase} apuracao={c.apuracao} />
+              </figure>
+            ))}
+          </div>
+        </section>
+      ))
+    }
+  </main>
+</Base>
+
+<style>
+  .playground {
+    padding: var(--sp-4) var(--sp-2) var(--sp-8);
+  }
+
+  h1 {
+    font-size: var(--fs-4);
+    text-transform: uppercase;
+  }
+
+  .nota {
+    max-width: 60ch;
+    margin-top: var(--sp-1);
+    color: var(--ink-2);
+  }
+
+  .cenario {
+    margin-top: var(--sp-7);
+  }
+
+  .cenario h2 {
+    font-size: var(--fs-3);
+    text-transform: uppercase;
+  }
+
+  /* A moldura tem a largura do container real do mapa (328 a 774 px) e não encolhe: onde ela é maior que a tela, a faixa
+     rola na horizontal em vez de alargar a página. O padding de 2 px dá lugar ao contorno de foco e de hover das placas
+     (desenhado fora delas, no filete), que o overflow cortaria nas placas da borda do muro. */
+  .molduras {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: start;
+    gap: var(--sp-6);
+    margin-top: var(--sp-3);
+    padding: var(--stroke-1);
+    overflow-x: auto;
+  }
+
+  .moldura {
+    flex: none;
+  }
+
+  figcaption {
+    margin-bottom: var(--sp-2);
+    font-size: var(--fs-1);
+    letter-spacing: var(--track-caps);
+    text-transform: uppercase;
+    color: var(--ink-2);
+  }
+</style>

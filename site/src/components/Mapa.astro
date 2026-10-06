@@ -1,17 +1,775 @@
 ---
-// STUB: o mapa (cartograma de 28 placas: Brasil + 27 UFs) é construído pelo agente do mapa.
-// Interface estável: <Mapa /> se basta (lê os dados embutidos do build); `fase` só é passado pelo playground.
+// O muro de 28 (design/DIRECTION.md, Mapa): Brasil + 27 UFs em placas iguais, coladas lado a lado numa grade
+// aproximadamente geográfica que desenha o Brasil (lib/cartograma.ts). Cada placa: bandeira intacta, sigla e a barra do
+// site (13 à esquerda, 22 à direita, proporcionais, costura de 4 px em --bg e marca de 50%); com |variação vs 2022|
+// >= 0,5 ponto, a seta para o lado de quem ganhou terreno, na cor dele. Cor fixa por candidato (lib/cores.ts), nunca
+// pela liderança: a sigla fica em --ink e a placa nunca é pintada. A entrada escalonada mexe só em sigla, seta e barra,
+// nunca na bandeira (sem opacidade nem movimento).
+// Se adapta ao container (container queries): placas em retrato e título e legenda acima do muro nos estreitos
+// (celular); placas em paisagem, com título, legenda e painel de detalhe nos vazios do oceano, nos largos (>= 520 px).
+// <Mapa /> sem props mostra o 1º turno do hist (o build não conhece a apuração; o ao vivo é da Fase 3). `apuracao` só é
+// passada pelo playground (/design/mapa).
+import brFixture from '../../../contracts/fixtures/br.json';
+import Bandeira from './Bandeira.astro';
+import { AREAS, CARTOGRAMA, gridArea, ordemEntrada, vizinho, type Direcao, type Lugar } from '../lib/cartograma.ts';
+import {
+  LINHA_PRIMEIRO_TURNO,
+  MAPA_SETA,
+  MAPA_TITULO,
+  OUTROS_CANDIDATOS,
+  linhaApuracao,
+} from '../lib/copy.ts';
+import type { UF } from '../lib/contratos.ts';
+import { corCandidato } from '../lib/cores.ts';
+import { histBr, histUf } from '../lib/dados.ts';
+import { ajustarDestino } from '../lib/destino.ts';
+import { mapaApuracao, mapaPre, vista, type Fase, type PlacarMapa } from '../lib/mapa-dados.ts';
+
 interface Props {
-  fase?: 'pre' | 'parcial' | 'final';
+  fase?: Fase;
+  /** Só em parcial/final: os placares (uf/*.json e br.json, ou as placas de /data/mapa.json) e a hora do título. */
+  apuracao?: { placares: Partial<Record<Lugar, PlacarMapa>>; atualizado: string | null };
 }
-const { fase = 'pre' } = Astro.props;
+
+const { fase = 'pre', apuracao } = Astro.props;
+const mapa =
+  fase === 'pre'
+    ? mapaPre((l) => (l === 'BR' ? histBr() : histUf(l)))
+    : mapaApuracao(fase, apuracao?.placares ?? {}, apuracao?.atualizado ?? null);
+
+// A bandeira tem a mesma caixa em toda placa e no painel: 40 px, a mesma do Brasil no placar (Placar.astro).
+const BANDEIRA = 40;
+const DIRECOES: Direcao[] = ['cima', 'direita', 'baixo', 'esquerda'];
+const ordem = ordemEntrada();
+
+// Nomes reais dos candidatos (iguais em todo arquivo de dados); o hist só tem percentuais. Sempre na ordem do número de urna.
+const candidatos = [...brFixture.presidente.cand]
+  .sort((a, b) => a.n - b.n)
+  .map(({ n, nome }, i) => ({ n, nome, cor: corCandidato(n, i === 0 ? 0 : 1).css }));
+const cores = candidatos.map((c) => `--cor-${c.n}:${c.cor}`).join(';');
+
+// DESTINO do nome no painel e do título: ajustado numa largura de referência e escrito em cqi da própria caixa.
+const REFERENCIA = 1000;
+const destino = (texto: string, tamMax: number, tamMin: number) => {
+  const [linha] = ajustarDestino(texto.toLocaleUpperCase('pt-BR'), { largura: REFERENCIA, tamMax, tamMin, maxLinhas: 1 }).linhas;
+  return `--nt:${(linha.tamanho / REFERENCIA) * 100}cqi;--nw:${linha.wdth}%`;
+};
+
+const placas = mapa.placas.map((placa) => {
+  const v = vista(placa, mapa.fase);
+  const { c, r } = CARTOGRAMA[placa.lugar];
+  return {
+    ...placa,
+    v,
+    bandeira: placa.lugar.toLowerCase() as Lowercase<UF> | 'br',
+    celula: `grid-area: ${r} / ${c}`,
+    estilo: `${v.estilo};${destino(placa.nome, 110, 40)};--ordem:${ordem.get(placa.lugar)}`,
+    nav: DIRECOES.map((d) => vizinho(placa.lugar, d) ?? '-').join(' '),
+  };
+});
+
+// O painel abre no Brasil (o agregado), sem marcar a placa do Brasil: nada de destaque para ela.
+const inicial = placas.find((p) => p.lugar === 'BR') ?? placas[0];
+// Espaço inquebrável antes de cada "·": a linha quebra depois do separador, nunca começa com ele.
+const meta = (
+  mapa.fase === 'pre' ? LINHA_PRIMEIRO_TURNO : mapa.secoes === null ? '' : linhaApuracao(mapa.fase, mapa.secoes, mapa.atualizado)
+).replaceAll(' · ', '\u00a0· ');
+const areas = `--area-titulo:${gridArea(AREAS.titulo)};--area-painel:${gridArea(AREAS.painel)};--area-legenda:${gridArea(AREAS.legenda)}`;
 ---
 
-<section class="mapa" aria-label="Mapa por estado" data-fase={fase}></section>
+<section
+  class="mapa"
+  data-mapa
+  data-fase={mapa.fase}
+  style={`${areas};${cores}`}
+>
+  <div class="muro">
+    <header class="titulo">
+      <h2 class="titulo-nome" style={destino(MAPA_TITULO, 200, 60)}>{MAPA_TITULO}</h2>
+      {meta && <p class="titulo-meta">{meta}</p>}
+    </header>
+
+    <div class="legenda">
+      <ul class="l-cand" role="list">
+        {
+          candidatos.map((c) => (
+            <li style={`--cor:${c.cor}`}>
+              <b class="l-n">{c.n}</b>
+              <span class="l-nome">{c.nome}</span>
+            </li>
+          ))
+        }
+      </ul>
+      <ul class="l-itens" role="list">
+        {
+          mapa.fase === 'pre' ? (
+            <li>
+              <i class="l-outros" />
+              {OUTROS_CANDIDATOS}
+            </li>
+          ) : (
+            <li>
+              <span class="l-setas" aria-hidden="true">
+                <svg class="tri" viewBox="0 0 10 12">
+                  <path d="M0 6 10 0v12z" />
+                </svg>
+                <svg class="tri" viewBox="0 0 10 12">
+                  <path d="M10 6 0 0v12z" />
+                </svg>
+              </span>
+              {MAPA_SETA}
+            </li>
+          )
+        }
+      </ul>
+    </div>
+
+    <p class="sr-only">Use as setas do teclado para ir de um estado a outro.</p>
+    <ul class="placas" role="list">
+      {
+        placas.map((p) => (
+          <li style={p.celula}>
+            <a
+              class="placa"
+              href={p.href}
+              aria-label={p.v.rotulo}
+              style={p.estilo}
+              data-lugar={p.lugar}
+              data-nav={p.nav}
+              data-nome={p.nome}
+              data-meta={p.v.meta}
+              data-a={p.v.a}
+              data-o={p.v.o}
+              data-b={p.v.b}
+              data-var={p.v.variacao}
+              data-ganhou={p.v.ganhou}
+              data-vazio={p.pct ? undefined : ''}
+              data-seta={p.v.seta ? '' : undefined}
+            >
+              <span class="bandeira" data-mapa-bandeira>
+                <Bandeira uf={p.bandeira} largura={BANDEIRA} />
+              </span>
+              <span class="sigla" aria-hidden="true">
+                {p.lugar}
+              </span>
+              {p.v.seta && (
+                <span class="seta" aria-hidden="true">
+                  <svg class="tri" viewBox="0 0 10 12">
+                    <path d="M0 6 10 0v12z" />
+                  </svg>
+                  <span class="seta-n">{p.v.setaNumero}</span>
+                </span>
+              )}
+              <span class="barra" aria-hidden="true">
+                <i class="s13" />
+                {mapa.fase === 'pre' && <i class="so" />}
+                <i class="s22" />
+              </span>
+            </a>
+          </li>
+        ))
+      }
+    </ul>
+
+    <div
+      class="painel"
+      data-mapa-painel
+      style={inicial.estilo}
+      data-ganhou={inicial.v.ganhou}
+      data-vazio={inicial.pct ? undefined : ''}
+    >
+      <div class="p-topo">
+        <span class="bandeira" data-mapa-bandeira>
+          <Bandeira uf={inicial.bandeira} largura={BANDEIRA} />
+        </span>
+        <span class="p-caixa">
+          <a class="p-nome" href={inicial.href} aria-label={inicial.v.rotulo} tabindex="-1" data-mapa-p="nome">{inicial.nome}</a>
+        </span>
+      </div>
+      <p class="p-numeros" aria-hidden="true">
+        <span class="p-n p-n13">13</span>
+        <span class="p-a" data-mapa-p="a">{inicial.v.a}</span>
+        <span class="p-b" data-mapa-p="b">{inicial.v.b}</span>
+        <span class="p-n p-n22">22</span>
+      </p>
+      <span class="barra p-barra" aria-hidden="true">
+        <i class="s13" />
+        {mapa.fase === 'pre' && <i class="so" />}
+        <i class="s22" />
+      </span>
+      <div class="p-pe" aria-hidden="true">
+        {
+          mapa.fase === 'pre' ? (
+            <p class="p-o">
+              {OUTROS_CANDIDATOS} <span data-mapa-p="o">{inicial.v.o}</span>
+            </p>
+          ) : (
+            <p class="p-var">
+              <svg class="tri" viewBox="0 0 10 12">
+                <path d="M0 6 10 0v12z" />
+              </svg>
+              <span data-mapa-p="var">{inicial.v.variacao}</span>
+            </p>
+          )
+        }
+        <p class="p-meta" data-mapa-p="meta">{inicial.v.meta}</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<script src="./mapa.ts"></script>
 
 <style>
   .mapa {
-    aspect-ratio: 7 / 8;
+    container: mapa / inline-size;
+  }
+
+  /* Grade de 7 colunas iguais; a altura da linha sai da largura da coluna (--cw), então o muro não tem CLS.
+     No celular: linha 1 = título, linha 2 = legenda, linhas 3 a 10 = as placas. */
+  .muro {
+    --cw: calc((100cqi - 6 * var(--stroke-1)) / 7);
+    --rh: calc(var(--cw) * 0.5 + 40px);
+    --barra: 10px;
+    display: grid;
+    grid-template-columns: repeat(7, minmax(0, 1fr));
+    grid-template-rows: auto auto repeat(8, var(--rh));
+    gap: var(--stroke-1);
+  }
+
+  .titulo-meta,
+  .l-itens,
+  .p-meta,
+  .p-o {
+    font-size: var(--fs-1);
+    line-height: 1.25;
+    letter-spacing: var(--track-caps);
+    text-transform: uppercase;
+    color: var(--ink-2);
+  }
+
+  /* ---------- título ---------- */
+  .titulo {
+    grid-row: 1;
+    grid-column: 1 / -1;
+    container-type: inline-size;
+  }
+
+  .titulo-nome {
+    font-size: var(--nt);
+    font-stretch: var(--nw);
+    line-height: 0.9;
+    text-transform: uppercase;
+    white-space: nowrap;
+  }
+
+  .titulo-meta {
+    margin-top: var(--sp-1);
+    text-wrap: balance;
+  }
+
+  /* ---------- legenda: quem é quem, antes do muro ---------- */
+  .legenda {
+    grid-row: 2;
+    grid-column: 1 / -1;
+    display: grid;
+    gap: var(--sp-1);
+    padding: var(--sp-2) 0 var(--sp-3);
+  }
+
+  .l-cand,
+  .l-itens {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--sp-1) var(--sp-3);
+    margin: 0;
+    padding: 0;
+    list-style: none;
+  }
+
+  .l-cand > li {
+    display: flex;
+    align-items: baseline;
+    gap: var(--sp-1);
+    font-family: var(--font-display);
+    font-weight: 900;
+    font-size: var(--fs-2);
+    line-height: 1;
+    text-transform: uppercase;
+    color: var(--cor);
+  }
+
+  /* Número de urna em plaquinha na cor do candidato; texto sobre a cor em --bg. */
+  .l-n,
+  .p-n {
+    padding: 3px 5px;
+    font-family: var(--font-display);
+    font-weight: 900;
+    font-size: var(--fs-1);
+    line-height: 1;
+    color: var(--bg);
+    background: var(--cor);
+  }
+
+  .l-nome {
+    font-stretch: 87.5%;
+  }
+
+  .l-itens > li {
+    display: flex;
+    align-items: start;
+    gap: var(--sp-1);
+    text-wrap: balance;
+  }
+
+  /* Ícones de 10 px centrados na primeira linha do texto (linha de 16 px). */
+  .l-outros {
+    width: 16px;
+    height: 10px;
+    flex: none;
+    margin-top: 3px;
+    background: var(--surface-2);
+  }
+
+  .l-setas {
+    display: flex;
+    gap: 2px;
+    margin-top: 3px;
+  }
+
+  .l-setas .tri:first-child {
+    fill: var(--cor-13);
+  }
+
+  .l-setas .tri:last-child {
+    fill: var(--cor-22);
+  }
+
+  /* ---------- placas ---------- */
+  /* A lista divide as trilhas do muro (subgrid); só as placas recebem o ponteiro, os vazios deixam passar. */
+  .placas {
+    grid-column: 1 / -1;
+    grid-row: 3 / span 8;
+    display: grid;
+    grid-template-columns: subgrid;
+    grid-template-rows: subgrid;
+    margin: 0;
+    padding: 0;
+    list-style: none;
+    pointer-events: none;
+  }
+
+  .placas > li {
+    display: grid;
+    min-width: 0;
+  }
+
+  /* Retrato no celular: bandeira no alto, sigla, e a barra como faixa de pé de cartaz. */
+  .placa {
+    position: relative;
+    display: grid;
+    grid-template-rows: auto 1fr auto;
+    justify-items: center;
+    padding-top: calc((var(--cw) - 40px) / 2);
     background: var(--surface-1);
+    color: var(--ink);
+    text-decoration: none;
+    pointer-events: auto;
+  }
+
+  /* A entrada é de sigla, seta e barra: a bandeira é identificador oficial e nunca leva opacidade nem movimento. */
+  .placa > :is(.sigla, .seta, .barra) {
+    animation: entra var(--dur-1) var(--ease) calc(var(--ordem) * 20ms) backwards;
+  }
+
+  /* Hover e foco desenham no filete entre as placas (2 px): nunca por cima de bandeira vizinha. */
+  .placa:hover {
+    outline: var(--stroke-1) solid var(--ink-2);
+    outline-offset: 0;
+  }
+
+  .placa:focus-visible {
+    z-index: 1;
+    outline: var(--stroke-1) solid var(--ink);
+    outline-offset: 0;
+  }
+
+  .placa:active .sigla {
+    transform: translateY(1px);
+  }
+
+  /* A caixa da bandeira é fixa (10:7, 40 px) e a bandeira fica inteira dentro dela (object-fit: contain do Bandeira). */
+  .bandeira {
+    display: block;
+    width: 40px;
+    height: 28px;
+  }
+
+  .bandeira :global(img) {
+    width: 100%;
+    height: 100%;
+  }
+
+  .sigla {
+    align-self: center;
+    font-family: var(--font-display);
+    font-weight: 900;
+    font-stretch: 75%;
+    font-size: calc(var(--cw) * 0.42);
+    line-height: 0.9;
+  }
+
+  /* Seta de deslocamento na cor de quem ganhou terreno; um só desenho (◀), espelhado para o 22 (▶). */
+  [data-ganhou='13'] {
+    --cor-var: var(--cor-13);
+  }
+
+  [data-ganhou='22'] {
+    --cor-var: var(--cor-22);
+  }
+
+  .tri {
+    width: 8px;
+    height: 10px;
+    flex: none;
+    fill: var(--cor-var);
+  }
+
+  [data-ganhou='22'] .seta .tri,
+  .painel[data-ganhou='22'] .tri {
+    transform: scaleX(-1);
+  }
+
+  .seta {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    color: var(--cor-var);
+  }
+
+  /* No celular a seta é a ponta da barra, do lado de quem ganhou terreno: ◀ à esquerda (13), ▶ à direita (22).
+     A barra encolhe para dar lugar a ela; a proporção entre os segmentos não muda. */
+  @container mapa (width < 520px) {
+    .seta {
+      position: absolute;
+      bottom: 0;
+      left: 0;
+    }
+
+    [data-ganhou='22'] > .seta {
+      left: auto;
+      right: 0;
+    }
+
+    .seta .tri {
+      height: var(--barra);
+    }
+
+    .placa[data-seta][data-ganhou='13'] .barra {
+      margin-left: 10px;
+    }
+
+    .placa[data-seta][data-ganhou='22'] .barra {
+      margin-right: 10px;
+    }
+  }
+
+  .seta-n {
+    display: none;
+    font-family: var(--font-display);
+    font-weight: 900;
+    font-stretch: 75%;
+    font-size: var(--fs-1);
+    line-height: 1;
+  }
+
+  /* A barra do site (card e placar): segmentos proporcionais 13 · outros · 22, costura de 4 px em --bg, marca de 50%. */
+  .barra {
+    position: relative;
+    display: flex;
+    gap: var(--stroke-2);
+    height: var(--barra);
+    background: var(--bg);
+  }
+
+  .barra::before {
+    content: '';
+    position: absolute;
+    bottom: 100%;
+    left: calc(50% - 1px);
+    width: var(--stroke-1);
+    height: 4px;
+    background: var(--ink-2);
+  }
+
+  .placa .barra {
+    justify-self: stretch;
+  }
+
+  .barra > i {
+    min-width: 0;
+  }
+
+  .barra > .s13 {
+    flex: var(--a) 1 0%;
+    background: var(--cor-13);
+  }
+
+  .barra > .so {
+    flex: var(--o) 1 0%;
+    background: var(--surface-2);
+  }
+
+  .barra > .s22 {
+    flex: var(--b) 1 0%;
+    background: var(--cor-22);
+  }
+
+  /* Sem dado ainda: só o trilho vazio (como no card), sem proporção inventada. */
+  [data-vazio] .barra {
+    background: none;
+    border: var(--stroke-1) solid var(--surface-2);
+  }
+
+  [data-vazio] .barra > i {
+    display: none;
+  }
+
+  [data-vazio] .sigla {
+    color: var(--ink-2);
+  }
+
+  /* ---------- painel de detalhe: só nos containers largos, onde há hover ---------- */
+  .painel {
+    display: none;
+  }
+
+  @keyframes entra {
+    from {
+      opacity: 0;
+      transform: translateY(8px);
+    }
+  }
+
+  /* A ilha segura a entrada até o muro aparecer na tela (no celular ele fica abaixo da dobra). */
+  .mapa[data-espera] .placa > :is(.sigla, .seta, .barra) {
+    animation: none;
+    opacity: 0;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .placa > :is(.sigla, .seta, .barra) {
+      animation: none;
+    }
+  }
+
+  /* ---------- container largo: placas em paisagem; título, legenda e painel nos vazios do oceano ---------- */
+  @container mapa (min-width: 520px) {
+    .muro {
+      --rh: max(80px, calc(var(--cw) * 0.8));
+      --barra: 12px;
+      grid-template-rows: repeat(8, var(--rh));
+    }
+
+    .placas {
+      grid-row: 1 / span 8;
+    }
+
+    .titulo {
+      grid-area: var(--area-titulo);
+      align-self: center;
+      padding-left: var(--sp-2);
+    }
+
+    .legenda {
+      grid-area: var(--area-legenda);
+      align-content: end;
+      gap: var(--sp-3);
+      padding: 0 var(--sp-2) 0 0;
+    }
+
+    .l-cand {
+      flex-direction: column;
+      gap: var(--sp-2);
+    }
+
+    /* O nome cabe nas 2 colunas da legenda em qualquer largura (a 1024 px de tela elas têm 150 px). */
+    .l-cand > li {
+      font-size: min(var(--fs-3), calc(var(--cw) * 0.2));
+    }
+
+    .l-itens {
+      flex-direction: column;
+      gap: var(--sp-1);
+    }
+
+    .placa {
+      grid-template: 'bandeira seta' auto 'sigla sigla' 1fr 'barra barra' auto / 1fr auto;
+      justify-items: start;
+      padding: var(--sp-1) var(--sp-1) 0;
+    }
+
+    .bandeira {
+      grid-area: bandeira;
+    }
+
+    .sigla {
+      grid-area: sigla;
+      align-self: end;
+      margin-bottom: var(--sp-1);
+      font-stretch: 125%;
+      font-size: calc(var(--cw) * 0.32);
+      line-height: 0.8;
+    }
+
+    /* A seta sai da ponta da barra e vira etiqueta no canto, do lado oposto à bandeira (com o número a partir de 720 px). */
+    .seta {
+      grid-area: seta;
+      align-self: start;
+      height: 14px;
+    }
+
+    .placa .barra {
+      grid-area: barra;
+      margin-inline: calc(-1 * var(--sp-1));
+    }
+
+    .painel {
+      grid-area: var(--area-painel);
+      container: painel / inline-size;
+      display: grid;
+      grid-template-rows: auto 1fr auto auto;
+      gap: var(--sp-1);
+      padding: var(--sp-2) var(--sp-2) var(--sp-1);
+      background: var(--surface-1);
+    }
+  }
+
+  @container mapa (min-width: 720px) {
+    .seta-n {
+      display: block;
+    }
+  }
+
+  /* ---------- painel: uma placa ampliada ---------- */
+  .p-topo {
+    display: flex;
+    align-items: center;
+    gap: var(--sp-1);
+  }
+
+  /* O nome é DESTINO na largura que sobra ao lado da bandeira (font-size em cqi desta caixa). */
+  .p-caixa {
+    flex: 1;
+    min-width: 0;
+    container-type: inline-size;
+  }
+
+  .p-nome {
+    display: block;
+    font-family: var(--font-display);
+    font-weight: 900;
+    font-size: var(--nt);
+    font-stretch: var(--nw);
+    line-height: 1;
+    text-transform: uppercase;
+    white-space: nowrap;
+    text-decoration: none;
+  }
+
+  .p-nome:hover {
+    text-decoration: underline;
+    text-decoration-thickness: var(--stroke-1);
+    text-underline-offset: 0.12em;
+  }
+
+  .p-numeros {
+    display: flex;
+    align-items: baseline;
+    gap: var(--sp-1);
+    align-self: end;
+    font-family: var(--font-display);
+    font-weight: 900;
+    line-height: 0.8;
+  }
+
+  /* Percentuais na cor de cada candidato, quem quer que lidere. */
+  .p-a,
+  .p-b {
+    font-size: 10cqi;
+    font-stretch: 75%;
+  }
+
+  .p-a {
+    color: var(--cor-13);
+  }
+
+  .p-b {
+    margin-left: auto;
+    color: var(--cor-22);
+  }
+
+  .p-n {
+    align-self: center;
+  }
+
+  .p-n13 {
+    --cor: var(--cor-13);
+  }
+
+  .p-n22 {
+    --cor: var(--cor-22);
+  }
+
+  .p-barra {
+    --barra: 16px;
+  }
+
+  .p-barra::after {
+    content: '';
+    position: absolute;
+    top: 100%;
+    left: calc(50% - 1px);
+    width: var(--stroke-1);
+    height: 4px;
+    background: var(--ink-2);
+  }
+
+  .p-pe {
+    display: grid;
+    gap: 2px;
+    margin-top: 4px;
+  }
+
+  .p-o {
+    text-align: center;
+  }
+
+  .p-var {
+    display: flex;
+    align-items: center;
+    gap: var(--sp-1);
+    font-family: var(--font-display);
+    font-weight: 900;
+    font-size: var(--fs-1);
+    font-stretch: 75%;
+    line-height: 1.25;
+    letter-spacing: var(--track-caps);
+    text-transform: uppercase;
+    text-wrap: balance;
+    color: var(--cor-var);
+  }
+
+  /* A frase fica do lado de quem ganhou terreno, como a seta da placa; sem variação, some (a altura fica). */
+  .painel[data-ganhou='22'] .p-var {
+    flex-direction: row-reverse;
+    text-align: right;
+  }
+
+  .painel[data-ganhou=''] .p-var,
+  .painel:not([data-ganhou]) .p-var,
+  [data-vazio] .p-numeros,
+  [data-vazio] .p-var {
+    visibility: hidden;
   }
 </style>
