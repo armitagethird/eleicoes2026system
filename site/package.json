@@ -13,6 +13,10 @@
     "fixtures": "node ../contracts/scripts/fixtures.ts",
     "fonts": "node scripts/build-fonts.ts",
     "flags": "node scripts/build-flags.ts",
+    "flags:raster": "node scripts/build-flags-raster.ts",
+    "metricas": "node scripts/build-metricas.ts",
+    "card:previews": "node scripts/card-previews.ts",
+    "prints": "node scripts/prints.ts",
     "test": "vitest run",
     "check": "astro check"
   },

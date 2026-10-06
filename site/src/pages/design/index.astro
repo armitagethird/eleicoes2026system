@@ -1,0 +1,631 @@
+---
+// Playground do card (só em dev; o build apaga /design): o critério de aceite da Fase 1. Todas as variantes do brief
+// (Fase 1, item 4) e da direção DESTINO, cada uma em SVG inline, a 350 px (a largura do card na timeline do X) e com um
+// botão "Baixar PNG" que exporta pelo mesmo caminho do Compartilhar (components/playground.ts), para conferir a paridade.
+// Os números são fictícios; os nomes dos candidatos à presidência são reais.
+import Botao from '../../components/Botao.astro';
+import Cabecalho from '../../components/Cabecalho.astro';
+import { renderCard, type Acento, type CardData } from '../../components/Card.ts';
+import Rodape from '../../components/Rodape.astro';
+import Base from '../../layouts/Base.astro';
+import { urlBandeiraPng } from '../../lib/bandeiras.ts';
+import { cardDeCidade, cardDePlacar, comPalpite } from '../../lib/card-dados.ts';
+import type { Candidato, CargoPlacar, Cidade, UF } from '../../lib/contratos.ts';
+import { AVISO_FICTICIO } from '../../lib/copy.ts';
+import { ajustarDestino } from '../../lib/destino.ts';
+import tokens from '../../styles/tokens.css?raw';
+
+// Amostras do seletor: as cores saem de tokens.css (a de Card.ts é a mesma, conferida em Card.test.ts).
+const corDoAcento = (padrao: RegExp): string => {
+  const cor = tokens.match(padrao)?.[1];
+  if (!cor) throw new Error(`/design: não achei a cor do acento em tokens.css (${padrao})`);
+  return cor;
+};
+const ACENTOS = [
+  { valor: 'violeta', nome: 'Violeta', cor: corDoAcento(/--accent:\s*(#[0-9a-f]{6})/i) },
+  { valor: 'teal', nome: 'Teal', cor: corDoAcento(/\[data-acento='teal'\]\s*\{\s*--accent:\s*(#[0-9a-f]{6})/i) },
+  { valor: 'coral', nome: 'Coral', cor: corDoAcento(/\[data-acento='coral'\]\s*\{\s*--accent:\s*(#[0-9a-f]{6})/i) },
+] as const satisfies ReadonlyArray<{ valor: Acento; nome: string; cor: string }>;
+
+const ATUALIZADO = '2026-10-25T18:42:10-03:00';
+
+const lula = (pct: number, eleito = false): Candidato => ({ n: 13, nome: 'Lula', partido: 'PT', votos: Math.round(pct * 3000), pct, eleito });
+const flavio = (pct: number): Candidato => ({ n: 22, nome: 'Flávio Bolsonaro', partido: 'PL', votos: Math.round(pct * 3000), pct, eleito: false });
+const deGovernador = (n: number, nome: string, pct: number): Candidato => ({ n, nome, partido: 'FIC', votos: Math.round(pct * 60000), pct, eleito: false });
+const cargoPlacar = (cand: Candidato[], variacao_2022: Record<string, number> = {}): CargoPlacar => ({ cand, variacao_2022, brancos: 0, nulos: 0 });
+
+const comBandeira = (card: CardData): CardData => ({ ...card, bandeiraHref: urlBandeiraPng(card.uf) });
+
+interface CasoCidade {
+  local: string;
+  uf: UF;
+  secoes: number;
+  pct13: number;
+  /** Variação do 13 vs 2022; ausente = sem comparação. */
+  variacao?: number;
+  diferencaVotos?: number;
+  selos?: Cidade['selos'];
+  virou?: boolean;
+  hora?: string;
+  modo?: 'parcial' | 'final';
+}
+
+function deCidade({ local, uf, secoes, pct13, variacao, diferencaVotos, selos = [], virou = false, hora = ATUALIZADO, modo = 'parcial' }: CasoCidade): CardData {
+  const cidade: Cidade = {
+    v: 1,
+    slug: local,
+    nome: local,
+    uf,
+    cod_tse: 0,
+    cod_ibge: 0,
+    eleitores: 0,
+    atualizado: hora,
+    secoes_pct: secoes,
+    presidente: {
+      cand: [lula(pct13), flavio(100 - pct13)],
+      variacao_2022: variacao === undefined ? {} : { '13': variacao, '22': -variacao },
+      diferenca_votos: diferencaVotos ?? Math.round(Math.abs(2 * pct13 - 100) * 3000),
+    },
+    governador: null,
+    selos,
+    rank: { dividida_br: null, dividida_uf: null, virada_uf: null },
+    virou,
+  };
+  const card = cardDeCidade(cidade, undefined, modo);
+  if (!card) throw new Error(`/design: não deu para montar o card de ${local}`);
+  return comBandeira(card);
+}
+
+function deGovernadorDoRj(a: Candidato, b: Candidato): CardData {
+  const placar = { atualizado: ATUALIZADO, secoes_pct: 87.3, presidente: cargoPlacar([lula(51.5), flavio(48.5)]), governador: cargoPlacar([a, b]) };
+  const card = cardDePlacar(placar, { nome: 'Rio de Janeiro', uf: 'RJ' }, 'parcial', 'governador');
+  if (!card) throw new Error('/design: não deu para montar o card de governador');
+  return comBandeira(card);
+}
+
+function doBrasilEleito(): CardData {
+  const placar = { atualizado: ATUALIZADO, secoes_pct: 100, presidente: cargoPlacar([lula(50.9, true), flavio(49.1)], { '13': -2, '22': 2 }), governador: null };
+  const card = cardDePlacar(placar, { nome: 'Brasil', uf: 'BR' }, 'final');
+  if (!card) throw new Error('/design: não deu para montar o card do Brasil');
+  return comBandeira(card);
+}
+
+interface Caso {
+  id: string;
+  rotulo: string;
+  /** O que conferir neste card. */
+  olhar: string;
+  card: CardData;
+}
+
+const saoLuis = deCidade({ local: 'São Luís', uf: 'MA', secoes: 87.3, pct13: 58.6, variacao: -3.4 });
+
+const casos: Array<{ titulo: string; itens: Caso[] }> = [
+  {
+    titulo: 'Brief · Fase 1',
+    itens: [
+      { id: 'parcial-10', rotulo: 'Parcial, 10%', olhar: '10,4% das seções, às 17:48.', card: deCidade({ local: 'São Luís', uf: 'MA', secoes: 10.4, pct13: 58.6, variacao: -3.4, hora: '2026-10-25T17:48:00-03:00' }) },
+      { id: 'parcial-87', rotulo: 'Parcial, 87%', olhar: 'O caso-base: 87,3% das seções e o 22 ganhando terreno desde 2022.', card: saoLuis },
+      { id: 'final', rotulo: 'Final', olhar: '100% das seções: sem rótulo de posição; o 13 ganhou 5,7 pontos.', card: deCidade({ local: 'Natal', uf: 'RN', secoes: 100, pct13: 63.8, variacao: 5.7, hora: '2026-10-25T20:31:00-03:00', modo: 'final' }) },
+      { id: 'virou', rotulo: 'Virou vs 2022', olhar: 'A liderança mudou desde 2022: selo de virada em acento.', card: deCidade({ local: 'Juiz de Fora', uf: 'MG', secoes: 94.1, pct13: 48.2, variacao: -4.9, virou: true }) },
+      { id: 'com-selo', rotulo: 'Com selo', olhar: 'Selo de ranking à direita da linha de meta.', card: deCidade({ local: 'São Luís', uf: 'MA', secoes: 87.3, pct13: 51.3, variacao: 1.8, selos: ['mais_dividida_uf'] }) },
+      { id: 'sem-selo', rotulo: 'Sem selo', olhar: 'Sem selo, a linha de meta tem a largura toda.', card: deCidade({ local: 'Campinas', uf: 'SP', secoes: 87.3, pct13: 44.3, variacao: 3.3 }) },
+      { id: 'governador', rotulo: 'Governador', olhar: 'Sem comparação com 2022: mostra a margem entre os dois.', card: deGovernadorDoRj(deGovernador(12, 'Fictício A', 39.4), deGovernador(45, 'Fictícia B', 60.6)) },
+      { id: 'palpite', rotulo: 'Palpite', olhar: 'Folhas em contorno, selo de palpite e rodapé que avisa que não é resultado.', card: comPalpite(saoLuis, 57) },
+      { id: 'nome-longo', rotulo: 'Nome de cidade longo', olhar: 'Vila Bela da Santíssima Trindade: o nome quebra em duas linhas.', card: deCidade({ local: 'Vila Bela da Santíssima Trindade', uf: 'MT', secoes: 97.2, pct13: 46.9, variacao: 2.1, hora: '2026-10-25T19:05:00-03:00' }) },
+      { id: 'margem-0-1', rotulo: 'Margem de 0,1 ponto', olhar: 'Abaixo de 1 ponto, a frase vira diferença em votos, sem seta.', card: deCidade({ local: 'São João da Boa Vista', uf: 'SP', secoes: 96.8, pct13: 49.95, variacao: 4.1, diferencaVotos: 312 }) },
+      { id: 'cem-por-cento', rotulo: '100% para um lado', olhar: 'Cidade pequena, final: a barra tem um segmento só.', card: deCidade({ local: 'Una', uf: 'BA', secoes: 100, pct13: 100, variacao: 0.8, modo: 'final' }) },
+    ],
+  },
+  {
+    titulo: 'Direção Destino',
+    itens: [
+      { id: '22-lidera', rotulo: '22 lidera', olhar: 'A cor troca de dono; as colunas não trocam de lugar.', card: deCidade({ local: 'Jaú', uf: 'SP', secoes: 71.5, pct13: 38.3, variacao: 2.1 }) },
+      { id: 'sem-2022', rotulo: 'Sem 2022', olhar: 'Sem comparação não há seta nem acento: só tinta e cinza.', card: deCidade({ local: 'Rio Branco', uf: 'AC', secoes: 72, pct13: 41.3 }) },
+      { id: 'aguardando', rotulo: 'Aguardando seções', olhar: 'Menos de 1% das seções: nenhum percentual e nenhuma margem.', card: deCidade({ local: 'Natal', uf: 'RN', secoes: 0.4, pct13: 50, variacao: 0 }) },
+      { id: 'governador-nome-longo', rotulo: 'Governador, nome longo', olhar: 'Nomes longos quebram em duas linhas, cada coluna no seu lado.', card: deGovernadorDoRj(deGovernador(12, 'Fictícia Aparecida dos Santos Pereira', 47.2), deGovernador(45, 'Fictício Antônio Carlos de Souza Lima', 52.8)) },
+    ],
+  },
+  {
+    titulo: 'Casos de borda',
+    itens: [
+      { id: 'nome-medio', rotulo: 'Nome médio', olhar: "Santa Bárbara d'Oeste, com selo de virada na UF.", card: deCidade({ local: "Santa Bárbara d'Oeste", uf: 'SP', secoes: 62, pct13: 38.5, variacao: -2.2, selos: ['maior_virada_uf'] }) },
+      { id: 'cedilha', rotulo: 'Cedilha no nome', olhar: 'Açailândia: o Ç desce e empurra o que vem abaixo.', card: deCidade({ local: 'Açailândia', uf: 'MA', secoes: 55, pct13: 57.2, variacao: 1.4 }) },
+      { id: 'selo-longo', rotulo: 'Selo longo', olhar: 'Selo e linha de meta dividem a mesma largura.', card: deCidade({ local: 'Conceição do Mato Dentro', uf: 'MG', secoes: 88, pct13: 44.9, variacao: -4.2, selos: ['mais_dividida_br'] }) },
+      { id: 'palpite-22-lidera', rotulo: 'Palpite, 22 à frente', olhar: 'O mesmo contorno, com o palpite maior para o 22.', card: comPalpite(saoLuis, 38.5) },
+      { id: 'brasil-eleito', rotulo: 'Brasil, eleito', olhar: 'Só aqui aparece o rótulo de eleito: o JSON traz eleito: true.', card: doBrasilEleito() },
+    ],
+  },
+];
+
+let numero = 0;
+const grupos = casos.map(({ titulo, itens }) => ({
+  titulo,
+  itens: itens.map((caso) => ({ ...caso, numero: String(++numero).padStart(2, '0'), svg: renderCard(caso.card) })),
+}));
+const dadosDaIlha = JSON.stringify(grupos.flatMap(({ itens }) => itens.map(({ id, rotulo, card }) => ({ id, rotulo, card }))));
+
+// DESTINO no título, como na home: ajustado no build numa largura de referência e escrito em cqi.
+const TITULO = 'Playground do card';
+const REFERENCIA = 1000;
+const { linhas } = ajustarDestino(TITULO.toLocaleUpperCase('pt-BR'), { largura: REFERENCIA, tamMax: 230, tamMin: 205 });
+const palavras = TITULO.split(' ');
+let usadas = 0;
+const linhasTitulo = linhas.map((l) => {
+  const quantas = l.texto.split(' ').length;
+  const texto = palavras.slice(usadas, (usadas += quantas)).join(' ');
+  return { texto, estilo: `font-size:${(l.tamanho / REFERENCIA) * 100}cqi;font-stretch:${l.wdth}%` };
+});
+
+const aceite = [
+  'Legível a 350 px de largura: veja a coluna estreita de cada variante.',
+  'Ordem 13 antes de 22 em todas as variantes.',
+  'Nenhuma cor de partido: só tinta, cinza e um acento.',
+  'Todo número com algarismos tabulares.',
+];
+const pendencias = [
+  `Fonte Archivo e acento violeta ${ACENTOS[0].cor.toUpperCase()}. O seletor alterna teal e coral só para esta decisão.`,
+  'Líder em tinta clara sobre fundo escuro: o brief diz “tinta escura”, lido aqui como a tinta de maior contraste.',
+  'Seta e número em acento nas placas do mapa: é variação vs 2022, mas amplia o uso do acento.',
+  'Governador sem comparação com 2022 (mostra a margem) e cidade em final sem rótulo de posição.',
+  'Os textos dos selos ainda não têm versão final em copy.ts.',
+];
+---
+
+<Base titulo="Playground do card" descricao="Todas as variantes do card, para aprovação da Fase 1." caminho="/design">
+  <div class="pagina">
+    <Cabecalho modo="pre" />
+
+    <header class="topo">
+      <h1 class="destino">
+        {
+          linhasTitulo.map((l) => (
+            <>
+              <span class="linha" style={l.estilo}>
+                {l.texto}
+              </span>{' '}
+            </>
+          ))
+        }
+      </h1>
+      <div class="intro">
+        <p>
+          Todas as variantes do card em SVG inline, na mesma largura da timeline do X e no PNG que o botão exporta de
+          verdade. Troque o acento na barra abaixo.
+        </p>
+        <p class="aviso">{AVISO_FICTICIO}</p>
+      </div>
+    </header>
+
+    <div class="barra">
+      <p class="barra-rotulo" id="acento-rotulo">Acento</p>
+      <div class="acentos" role="radiogroup" aria-labelledby="acento-rotulo" data-acentos>
+        {
+          ACENTOS.map(({ valor, nome, cor }) => (
+            <label class="acento">
+              <input class="sr-only" type="radio" name="acento" value={valor} checked={valor === 'violeta'} />
+              <span class="amostra" style={`--cor:${cor}`} aria-hidden="true" />
+              {nome}
+            </label>
+          ))
+        }
+      </div>
+      <p class="barra-nota">Teal e coral existem só para esta aprovação.</p>
+    </div>
+
+    <main>
+      {
+        grupos.map(({ titulo, itens }) => (
+          <section class="grupo" aria-labelledby={`grupo-${itens[0].id}`}>
+            <h2 class="grupo-titulo" id={`grupo-${itens[0].id}`}>
+              <span>{titulo}</span>
+              <span class="contagem">{itens.length} variantes</span>
+            </h2>
+            <div class="grade">
+              {itens.map(({ id, numero, rotulo, olhar, svg }) => (
+                <article class="variante" id={`v-${id}`} data-variante>
+                  <header class="cabeca">
+                    <span class="numero">{numero}</span>
+                    <h3 class="rotulo">{rotulo}</h3>
+                    <p class="olhar">{olhar}</p>
+                  </header>
+                  <div class="palco">
+                    <figure class="grande" data-card={id} set:html={svg} />
+                    <div class="lado">
+                      <figure class="pequeno" aria-hidden="true">
+                        <div data-card={id} set:html={svg} />
+                        <figcaption class="legenda">350 px · como na timeline do X</figcaption>
+                      </figure>
+                      <div class="acoes">
+                        <Botao variante="secundario" data-baixar={id}>
+                          Baixar PNG
+                        </Botao>
+                        <p class="estado" role="status" data-estado />
+                      </div>
+                    </div>
+                  </div>
+                </article>
+              ))}
+            </div>
+          </section>
+        ))
+      }
+
+      <section class="grupo" aria-labelledby="aprovar">
+        <h2 class="grupo-titulo" id="aprovar"><span>Para aprovar</span></h2>
+        <div class="aprovar">
+          <div>
+            <h3 class="aprovar-titulo">Aceite da Fase 1</h3>
+            <ul class="lista">
+              {aceite.map((item) => <li>{item}</li>)}
+            </ul>
+          </div>
+          <div>
+            <h3 class="aprovar-titulo">Pendências do Romero</h3>
+            <ol class="lista">
+              {pendencias.map((item) => <li>{item}</li>)}
+            </ol>
+          </div>
+        </div>
+      </section>
+    </main>
+
+    <Rodape />
+  </div>
+
+  <script type="application/json" id="playground-dados" set:html={dadosDaIlha} />
+  <script>
+    import '../../components/playground.ts';
+  </script>
+</Base>
+
+<style>
+  /* O fundo da página é --surface-1 para separar os cards (que são --bg). */
+  :global(body) {
+    background: var(--surface-1);
+  }
+
+  .pagina {
+    max-width: 1440px;
+    margin-inline: auto;
+    padding-inline: var(--sp-2);
+  }
+
+  .topo {
+    display: grid;
+    gap: var(--sp-3);
+    padding-block: var(--sp-1) var(--sp-3);
+  }
+
+  /* As linhas medem a largura do h1 (container): font-size em cqi vindo do ajuste do build. */
+  .destino {
+    container-type: inline-size;
+    line-height: 0.9;
+    text-transform: uppercase;
+    overflow-x: clip;
+  }
+
+  .linha {
+    display: block;
+    white-space: nowrap;
+  }
+
+  .intro {
+    display: grid;
+    gap: var(--sp-2);
+    align-content: end;
+    max-width: 60ch;
+  }
+
+  .aviso {
+    padding: var(--sp-1) var(--sp-2);
+    border: var(--stroke-1) solid var(--ink-2);
+    font-size: var(--fs-1);
+  }
+
+  /* Barra do acento: colada no topo ao rolar, para trocar o acento olhando qualquer variante. */
+  .barra {
+    position: sticky;
+    top: 0;
+    z-index: 1;
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: var(--sp-1) var(--sp-2);
+    padding-block: var(--sp-1);
+    border-block: var(--stroke-1) solid var(--surface-2);
+    background: var(--surface-1);
+  }
+
+  .barra-rotulo,
+  .barra-nota,
+  .contagem,
+  .legenda,
+  .numero {
+    font-family: var(--font-display);
+    font-size: var(--fs-1);
+    font-weight: 900;
+    line-height: 1.2;
+    letter-spacing: var(--track-caps);
+    text-transform: uppercase;
+    color: var(--ink-2);
+  }
+
+  .barra-rotulo {
+    display: none;
+  }
+
+  .barra-nota {
+    display: none;
+    margin-left: auto;
+  }
+
+  .acentos {
+    display: flex;
+    flex: 1 1 auto;
+    gap: var(--sp-1);
+  }
+
+  .acento {
+    display: flex;
+    flex: 1 1 0;
+    align-items: center;
+    justify-content: center;
+    gap: var(--sp-1);
+    min-height: 48px;
+    padding-inline: var(--sp-1);
+    border: 3px solid var(--surface-2);
+    border-radius: var(--radius);
+    font-family: var(--font-display);
+    font-size: var(--fs-1);
+    font-weight: 900;
+    letter-spacing: var(--track-caps);
+    text-transform: uppercase;
+    color: var(--ink-2);
+    cursor: pointer;
+    touch-action: manipulation;
+    -webkit-tap-highlight-color: transparent;
+    transition:
+      border-color var(--dur-1) var(--ease),
+      color var(--dur-1) var(--ease);
+  }
+
+  /* Escolhido = filete e texto em --ink; nada de fundo cheio, que é a marca de "líder". */
+  .acento:has(:checked) {
+    border-color: var(--ink);
+    color: var(--ink);
+  }
+
+  .acento:has(:focus-visible) {
+    outline: 3px solid var(--ink);
+    outline-offset: 3px;
+  }
+
+  .amostra {
+    flex: none;
+    width: var(--sp-2);
+    height: var(--sp-2);
+    background: var(--cor);
+  }
+
+  .grupo {
+    padding-top: var(--sp-4);
+  }
+
+  main {
+    padding-bottom: var(--sp-6);
+  }
+
+  .grupo-titulo {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: var(--sp-2);
+    margin-bottom: var(--sp-4);
+    padding-top: var(--sp-1);
+    border-top: var(--stroke-2) solid var(--ink);
+    font-size: var(--fs-3);
+    font-stretch: 87.5%;
+    text-transform: uppercase;
+  }
+
+  .contagem {
+    white-space: nowrap;
+  }
+
+  .grade {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(min(100%, 600px), 1fr));
+    gap: var(--sp-6) var(--sp-4);
+  }
+
+  .variante {
+    container-type: inline-size;
+    display: grid;
+    align-content: start;
+    gap: var(--sp-2);
+  }
+
+  .cabeca {
+    display: grid;
+    grid-template-columns: auto 1fr;
+    align-items: center;
+    gap: var(--sp-1) var(--sp-2);
+  }
+
+  .numero {
+    padding: 2px var(--sp-1);
+    border: var(--stroke-1) solid var(--ink-2);
+  }
+
+  .rotulo {
+    font-size: var(--fs-3);
+    font-stretch: 87.5%;
+    letter-spacing: var(--track-caps);
+    text-transform: uppercase;
+  }
+
+  .olhar {
+    grid-column: 2;
+    color: var(--ink-2);
+  }
+
+  .palco {
+    display: grid;
+    gap: var(--sp-2);
+  }
+
+  .grande {
+    max-width: 1200px;
+  }
+
+  .grande :global(svg) {
+    width: 100%;
+    height: auto;
+  }
+
+  .lado {
+    display: grid;
+    gap: var(--sp-2);
+  }
+
+  /* No celular o card grande já tem uns 350 px: a cópia estreita só repetiria o que está logo acima. */
+  .pequeno {
+    display: none;
+    width: 350px;
+    max-width: 100%;
+  }
+
+  .pequeno :global(svg) {
+    width: 100%;
+    height: auto;
+  }
+
+  .legenda {
+    margin-top: var(--sp-1);
+  }
+
+  .acoes {
+    display: grid;
+    justify-items: start;
+    align-content: start;
+    gap: var(--sp-1);
+  }
+
+  .estado {
+    min-height: 1.5em;
+    font-size: var(--fs-1);
+    color: var(--ink-2);
+  }
+
+  .aprovar {
+    display: grid;
+    gap: var(--sp-5);
+  }
+
+  .aprovar-titulo {
+    margin-bottom: var(--sp-2);
+    font-size: var(--fs-3);
+    font-stretch: 87.5%;
+    letter-spacing: var(--track-caps);
+    text-transform: uppercase;
+  }
+
+  .lista {
+    display: grid;
+    gap: var(--sp-1);
+    margin: 0;
+    padding-left: var(--sp-3);
+  }
+
+  .lista li::marker {
+    font-weight: 900;
+    color: var(--ink-2);
+  }
+
+  /* Acima de 560 px a coluna estreita aparece ao lado do botão; acima de 1000 px o card grande e a coluna estreita ficam lado a lado. */
+  @container (min-width: 560px) {
+    .pequeno {
+      display: block;
+    }
+
+    .lado {
+      grid-template-columns: 350px minmax(0, 1fr);
+      align-items: start;
+      gap: var(--sp-4);
+    }
+  }
+
+  @container (min-width: 1000px) {
+    .palco {
+      grid-template-columns: minmax(0, 1fr) 350px;
+      align-items: start;
+      gap: var(--sp-4);
+    }
+
+    .lado {
+      grid-template-columns: minmax(0, 1fr);
+      gap: var(--sp-2);
+    }
+  }
+
+  @media (min-width: 768px) {
+    .pagina {
+      padding-inline: var(--sp-4);
+    }
+
+    .topo {
+      padding-bottom: var(--sp-5);
+    }
+
+    .grupo {
+      padding-top: var(--sp-6);
+    }
+
+    .grupo-titulo {
+      font-size: var(--fs-4);
+    }
+
+    .barra-rotulo {
+      display: block;
+    }
+
+    .acento {
+      flex: 0 0 auto;
+      min-width: 128px;
+    }
+
+    .acentos {
+      flex: 0 1 auto;
+    }
+  }
+
+  @media (min-width: 1024px) {
+    .pagina {
+      padding-inline: var(--sp-6);
+    }
+
+    .topo {
+      grid-template-columns: repeat(12, minmax(0, 1fr));
+      align-items: end;
+      gap: var(--sp-3);
+    }
+
+    .destino {
+      grid-column: 1 / span 6;
+    }
+
+    .intro {
+      grid-column: 8 / span 5;
+    }
+
+    .barra-nota {
+      display: block;
+    }
+
+    .aprovar {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: var(--sp-4);
+    }
+  }
+</style>
