@@ -24,7 +24,8 @@ O card da cidade é o produto. O site existe para levar a pessoa ao card em um t
 - **CSS puro com custom properties**. Sem Tailwind, sem UI kit, sem biblioteca de componentes.
 - **Site 100% estático.** Dados ao vivo chegam como arquivos JSON estáticos em `/data/…` (gerados depois por um worker). O front só faz `fetch` desses arquivos a cada 20 s.
 - **O card é um template SVG** gerado por uma função TypeScript pura (`renderCard(dados): string`). O mesmo template é usado inline na página, convertido em PNG no navegador para compartilhar e, depois, renderizado no servidor para a OG. Uma fonte de verdade, três usos.
-- **Nada de 3D, Three.js, mapa municipal interativo, seção de pesquisas, newsletter.** Fora de escopo, decidido.
+- **Nada de 3D, Three.js, mapa municipal interativo, newsletter.** Fora de escopo, decidido.
+- **Pesquisas registradas no TSE na home (decisão do Romero, 06/10/2026).** Só pesquisas com registro no PesqEle e todas as informações do art. 10 da Res. TSE 23.600 visíveis junto de cada uma (período de coleta, margem de erro, nível de confiança, número de entrevistas, instituto e contratante, número de registro). Cada pesquisa aparece separada: sem média, agregador ou cálculo próprio sobre pesquisas. Sem enquete. Sem mercado de apostas (o Polymarket está proibido no Brasil desde 24/04/2026). O bloco some nos modos `live` e `final`.
 - **Nada de texto de matéria jornalística.** Só números do TSE e cálculos próprios.
 
 ## 3. Direção visual
@@ -58,7 +59,7 @@ Crie `src/styles/tokens.css` com: 3 cores (`--bg`, `--ink`, `--ink-2`) + `--acce
 
 - Candidatos sempre na **mesma ordem: número de urna** (13 antes de 22), em todo lugar, independentemente de quem lidera.
 - Vocabulário fixo, em `src/lib/copy.ts`: `lidera` em parcial; `eleito(a)` **somente** quando o JSON marcar `eleito: true`; nunca "venceu", "virada confirmada", "projeção". Todo card traz `parcial · X% das seções · Fonte: TSE · HH:MM`.
-- Cores fixas por candidato (13 vermelho, 22 azul claro; seção 3), iguais em todo o site. Nenhum rótulo ideológico, nenhuma pesquisa eleitoral.
+- Cores fixas por candidato (13 vermelho, 22 azul claro; seção 3), iguais em todo o site. Nenhum rótulo ideológico. Pesquisa eleitoral só as registradas no TSE, com os dados do art. 10 da Res. 23.600 (seção 2); nunca enquete, média ou odds de apostas.
 - **Sem fotos de candidatos.** Só nome, número e partido em texto. Foto pesa, envelhece a página e muda a leitura emocional do card.
 - **Palpite é local**: fica em `localStorage`, nunca é enviado a servidor nenhum, nunca vira agregado. Não crie endpoint para isso. (Enquete é proibida no período eleitoral; coletar palpites já seria uma.)
 - Formulário "me avisa": consentimento explícito em texto, um envio prometido ("às 17h do dia 25, com o link da sua cidade") e um de resultado final. Nesta fase o `POST` vai para um endpoint placeholder atrás de feature flag.
@@ -228,7 +229,7 @@ Worker Java que lê o TSE e publica `/data`; renderizador SVG → PNG para `/og/
 - Mapa municipal interativo (5.570 polígonos). Mapa de UF só se for um SVG leve e sobrar tempo.
 - Tailwind, React, bibliotecas de gráficos, bibliotecas de autocomplete.
 - Analytics pesado. No máximo Cloudflare Web Analytics, e só na Fase 3.
-- Qualquer agregação de palpites ou qualquer texto de pesquisa eleitoral.
+- Qualquer agregação de palpites; média ou agregação de pesquisas; enquete; odds de mercado de apostas.
 
 ## 9. Como trabalhar
 

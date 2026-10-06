@@ -123,6 +123,22 @@ Grade de 12 colunas: à esquerda (5 colunas) a busca, o painel e o placar; à di
 
 Uma única entrada orquestrada: as placas do mapa entram em 20 ms de escalonamento, com `opacity` e `translateY(8px)`, em menos de 700 ms no total. Ela nunca atrasa o elemento de LCP (título e busca aparecem no primeiro quadro). O resto é o painel que vira.
 
+## Pesquisas registradas (home, só no modo `pre`)
+
+Decisão do Romero em 06/10. Base legal: Res. TSE 23.600, art. 10.
+
+- **Onde fica:** na home, logo depois do placar BR (coluna esquerda no desktop). O título é `PESQUISAS REGISTRADAS NO TSE` e a linha de apoio diz `Cada pesquisa como o instituto divulgou. Não é resultado.`
+- **Cada pesquisa é uma linha de folha:**
+  - instituto e data de fim da coleta;
+  - o tipo (`VOTOS TOTAIS` ou `VOTOS VÁLIDOS`, como o instituto divulgou);
+  - a barra 13 vermelho | brancos, nulos e indecisos em `--surface-2` | 22 azul;
+  - os dois percentuais na cor de cada candidato;
+  - logo abaixo, em `--fs-1` `--ink-2`, sempre visível e nunca atrás de clique: `Quaest · contratada por X · 2.004 entrevistas · 1 a 4/out · margem ±2 p.p. · confiança 95% · registro BR-01234/2026`.
+- **Proibido:** média, tendência, gráfico de série, "quem está na frente nas pesquisas" ou qualquer cálculo nosso.
+- **Ordem:** a mais recente primeiro, no máximo 5.
+- **Sem pesquisa em `src/data/pesquisas.json`:** o bloco não aparece.
+- **Dados:** `src/data/pesquisas.json` (contrato em `contracts/schemas/pesquisas.schema.json`) é preenchido só com pesquisas reais, cada uma com a URL da fonte. Exemplos fictícios só em `/design/pesquisas`.
+
 ## Mapa: o muro de 28 (`components/Mapa.astro`)
 
 - **Cartograma de placas iguais** (Brasil + 27 UFs) numa grade aproximadamente geográfica (cerca de 7×8). Não há polígonos, e nunca mapa municipal.
