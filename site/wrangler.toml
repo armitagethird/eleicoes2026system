@@ -1,0 +1,4 @@
+# Cloudflare Pages. Nome do projeto é placeholder (definir ao criar o projeto no painel).
+name = "eleicoes2026"
+pages_build_output_dir = "dist"
+compatibility_date = "2026-10-01"

@@ -1,0 +1,57 @@
+---
+import '../styles/fonts.css';
+import '../styles/tokens.css';
+import '../styles/base.css';
+import { SITE_NAME, SITE_URL } from '../lib/site.ts';
+
+interface Props {
+  titulo: string;
+  descricao: string;
+  /** Caminho canônico sem query string, ex.: "/c/sao-luis-ma". */
+  caminho: string;
+  /** Imagem OG absoluta ou relativa ao site; cai em /og/fallback.png. */
+  og?: string;
+  /** ISO 8601, vai para o JSON-LD WebPage. */
+  modificado?: string;
+}
+
+const { titulo, descricao, caminho, og = '/og/fallback.png', modificado } = Astro.props;
+const canonica = new URL(caminho, SITE_URL).href;
+const imagem = new URL(og, SITE_URL).href;
+const jsonLd = JSON.stringify({
+  '@context': 'https://schema.org',
+  '@type': 'WebPage',
+  name: titulo,
+  description: descricao,
+  url: canonica,
+  ...(modificado ? { dateModified: modificado } : {}),
+});
+---
+
+<!doctype html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>{titulo}</title>
+    <meta name="description" content={descricao} />
+    <link rel="canonical" href={canonica} />
+    <meta name="theme-color" content="#121110" />
+    <link rel="preload" href="/fonts/archivo/archivo-display.woff2" as="font" type="font/woff2" crossorigin />
+    <link rel="preload" href="/fonts/archivo/archivo-text.woff2" as="font" type="font/woff2" crossorigin />
+    <meta property="og:type" content="website" />
+    <meta property="og:site_name" content={SITE_NAME} />
+    <meta property="og:title" content={titulo} />
+    <meta property="og:description" content={descricao} />
+    <meta property="og:url" content={canonica} />
+    <meta property="og:image" content={imagem} />
+    <meta property="og:image:width" content="1200" />
+    <meta property="og:image:height" content="675" />
+    <meta name="twitter:card" content="summary_large_image" />
+    <script type="application/ld+json" set:html={jsonLd} />
+    <slot name="head" />
+  </head>
+  <body>
+    <slot />
+  </body>
+</html>

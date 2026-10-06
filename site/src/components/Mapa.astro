@@ -1,0 +1,17 @@
+---
+// STUB: o mapa (cartograma de 28 placas: Brasil + 27 UFs) é construído pelo agente do mapa.
+// Interface estável: <Mapa /> se basta (lê os dados embutidos do build); `fase` só é passado pelo playground.
+interface Props {
+  fase?: 'pre' | 'parcial' | 'final';
+}
+const { fase = 'pre' } = Astro.props;
+---
+
+<section class="mapa" aria-label="Mapa por estado" data-fase={fase}></section>
+
+<style>
+  .mapa {
+    aspect-ratio: 7 / 8;
+    background: var(--surface-1);
+  }
+</style>

@@ -1,0 +1,24 @@
+/* Fontes auto-hospedadas, subset latino (gerado por `npm run fonts`). Nenhuma requisição a terceiros.
+ * Uma família, dois pesos (design/DIRECTION.md):
+ *   900 = display, com o eixo de largura vivo (font-stretch 62%–125%) para o nome da cidade caber de margem a margem;
+ *   500 = texto, largura normal.
+ */
+@font-face {
+  font-family: 'Archivo';
+  font-style: normal;
+  font-display: swap;
+  font-weight: 900;
+  font-stretch: 62% 125%;
+  src: url('/fonts/archivo/archivo-display.woff2') format('woff2');
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+
+@font-face {
+  font-family: 'Archivo';
+  font-style: normal;
+  font-display: swap;
+  font-weight: 500;
+  font-stretch: 100%;
+  src: url('/fonts/archivo/archivo-text.woff2') format('woff2');
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}

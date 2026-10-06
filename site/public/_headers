@@ -1,0 +1,11 @@
+# Dados ao vivo: o front faz polling a cada 20 s; cache de borda curto e revalidação obrigatória.
+/data/*
+  Cache-Control: public, max-age=15, must-revalidate
+
+# Assets com hash no nome: cache eterno.
+/_astro/*
+  Cache-Control: public, max-age=31536000, immutable
+
+# Fontes auto-hospedadas: trocar uma fonte = trocar o NOME do arquivo (senão o cache eterno a mantém).
+/fonts/*
+  Cache-Control: public, max-age=31536000, immutable
