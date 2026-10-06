@@ -39,10 +39,8 @@
   --stroke-2: 4px;
 
   --radius: 8px;
-  --shadow: none;
 
   --dur-1: 120ms;
-  --dur-2: 240ms;
   --dur-3: 480ms;
   --ease: cubic-bezier(0.2, 0.7, 0.1, 1);
 

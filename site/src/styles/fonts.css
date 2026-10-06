@@ -2,6 +2,10 @@
  * Uma família, dois pesos (design/DIRECTION.md):
  *   900 = display, com o eixo de largura vivo (font-stretch 62%–125%) para o nome da cidade caber de margem a margem;
  *   500 = texto, largura normal.
+ * O 900 vem em duas partes, e o navegador só baixa a parte cujo unicode-range aparece na página:
+ *   caps = o que a interface escreve em 900 (tudo em caixa-alta por CSS), 15 KB, sempre usada;
+ *   completo = o Latin-1 inteiro (29 KB), rede de segurança para minúscula ou símbolo raro em 900; hoje nunca é baixado.
+ * Os dois ranges são complementares e o de caps é IGUAL a `caixaAlta` de scripts/build-fonts.ts.
  */
 @font-face {
   font-family: 'Archivo';
@@ -9,8 +13,18 @@
   font-display: swap;
   font-weight: 900;
   font-stretch: 62% 125%;
+  src: url('/fonts/archivo/archivo-caps.woff2') format('woff2');
+  unicode-range: U+0020-005A, U+00A0, U+00AA, U+00B7, U+00BA, U+00C0-00DE, U+2013-2014, U+2018-2019, U+201C-201D, U+2026, U+2212;
+}
+
+@font-face {
+  font-family: 'Archivo';
+  font-style: normal;
+  font-display: swap;
+  font-weight: 900;
+  font-stretch: 62% 125%;
   src: url('/fonts/archivo/archivo-display.woff2') format('woff2');
-  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+  unicode-range: U+005B-007E, U+00A1-00A9, U+00AB-00B6, U+00B8-00B9, U+00BB-00BF, U+00DF-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+2000-2012, U+2015-2017, U+201A-201B, U+201E-2025, U+2027-206F, U+20AC, U+2122, U+2191, U+2193, U+2215, U+FEFF, U+FFFD;
 }
 
 @font-face {

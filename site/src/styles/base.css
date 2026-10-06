@@ -58,13 +58,14 @@ input {
 }
 
 :focus-visible {
-  /* --ink, não --accent: o acento é reservado a variação vs 2022 e selo. */
+  /* --ink, não --accent: o acento é reservado ao selo. */
   outline: 3px solid var(--ink);
   outline-offset: 2px;
 }
 
-/* Visível só para leitor de tela. */
+/* Visível só para leitor de tela. O peso 500 evita que texto herdado em 900 (com minúscula) faça o navegador baixar o display completo. */
 .sr-only {
+  font-weight: 500;
   position: absolute;
   width: 1px;
   height: 1px;
@@ -74,6 +75,29 @@ input {
   clip: rect(0 0 0 0);
   white-space: nowrap;
   border: 0;
+}
+
+/* Alto contraste do Windows: sem isto o fundo das barras e das plaquinhas vira a cor do tema e elas somem. A cor do candidato é
+ * semântica e o texto sobre ela é --bg, então ficam como estão; o filete CanvasText garante a borda contra qualquer tema. */
+@media (forced-colors: active) {
+  .barra > i,
+  .folha,
+  .l-n,
+  .p-n,
+  .placa-n,
+  .barra::before,
+  .barra::after {
+    forced-color-adjust: none;
+  }
+
+  .barra > i,
+  .folha,
+  .l-n,
+  .p-n,
+  .placa-n {
+    outline: 1px solid CanvasText;
+    outline-offset: -1px;
+  }
 }
 
 @media (prefers-reduced-motion: reduce) {

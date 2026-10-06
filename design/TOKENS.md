@@ -43,6 +43,7 @@ O card tem escala própria, documentada em `Card.ts`, com estes mínimos: texto 
 | `--sp-1` a `--sp-8` | 8, 16, 24, 32, 40, 48, 64, 96 px | Múltiplos de 8 (brief). |
 | `--stroke-1` / `--stroke-2` | 2px / 4px | Filetes e costuras. São traço, não espaçamento. |
 | `--radius` | 8px | Só em controles. Folhas, placas e card são retos (papel cortado). |
-| `--shadow` | none | Sem sombra (brief). |
-| `--dur-1` / `--dur-2` / `--dur-3` | 120 / 240 / 480 ms | Foco e hover / placa que vira / entrada do mapa. |
+| `--dur-1` / `--dur-3` | 120 / 480 ms | Foco, hover e entrada das placas do mapa / entrada das folhas do comparativo. |
 | `--ease` | cubic-bezier(.2,.7,.1,1) | Arranque rápido e assentamento seco, como uma placa mecânica. |
+
+Sem token de sombra: o brief aceita "uma sombra ou nenhuma" e o site ficou com nenhuma. A placa que vira (2 × 120 ms por algarismo) mede o tempo em `lib/flap.ts`, não em token.

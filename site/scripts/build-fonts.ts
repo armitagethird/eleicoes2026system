@@ -15,9 +15,17 @@ const latin: Array<[number, number]> = [
   [0x02da, 0x02da], [0x02dc, 0x02dc], [0x2000, 0x206f], [0x20ac, 0x20ac], [0x2122, 0x2122],
   [0x2191, 0x2191], [0x2193, 0x2193], [0x2212, 0x2212], [0x2215, 0x2215],
 ];
-const text = latin
-  .flatMap(([a, b]) => Array.from({ length: b - a + 1 }, (_, i) => String.fromCodePoint(a + i)))
-  .join('');
+const glifosDe = (faixas: Array<[number, number]>): string =>
+  faixas.flatMap(([a, b]) => Array.from({ length: b - a + 1 }, (_, i) => String.fromCodePoint(a + i))).join('');
+const text = glifosDe(latin);
+
+// Só o que a interface escreve em peso 900: tudo é caixa-alta por CSS (text-transform), então não há minúscula nem Latin-1 raro.
+// ASCII de espaço a Z, espaço sem quebra, º ª ·, Latin-1 maiúsculo (À a Þ, com ×), travessões, aspas, reticências e o menos.
+// IGUAL ao unicode-range da primeira @font-face 900 de src/styles/fonts.css: glifo no range e fora do arquivo cairia na Arial.
+const caixaAlta: Array<[number, number]> = [
+  [0x0020, 0x005a], [0x00a0, 0x00a0], [0x00aa, 0x00aa], [0x00b7, 0x00b7], [0x00ba, 0x00ba], [0x00c0, 0x00de],
+  [0x2013, 0x2014], [0x2018, 0x2019], [0x201c, 0x201d], [0x2026, 0x2026], [0x2212, 0x2212],
+];
 
 // tnum é obrigatório (números que atualizam não podem pular); o resto é o mínimo para texto corrido.
 const keepFeatures = ['tnum', 'lnum', 'kern', 'liga', 'ccmp', 'locl', 'mark', 'mkmk'];
@@ -34,7 +42,9 @@ type Job = { file: string; dest: string; variationAxes: Record<string, Eixo>; gl
 const glifosDoCard = `ABCDEFGHIJKLMNOPQRSTUVWXYZÀÁÂÃÄÇÈÉÊËÌÍÎÏÑÒÓÔÕÖÙÚÛÜ0123456789%,.:·+−-–—@/'’()ºª &`;
 
 const jobs: Job[] = [
+  // O display completo (Latin-1 inteiro) só é baixado se algum texto em 900 usar um glifo fora de caixaAlta (fonts.css).
   { file: 'archivo.ttf', dest: 'archivo/archivo-display.woff2', variationAxes: { wght: 900, wdth: { min: 62, max: 125 } } },
+  { file: 'archivo.ttf', dest: 'archivo/archivo-caps.woff2', variationAxes: { wght: 900, wdth: { min: 62, max: 125 } }, glifos: glifosDe(caixaAlta) },
   { file: 'archivo.ttf', dest: 'archivo/archivo-text.woff2', variationAxes: { wght: 500, wdth: 100 } },
   { file: 'archivo.ttf', dest: 'archivo/card.woff2', variationAxes: { wght: 900, wdth: { min: 62, max: 125 } }, glifos: glifosDoCard },
 ];
