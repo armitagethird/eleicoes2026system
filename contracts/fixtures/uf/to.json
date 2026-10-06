@@ -11,22 +11,22 @@
         "n": 13,
         "nome": "Lula",
         "partido": "PT",
-        "votos": 306507,
-        "pct": 53.14,
+        "votos": 298438,
+        "pct": 51.75,
         "eleito": false
       },
       {
         "n": 22,
         "nome": "Flávio Bolsonaro",
         "partido": "PL",
-        "votos": 270239,
-        "pct": 46.86,
+        "votos": 278308,
+        "pct": 48.25,
         "eleito": false
       }
     ],
     "variacao_2022": {
-      "13": 14.32,
-      "22": -14.32
+      "13": 1.22,
+      "22": -1.22
     },
     "brancos": 18605,
     "nulos": 24806
@@ -37,16 +37,16 @@
         "n": 12,
         "nome": "Fictício A",
         "partido": "FIC",
-        "votos": 323803,
-        "pct": 56.14,
+        "votos": 239997,
+        "pct": 41.61,
         "eleito": false
       },
       {
         "n": 45,
         "nome": "Fictícia B",
         "partido": "FIC",
-        "votos": 252943,
-        "pct": 43.86,
+        "votos": 336749,
+        "pct": 58.39,
         "eleito": false
       }
     ],

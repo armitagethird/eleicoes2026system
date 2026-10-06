@@ -9,7 +9,8 @@ Fonte de verdade do formato dos JSON que o front lê. O worker (depois) será es
 | `/data/c/{slug}.json` | `schemas/cidade.schema.json` | `secoes_pct < 1` = "aguardando primeiras seções" |
 | `/data/rankings.json` | `schemas/rankings.schema.json` | `{ dividida, unanime, virada, capitais }`, listas de slugs já ordenadas |
 | `src/data/municipios.json` | `schemas/municipios.schema.json` | embutido no build |
-| `src/data/hist/{slug}.json` | `schemas/hist.schema.json` | embutido no build; `t2_2022` é `null` sem 2022 |
+| `src/data/hist/{slug}.json`, `hist-uf/{uf}.json`, `hist-br.json` | `schemas/hist.schema.json` | embutido no build; `t2_2022` é `null` sem 2022 |
+| `/data/mapa.json` (**PROPOSTA**, aguarda aprovação) | `schemas/mapa.schema.json` | os 28 placares do mapa numa requisição; ver abaixo |
 
 `schemas/common.schema.json` guarda as definições compartilhadas (candidato, UF, slug, data-hora).
 
@@ -24,7 +25,7 @@ Regras que o schema não expressa e o teste `site/tests/contracts.test.ts` confe
 **FICTÍCIO (só para desenvolvimento, nunca exibir como dado oficial):**
 
 - todos os números do 2º turno de 2026: votos, percentuais, brancos, nulos, `secoes_pct`, comparecimento, `diferenca_votos`, `selos`, `rank`, `virou`;
-- `variacao_2022` de `br.json` e das UFs (não existe hist por UF) e a variação das cidades (calculada contra o hist, que hoje também é stub fictício);
+- `variacao_2022` de `br.json` e das UFs (calculada contra `hist-uf`/`hist-br`, fictícios) e a variação das cidades (calculada contra o hist, que hoje também é stub fictício);
 - os candidatos a governador (`Fictício A`, nº 12, e `Fictícia B`, nº 45, partido `FIC`);
 - o eleitorado por UF (aproximação grosseira) e os horários (`atualizado` fixo em 25/10 18:42:10, `status.final` às 21:03);
 - `cod_tse` e `eleitores` do stub de municípios (ver `site/src/data/README.md`).
@@ -34,3 +35,7 @@ Convenções das fixtures: `eleito` é `false` em tudo (cidade não elege; os pl
 Casos de borda forçados (ver `CENARIOS` em `scripts/fixtures.ts`): margem de 0,2 e 0,1 ponto (`santa-barbara-doeste-sp`, `sao-joao-da-boa-vista-sp`); 100% para o 22 (`serra-da-saudade-mg`); `secoes_pct < 1` (`bora-sp`); sem 2022 (`boa-esperanca-do-norte-mt`); `virou: true` (5 forçadas por espelhamento, mais as que viram por sorteio); `sao-luis-ma` com 87,3% das seções, como no brief. `rankings.json` e `rank`/`selos` são calculados só entre as 50 cidades do stub.
 
 `selos` aceitos: `mais_dividida_br`, `mais_dividida_uf`, `mais_unanime_br`, `maior_virada_br`, `maior_virada_uf` (enum proposto no schema; o brief só cita `mais_dividida_uf`).
+
+## Proposta: `/data/mapa.json` (aguarda aprovação do Romero)
+
+No modo ao vivo (Fase 3), o mapa da home precisa dos 28 placares (Brasil + 27 UFs) a cada 20 s. Lidos de `br.json` e `uf/{uf}.json` seriam 28 requisições; `mapa.json` junta numa só o que o mapa usa de cada um, com os mesmos nomes de campo: `secoes_pct`, `presidente.cand[].{n, pct}` (13 antes de 22) e `presidente.variacao_2022`. Não substitui nenhum arquivo. O worker o publicaria junto dos placares, no mesmo instante. `site/src/lib/mapa-dados.test.ts` confere que a fixture valida contra o schema e que ela dá exatamente o mesmo mapa que os 28 arquivos. Se não for aprovado, o mapa ao vivo lê os 28 arquivos (`mapaApuracao` aceita os dois).

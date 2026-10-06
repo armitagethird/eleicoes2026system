@@ -11,22 +11,22 @@
         "n": 13,
         "nome": "Lula",
         "partido": "PT",
-        "votos": 9684701,
-        "pct": 48.47,
+        "votos": 8746242,
+        "pct": 43.77,
         "eleito": false
       },
       {
         "n": 22,
         "nome": "Flávio Bolsonaro",
         "partido": "PL",
-        "votos": 10297034,
-        "pct": 51.53,
+        "votos": 11235493,
+        "pct": 56.23,
         "eleito": false
       }
     ],
     "variacao_2022": {
-      "13": 8.88,
-      "22": -8.88
+      "13": 0.09,
+      "22": -0.09
     },
     "brancos": 644572,
     "nulos": 859429

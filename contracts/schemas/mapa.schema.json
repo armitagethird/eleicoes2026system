@@ -1,0 +1,81 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "mapa.schema.json",
+  "title": "/data/mapa.json (PROPOSTA, aguarda aprovação): os 28 placares do mapa numa requisição",
+  "description": "Agregado de br.json e uf/{uf}.json para o modo ao vivo: 1 requisição a cada 20 s em vez de 28. Não substitui nenhum arquivo: cada placa repete, com os mesmos nomes de campo, só o que o mapa usa do placar correspondente (secoes_pct, número e percentual dos candidatos a presidente, variacao_2022). Chave = sigla da UF ou BR.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["v", "atualizado", "placas"],
+  "properties": {
+    "v": { "const": 1 },
+    "atualizado": { "$ref": "common.schema.json#/$defs/dataHora" },
+    "placas": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["BR", "AC", "AL", "AM", "AP", "BA", "CE", "DF", "ES", "GO", "MA", "MG", "MS", "MT", "PA", "PB", "PE", "PI", "PR", "RJ", "RN", "RO", "RR", "RS", "SC", "SE", "SP", "TO"],
+      "properties": {
+        "BR": { "$ref": "#/$defs/placa" },
+        "AC": { "$ref": "#/$defs/placa" },
+        "AL": { "$ref": "#/$defs/placa" },
+        "AM": { "$ref": "#/$defs/placa" },
+        "AP": { "$ref": "#/$defs/placa" },
+        "BA": { "$ref": "#/$defs/placa" },
+        "CE": { "$ref": "#/$defs/placa" },
+        "DF": { "$ref": "#/$defs/placa" },
+        "ES": { "$ref": "#/$defs/placa" },
+        "GO": { "$ref": "#/$defs/placa" },
+        "MA": { "$ref": "#/$defs/placa" },
+        "MG": { "$ref": "#/$defs/placa" },
+        "MS": { "$ref": "#/$defs/placa" },
+        "MT": { "$ref": "#/$defs/placa" },
+        "PA": { "$ref": "#/$defs/placa" },
+        "PB": { "$ref": "#/$defs/placa" },
+        "PE": { "$ref": "#/$defs/placa" },
+        "PI": { "$ref": "#/$defs/placa" },
+        "PR": { "$ref": "#/$defs/placa" },
+        "RJ": { "$ref": "#/$defs/placa" },
+        "RN": { "$ref": "#/$defs/placa" },
+        "RO": { "$ref": "#/$defs/placa" },
+        "RR": { "$ref": "#/$defs/placa" },
+        "RS": { "$ref": "#/$defs/placa" },
+        "SC": { "$ref": "#/$defs/placa" },
+        "SE": { "$ref": "#/$defs/placa" },
+        "SP": { "$ref": "#/$defs/placa" },
+        "TO": { "$ref": "#/$defs/placa" }
+      }
+    }
+  },
+  "$defs": {
+    "placa": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["secoes_pct", "presidente"],
+      "properties": {
+        "secoes_pct": { "$ref": "common.schema.json#/$defs/pct" },
+        "presidente": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["cand", "variacao_2022"],
+          "properties": {
+            "cand": {
+              "description": "Exatamente dois, em ordem crescente de número de urna (13 antes de 22).",
+              "type": "array",
+              "minItems": 2,
+              "maxItems": 2,
+              "items": {
+                "type": "object",
+                "additionalProperties": false,
+                "required": ["n", "pct"],
+                "properties": {
+                  "n": { "$ref": "common.schema.json#/$defs/candidato/properties/n" },
+                  "pct": { "$ref": "common.schema.json#/$defs/candidato/properties/pct" }
+                }
+              }
+            },
+            "variacao_2022": { "$ref": "common.schema.json#/$defs/variacao2022" }
+          }
+        }
+      }
+    }
+  }
+}

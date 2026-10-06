@@ -8,8 +8,6 @@ const histCidades = import.meta.glob<Hist>('../data/hist/*.json', { eager: true,
 const histUfs = import.meta.glob<Hist>('../data/hist-uf/*.json', { eager: true, import: 'default' });
 const histBrasil = import.meta.glob<Hist>('../data/hist-br.json', { eager: true, import: 'default' });
 
-export const municipio = (slug: string): Municipio | undefined => municipios.find((m) => m.slug === slug);
-
 export const histCidade = (slug: string): Hist | undefined => histCidades[`../data/hist/${slug}.json`];
 
 export const histUf = (uf: UF): Hist | undefined => histUfs[`../data/hist-uf/${uf.toLowerCase()}.json`];

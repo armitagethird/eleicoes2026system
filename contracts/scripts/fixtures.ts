@@ -2,8 +2,9 @@
 // Determinístico (pseudo-aleatório semeado pelo slug/UF, sem relógio). Roda com Node puro: npm run fixtures (em /site).
 //   npm run fixtures -- --modo=live   -> public/data/status.json = status.live.json (padrão: pre)
 //
-// REAL: slug, nomes, UF, códigos IBGE, lat/lon (municipios.json) e hist/ (hoje stub fictício; vira real na Fase 0.5).
-// FICTÍCIO: todos os números do 2º turno de 2026 (votos, percentuais, seções, selos, ranks) e as variações vs 2022 dos placares.
+// REAL: slug, nomes, UF, códigos IBGE, lat/lon (municipios.json). hist/, hist-uf/ e hist-br.json são stubs fictícios
+// (viram reais na Fase 0.5) e as variações vs 2022 são calculadas contra eles.
+// FICTÍCIO: todos os números do 2º turno de 2026 (votos, percentuais, seções, selos, ranks).
 import { cpSync, mkdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -173,11 +174,16 @@ function cidade({ m, hist, secoes, p13, virou }: CidadeCalc) {
 }
 
 // ---------- UFs e Brasil ----------
-interface UfCalc { votos: [number, number]; votos2022: [number, number]; brancos: number; nulos: number; comparecidos: number; apto: number; secoes: number; gov: [number, number] | null }
+// O 2º turno de cada UF parte do 1º turno do hist-uf (13 + uma fatia sorteada dos "outros"), e a variação vs 2022 é
+// contra o t2_2022 do mesmo hist: o mapa, o placar e o hist contam a mesma história.
+interface UfCalc { votos: [number, number]; pct2022: Hist['t2_2022']; brancos: number; nulos: number; comparecidos: number; apto: number; secoes: number; gov: [number, number] | null }
+
+const histUf = (uf: string) => le<Hist>(join(RAIZ, `site/src/data/hist-uf/${uf.toLowerCase()}.json`));
 
 const ufs: Record<string, UfCalc> = {};
 for (const [uf, eleitores] of Object.entries(ELEITORES_UF)) {
   const rnd = semente(`uf-${uf}`);
+  const hist = histUf(uf);
   const secoes = r1(60 + rnd() * 38);
   const comp = 74 + rnd() * 10;
   const apto = Math.round(eleitores * (secoes / 100));
@@ -185,23 +191,21 @@ for (const [uf, eleitores] of Object.entries(ELEITORES_UF)) {
   const brancos = Math.round(comparecidos * 0.03);
   const nulos = Math.round(comparecidos * 0.04);
   const validos = comparecidos - brancos - nulos;
-  const p13 = 38 + rnd() * 24;
+  const p13 = hist.t1_2026.pct['13'] + hist.t1_2026.pct.outros * (0.25 + rnd() * 0.5);
   const votos = dividir(validos, p13);
-  const votos2022 = dividir(Math.round(eleitores * 0.78 * 0.93), 30 + rnd() * 40);
   const gov = UFS_COM_GOVERNADOR.includes(uf) ? dividir(validos, 35 + rnd() * 30) : null;
-  ufs[uf] = { votos, votos2022, brancos, nulos, comparecidos, apto, secoes, gov };
+  ufs[uf] = { votos, pct2022: hist.t2_2022, brancos, nulos, comparecidos, apto, secoes, gov };
 }
 
 function placar(u: UfCalc, secoes: number) {
   const pres = candidatos(PRESIDENTE, u.votos[0], u.votos[1]);
-  const p2022 = candidatos(PRESIDENTE, u.votos2022[0], u.votos2022[1]);
   const comparecimento = r1((u.comparecidos / u.apto) * 100);
   return {
     v: 1, turno: 2, atualizado: ATUALIZADO,
     secoes_pct: secoes, comparecimento_pct: comparecimento, abstencao_pct: r1(100 - comparecimento),
     presidente: {
       cand: pres,
-      variacao_2022: { '13': r2(pres[0].pct - p2022[0].pct), '22': r2(pres[1].pct - p2022[1].pct) },
+      variacao_2022: u.pct2022 ? { '13': r2(pres[0].pct - u.pct2022.pct['13']), '22': r2(pres[1].pct - u.pct2022.pct['22']) } : {},
       brancos: u.brancos, nulos: u.nulos,
     },
     governador: u.gov
@@ -213,7 +217,7 @@ function placar(u: UfCalc, secoes: number) {
 const soma = (campo: (u: UfCalc) => number) => Object.values(ufs).reduce((acc, u) => acc + campo(u), 0);
 const brasil: UfCalc = {
   votos: [soma((u) => u.votos[0]), soma((u) => u.votos[1])],
-  votos2022: [soma((u) => u.votos2022[0]), soma((u) => u.votos2022[1])],
+  pct2022: le<Hist>(join(RAIZ, 'site/src/data/hist-br.json')).t2_2022,
   brancos: soma((u) => u.brancos), nulos: soma((u) => u.nulos),
   comparecidos: soma((u) => u.comparecidos), apto: soma((u) => u.apto), secoes: 0, gov: null,
 };
@@ -221,14 +225,28 @@ const eleitoresBrasil = Object.values(ELEITORES_UF).reduce((a, b) => a + b, 0);
 const secoesBrasil = r1((brasil.apto / eleitoresBrasil) * 100);
 
 // ---------- escrita ----------
-rmSync(FIXTURES, { recursive: true, force: true });
+// Só as pastas que este script gera: pesquisas.exemplo.json é escrito à mão e mora em fixtures/ também.
+for (const gerada of ['c', 'uf']) rmSync(join(FIXTURES, gerada), { recursive: true, force: true });
 
 grava(join(FIXTURES, 'status.json'), { v: 1, modo: 'pre', inicio: '2026-10-25T17:00:00-03:00', atualizado: '2026-10-12T10:00:00-03:00' });
 grava(join(FIXTURES, 'status.live.json'), { v: 1, modo: 'live', inicio: '2026-10-25T17:00:00-03:00', atualizado: ATUALIZADO });
 grava(join(FIXTURES, 'status.final.json'), { v: 1, modo: 'final', inicio: '2026-10-25T17:00:00-03:00', atualizado: '2026-10-25T21:03:00-03:00' });
 
-grava(join(FIXTURES, 'br.json'), { ...placar(brasil, secoesBrasil), governador: null });
-for (const [uf, u] of Object.entries(ufs)) grava(join(FIXTURES, `uf/${uf.toLowerCase()}.json`), placar(u, u.secoes));
+const placarBr = { ...placar(brasil, secoesBrasil), governador: null };
+const placaresUf = Object.entries(ufs).map(([uf, u]) => [uf, placar(u, u.secoes)] as const);
+grava(join(FIXTURES, 'br.json'), placarBr);
+for (const [uf, p] of placaresUf) grava(join(FIXTURES, `uf/${uf.toLowerCase()}.json`), p);
+
+// PROPOSTA (aguarda aprovação): /data/mapa.json, os 28 placares só com o que o mapa usa, numa requisição.
+const doMapa = ({ secoes_pct, presidente }: ReturnType<typeof placar>) => ({
+  secoes_pct,
+  presidente: { cand: presidente.cand.map(({ n, pct }) => ({ n, pct })), variacao_2022: presidente.variacao_2022 },
+});
+grava(join(FIXTURES, 'mapa.json'), {
+  v: 1,
+  atualizado: ATUALIZADO,
+  placas: Object.fromEntries([['BR', doMapa(placarBr)], ...placaresUf.map(([uf, p]) => [uf, doMapa(p)])]),
+});
 for (const c of calcs) grava(join(FIXTURES, `c/${c.m.slug}.json`), cidade(c));
 
 const lista = (itens: CidadeCalc[], n = 10) => itens.slice(0, n).map((c) => c.m.slug);
