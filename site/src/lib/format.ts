@@ -60,3 +60,23 @@ export function hora(valor: string | Date | null | undefined): string {
   const data = valor instanceof Date ? valor : new Date(valor);
   return Number.isNaN(data.getTime()) ? SEM_HORA : horaBrasilia.format(data);
 }
+
+/**
+ * Tempo até `alvo` em dias, horas e minutos. O minuto arredonda para cima (faltando 30 s, ainda falta "1 min"), para a
+ * contagem só chegar a zero no instante do alvo. Depois dele fica em zero; alvo ausente ou inválido devolve null.
+ */
+export function contagem(alvo: string | null | undefined, agora: Date): { d: number; h: number; min: number } | null {
+  const fim = alvo ? new Date(alvo).getTime() : Number.NaN;
+  if (Number.isNaN(fim)) return null;
+  const minutos = Math.max(0, Math.ceil((fim - agora.getTime()) / 60_000));
+  return { d: Math.floor(minutos / 1440), h: Math.floor(minutos / 60) % 24, min: minutos % 60 };
+}
+
+const diaBrasilia = new Intl.DateTimeFormat('pt-BR', { timeZone: 'America/Sao_Paulo', day: 'numeric', month: 'long' });
+
+/** "25 de outubro" em America/Sao_Paulo. Entrada ausente ou inválida devolve "". */
+export function diaMes(valor: string | Date | null | undefined): string {
+  if (!valor) return '';
+  const data = valor instanceof Date ? valor : new Date(valor);
+  return Number.isNaN(data.getTime()) ? '' : diaBrasilia.format(data);
+}

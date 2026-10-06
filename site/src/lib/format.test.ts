@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { hora, numero, percentual, pontos, votos } from './format.ts';
+import { contagem, hora, numero, percentual, pontos, votos } from './format.ts';
 
 describe('numero', () => {
   it('usa ponto como separador de milhar, inclusive em 4 dígitos', () => {
@@ -122,5 +122,38 @@ describe('hora', () => {
     expect(hora(null)).toBe('--:--');
     expect(hora('')).toBe('--:--');
     expect(hora('ontem')).toBe('--:--');
+  });
+});
+
+describe('contagem', () => {
+  const alvo = '2026-10-25T17:00:00-03:00';
+
+  it('dias, horas e minutos até o alvo', () => {
+    expect(contagem(alvo, new Date('2026-10-07T10:48:00-03:00'))).toEqual({ d: 18, h: 6, min: 12 });
+  });
+
+  it('arredonda o minuto para cima: faltando 30 s, ainda falta 1 min', () => {
+    expect(contagem(alvo, new Date('2026-10-25T16:59:30-03:00'))).toEqual({ d: 0, h: 0, min: 1 });
+    expect(contagem(alvo, new Date('2026-10-25T16:00:30-03:00'))).toEqual({ d: 0, h: 1, min: 0 });
+  });
+
+  it('minuto cheio não arredonda', () => {
+    expect(contagem(alvo, new Date('2026-10-25T16:48:00-03:00'))).toEqual({ d: 0, h: 0, min: 12 });
+  });
+
+  it('compara instantes, não relógio local (alvo em UTC)', () => {
+    expect(contagem('2026-10-25T20:00:00Z', new Date('2026-10-24T17:00:00-03:00'))).toEqual({ d: 1, h: 0, min: 0 });
+  });
+
+  it('no alvo e depois dele fica em zero, nunca negativo', () => {
+    expect(contagem(alvo, new Date(alvo))).toEqual({ d: 0, h: 0, min: 0 });
+    expect(contagem(alvo, new Date('2026-10-26T09:00:00-03:00'))).toEqual({ d: 0, h: 0, min: 0 });
+  });
+
+  it('alvo ausente ou inválido devolve null sem lançar', () => {
+    expect(contagem(null, new Date())).toBeNull();
+    expect(contagem(undefined, new Date())).toBeNull();
+    expect(contagem('', new Date())).toBeNull();
+    expect(contagem('amanhã', new Date())).toBeNull();
   });
 });

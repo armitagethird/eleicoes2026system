@@ -26,14 +26,21 @@ const keepFeatures = ['tnum', 'lnum', 'kern', 'liga', 'ccmp', 'locl', 'mark', 'm
 // display = 900 com o eixo de largura vivo (62-125), que ajusta o nome da cidade à largura como um letreiro de destino;
 // texto = 500 em largura normal.
 type Eixo = number | { min: number; max: number };
-type Job = { file: string; dest: string; variationAxes: Record<string, Eixo> };
+type Job = { file: string; dest: string; variationAxes: Record<string, Eixo>; glifos?: string };
+
+// card = o subset que vira base64 dentro do SVG do card (components/Card.ts) para o PNG sair idêntico ao SVG inline.
+// Só caixa-alta com os acentos do português, dígitos e a pontuação do card. As setas de deslocamento são triângulos desenhados:
+// a Archivo não tem ◀ ▶. Mesmos eixos do display, para o wdth do DESTINO renderizar igual nos dois.
+const glifosDoCard = `ABCDEFGHIJKLMNOPQRSTUVWXYZÀÁÂÃÄÇÈÉÊËÌÍÎÏÑÒÓÔÕÖÙÚÛÜ0123456789%,.:·+−-–—@/'’()ºª &`;
+
 const jobs: Job[] = [
   { file: 'archivo.ttf', dest: 'archivo/archivo-display.woff2', variationAxes: { wght: 900, wdth: { min: 62, max: 125 } } },
   { file: 'archivo.ttf', dest: 'archivo/archivo-text.woff2', variationAxes: { wght: 500, wdth: 100 } },
+  { file: 'archivo.ttf', dest: 'archivo/card.woff2', variationAxes: { wght: 900, wdth: { min: 62, max: 125 } }, glifos: glifosDoCard },
 ];
 
-for (const { file, dest, variationAxes } of jobs) {
-  const buffer = await subsetFont(await readFile(join(src, file)), text, {
+for (const { file, dest, variationAxes, glifos = text } of jobs) {
+  const buffer = await subsetFont(await readFile(join(src, file)), glifos, {
     targetFormat: 'woff2',
     keepFeatures,
     variationAxes,
