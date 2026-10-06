@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { contagem, hora, numero, percentual, pontos, votos } from './format.ts';
+import { contagem, hora, horaCurta, numero, percentual, pontos, votos } from './format.ts';
 
 describe('numero', () => {
   it('usa ponto como separador de milhar, inclusive em 4 dígitos', () => {
@@ -155,5 +155,27 @@ describe('contagem', () => {
     expect(contagem(undefined, new Date())).toBeNull();
     expect(contagem('', new Date())).toBeNull();
     expect(contagem('amanhã', new Date())).toBeNull();
+  });
+});
+
+describe('horaCurta', () => {
+  it('hora cheia sem minutos, como se fala: "17h"', () => {
+    expect(horaCurta('2026-10-25T17:00:00-03:00')).toBe('17h');
+    expect(horaCurta('2026-10-25T09:00:00-03:00')).toBe('9h');
+  });
+
+  it('com minutos: "17h30"', () => {
+    expect(horaCurta('2026-10-25T17:30:00-03:00')).toBe('17h30');
+    expect(horaCurta('2026-10-25T09:05:00-03:00')).toBe('9h05');
+  });
+
+  it('usa o fuso de Brasília, não o do aparelho', () => {
+    expect(horaCurta('2026-10-25T20:00:00Z')).toBe('17h');
+  });
+
+  it('ausente ou inválida devolve vazio, sem lançar', () => {
+    expect(horaCurta(null)).toBe('');
+    expect(horaCurta(undefined)).toBe('');
+    expect(horaCurta('amanhã')).toBe('');
   });
 });

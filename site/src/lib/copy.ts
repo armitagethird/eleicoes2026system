@@ -1,5 +1,5 @@
 import type { Selo } from './contratos.ts';
-import { hora, percentual, pontos, votos } from './format.ts';
+import { diaMes, hora, horaCurta, percentual, pontos, votos } from './format.ts';
 import type { Modo } from './status.ts';
 
 /**
@@ -16,18 +16,18 @@ export function rotuloPosicao(eleito: boolean, feminino = false): 'lidera' | 'el
   return feminino ? 'eleita' : 'eleito';
 }
 
-/** Linha de apuração de todo card: "parcial · 87% das seções · Fonte: TSE · 18:42". */
+/** Linha de apuração de todo card: "parcial · 87% das seções · Fonte: TSE · 18:42". Parcial nunca arredonda para 100% (apuracaoCard). */
 export function linhaApuracao(
   fase: 'parcial' | 'final',
   secoesPct: number,
   atualizado: string | null | undefined,
 ): string {
-  return `${fase} · ${percentual(secoesPct, 0)} das seções · Fonte: TSE · ${hora(atualizado)}`;
+  return `${apuracaoCard(fase, secoesPct)} · Fonte: TSE · ${hora(atualizado)}`;
 }
 
 /** Falha de rede: o front mantém o último dado e avisa. */
 export function semConexao(atualizado: string | null | undefined): string {
-  return `sem conexão, mostrando última atualização às ${hora(atualizado)}`;
+  return `Sem conexão, mostrando a última atualização às ${hora(atualizado)}.`;
 }
 
 // Home e placar (design/DIRECTION.md, Home). PENDENTE de aprovação do Romero.
@@ -118,14 +118,7 @@ export function diferencaPontosCard(pts: number): FraseCard {
 // Mapa, o muro de 28 placas (design/DIRECTION.md, Mapa). O componente põe em caixa-alta. PENDENTE de aprovação do Romero.
 
 export const MAPA_TITULO = 'estado por estado';
-/** Legenda neutra: a posição na placa é a ordem do número de urna, nunca um lado político. */
-export const MAPA_ORDEM = '13 à esquerda · 22 à direita (ordem do número de urna)';
 export const MAPA_SETA = 'seta: o lado que ganhou pontos desde 2022';
-
-/** Legenda das duas cores da barra. "lidera" só em parcial; no 1º turno e no final, só quem teve mais votos. */
-export function legendaMapa(fase: 'pre' | 'parcial' | 'final'): { claro: string; cinza: string } {
-  return fase === 'parcial' ? { claro: rotuloPosicao(false), cinza: 'segundo' } : { claro: 'mais votos', cinza: 'menos votos' };
-}
 
 /**
  * Nome acessível de uma placa: sempre 13 antes de 22, qualquer que seja o líder. "Maranhão: 13, 61,1%; 22, 38,9%; 13 lidera;
@@ -187,4 +180,65 @@ export function textoCompartilhar({ local, cand, variacao, modo, secoesPct }: Da
   const mudanca = ganhou && `, ${pontos(Math.abs(variacao ?? 0)).replace(/ pontos?$/, ' pts')} para ${ganhou.nome} vs 2022`;
   const apurado = `${modo === 'final' ? 100 : Math.min(99, Math.round(secoesPct))}% apurado`;
   return [`${placar}${mudanca ?? ''}`, apurado, link].filter(Boolean).join(' · ');
+}
+
+/** <title> da página de cidade (brief, Fase 2). PENDENTE de aprovação do Romero. */
+export const tituloCidade = (nome: string, uf: string): string => `Resultado do 2º turno 2026 em ${nome} (${uf}) — comparado com 2022`;
+
+/** Meta description da cidade: sem número nem estado de apuração, que envelheceriam no HTML estático. PENDENTE de aprovação do Romero. */
+export const descricaoCidade = (nome: string, uf: string): string =>
+  `Como ${nome} (${uf}) votou no 1º turno de 2026 e quanto mudou desde 2022. Acompanhe o 2º turno e compartilhe o card da cidade.`;
+
+// Página do estado e rankings (BRIEF Fase 2). PENDENTE de aprovação do Romero.
+
+/** <title> do estado. Sem "em": a preposição muda por estado ("no Maranhão", "em Alagoas", "na Bahia"). */
+export const tituloUf = (nome: string, uf: string): string => `${nome} (${uf}): resultado do 2º turno 2026, comparado com 2022`;
+
+/** Meta description do estado: sem número nem estado de apuração, que envelheceriam no HTML estático. */
+export const descricaoUf = (nome: string, uf: string): string =>
+  `${nome} (${uf}): como o estado votou no 1º turno de 2026, quanto mudou desde 2022 e as cidades por número de eleitores. Acompanhe o 2º turno.`;
+
+/** Governador antes da apuração: só o dia, sem número. */
+export const GOVERNADOR_PRE = '2º turno para governador em 25/10';
+
+export const tituloRankings = 'Rankings do 2º turno 2026: cidades e capitais';
+
+export const descricaoRankings =
+  'As cidades mais divididas, as mais unânimes e as maiores viradas do 2º turno de 2026, e as capitais, durante a apuração.';
+
+export const ROTULO_RANKING = {
+  dividida: 'mais dividida',
+  unanime: 'mais unânime',
+  virada: 'maior virada',
+  capitais: 'capitais',
+} as const;
+
+/** Rankings antes da apuração. Sem início conhecido, não inventa hora. */
+export function rankingsComecam(inicio: string | null | undefined): string {
+  const horario = horaCurta(inicio);
+  const dia = diaMes(inicio).split(' ')[0];
+  return horario && dia ? `os rankings começam às ${horario} do dia ${dia}` : 'os rankings começam com a apuração do 2º turno';
+}
+
+// Pesquisas registradas no TSE (home, só no modo pre; design/DIRECTION.md, Pesquisas registradas). Base legal: Res. TSE 23.600,
+// art. 10. Pesquisa não é resultado: aqui nunca entra "lidera", "eleito", média nem tendência. PENDENTE de aprovação do Romero.
+
+export const PESQUISAS_TITULO = 'Pesquisas registradas no TSE';
+export const PESQUISAS_APOIO = 'Cada pesquisa como o instituto divulgou. Não é resultado.';
+/** Base dos percentuais, como o instituto divulgou. O componente põe em caixa-alta. */
+export const TIPO_PESQUISA = { votos_totais: 'votos totais', votos_validos: 'votos válidos' } as const;
+/** Nome de cada fatia da barra e do texto alternativo; 13 e 22 pelo número de urna. */
+export const ROTULO_RESULTADO_PESQUISA = { '13': '13', brancos_nulos: 'brancos e nulos', indecisos: 'indecisos', '22': '22' } as const;
+/** Antes do fim da coleta, no cabeçalho de cada pesquisa: "coleta até 4/out". */
+export const PESQUISA_COLETA_ATE = 'coleta até';
+export const PESQUISA_ANTES_1O_TURNO = 'antes do 1º turno';
+export const PESQUISA_VER_DIVULGACAO = 'ver divulgação original';
+/** Carimbo de cada linha de exemplo no playground (/design/pesquisas). Nunca aparece com dado real. */
+export const PESQUISA_FICTICIA = 'exemplo fictício';
+
+/** Frase do estado pre de /rankings: o h1 da página já diz "rankings", então ela não repete. Sem início conhecido, não inventa hora. PENDENTE de aprovação do Romero. */
+export function listasAbrem(inicio: string | null | undefined): string {
+  const horario = horaCurta(inicio);
+  const dia = diaMes(inicio).split(' ')[0];
+  return horario && dia ? `as listas abrem com a apuração, às ${horario} do dia ${dia}` : 'as listas abrem com a apuração do 2º turno';
 }

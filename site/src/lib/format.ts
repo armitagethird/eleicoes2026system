@@ -80,3 +80,10 @@ export function diaMes(valor: string | Date | null | undefined): string {
   const data = valor instanceof Date ? valor : new Date(valor);
   return Number.isNaN(data.getTime()) ? '' : diaBrasilia.format(data);
 }
+
+/** Hora como se fala, em America/Sao_Paulo: "17h" e "17h30". Entrada ausente ou inválida devolve "". */
+export function horaCurta(valor: string | Date | null | undefined): string {
+  const [h, min] = hora(valor).split(':');
+  if (h === '--') return '';
+  return `${Number(h)}h${min === '00' ? '' : min}`;
+}

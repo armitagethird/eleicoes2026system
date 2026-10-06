@@ -2,13 +2,21 @@ import { describe, expect, it } from 'vitest';
 import {
   AGUARDANDO_SECOES,
   AVISO_FICTICIO,
+  GOVERNADOR_PRE,
   LINHA_PRIMEIRO_TURNO,
   PALAVRAS_PROIBIDAS,
+  apuracaoCard,
   contagemFalada,
+  descricaoRankings,
+  descricaoUf,
   linhaApuracao,
+  listasAbrem,
   pilula,
+  rankingsComecam,
   rotuloPosicao,
   semConexao,
+  tituloRankings,
+  tituloUf,
   variacao2022,
 } from './copy.ts';
 
@@ -25,8 +33,15 @@ describe('copy', () => {
     expect(linhaApuracao('final', 100, '2026-10-25T21:03:00-03:00')).toBe('final · 100% das seções · Fonte: TSE · 21:03');
   });
 
+  it('parcial nunca diz 100% das seções, em nenhum dos três textos de apuração', () => {
+    expect(linhaApuracao('parcial', 99.6, '2026-10-25T21:00:00-03:00')).toBe('parcial · 99% das seções · Fonte: TSE · 21:00');
+    expect(linhaApuracao('parcial', 100, '2026-10-25T21:00:00-03:00')).toContain('99% das seções');
+    expect(linhaApuracao('parcial', 99.6, undefined)).toBe(`${apuracaoCard('parcial', 99.6)} · Fonte: TSE · --:--`);
+    expect(pilula('live', 99.6, '2026-10-25T21:00:00-03:00')).toBe('ao vivo · 99% · 21:00');
+  });
+
   it('sem conexão cita a hora da última atualização', () => {
-    expect(semConexao('2026-10-25T18:42:10-03:00')).toBe('sem conexão, mostrando última atualização às 18:42');
+    expect(semConexao('2026-10-25T18:42:10-03:00')).toBe('Sem conexão, mostrando a última atualização às 18:42.');
   });
 
   it('nenhum texto usa palavra proibida', () => {
@@ -76,6 +91,55 @@ describe('copy da home', () => {
       variacao2022('Lula', 1),
       LINHA_PRIMEIRO_TURNO,
       AVISO_FICTICIO,
+    ].join(' ');
+    for (const palavra of PALAVRAS_PROIBIDAS) expect(textos).not.toContain(palavra);
+  });
+});
+
+describe('copy de estado, rankings e 404', () => {
+  it('título e descrição do estado levam o nome e a sigla, sem preposição que mude por estado', () => {
+    expect(tituloUf('Maranhão', 'MA')).toBe('Maranhão (MA): resultado do 2º turno 2026, comparado com 2022');
+    expect(descricaoUf('Mato Grosso do Sul', 'MS')).toContain('Mato Grosso do Sul (MS)');
+  });
+
+  it('governador em modo pre só avisa o dia, sem número', () => {
+    expect(GOVERNADOR_PRE).toBe('2º turno para governador em 25/10');
+    expect(GOVERNADOR_PRE).not.toMatch(/\d+[,.]\d/);
+  });
+
+  it('rankings no pre dizem a hora e o dia do início, lidos do status', () => {
+    expect(rankingsComecam('2026-10-25T17:00:00-03:00')).toBe('os rankings começam às 17h do dia 25');
+    expect(rankingsComecam('2026-10-25T17:30:00-03:00')).toBe('os rankings começam às 17h30 do dia 25');
+  });
+
+  it('rankings no pre sem início conhecido não inventa hora', () => {
+    expect(rankingsComecam(null)).toBe('os rankings começam com a apuração do 2º turno');
+    expect(rankingsComecam('amanhã')).toBe('os rankings começam com a apuração do 2º turno');
+  });
+
+  it('a frase do pre de /rankings diz hora e dia do início e não repete "rankings"', () => {
+    expect(listasAbrem('2026-10-25T17:00:00-03:00')).toBe('as listas abrem com a apuração, às 17h do dia 25');
+    expect(listasAbrem('2026-10-25T17:30:00-03:00')).toBe('as listas abrem com a apuração, às 17h30 do dia 25');
+    expect(listasAbrem('2026-10-25T17:00:00-03:00')).not.toContain('ranking');
+  });
+
+  it('a frase do pre de /rankings sem início conhecido não inventa hora', () => {
+    for (const inicio of [null, undefined, 'amanhã']) {
+      expect(listasAbrem(inicio)).toBe('as listas abrem com a apuração do 2º turno');
+    }
+  });
+
+  it('nenhum texto novo usa palavra proibida', () => {
+    const textos = [
+      tituloUf('Bahia', 'BA'),
+      descricaoUf('Bahia', 'BA'),
+      GOVERNADOR_PRE,
+      rankingsComecam('2026-10-25T17:00:00-03:00'),
+      rankingsComecam(null),
+      listasAbrem('2026-10-25T17:00:00-03:00'),
+      listasAbrem(null),
+      tituloRankings,
+      descricaoRankings,
     ].join(' ');
     for (const palavra of PALAVRAS_PROIBIDAS) expect(textos).not.toContain(palavra);
   });
