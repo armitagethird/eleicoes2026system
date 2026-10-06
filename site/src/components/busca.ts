@@ -20,6 +20,8 @@ const TEXTO = {
 const quantas = (n: number): string => `${n} ${n === 1 ? 'cidade' : 'cidades'}. Use as setas para escolher.`;
 const abrindo = (r: ResultadoBusca): string => `Abrindo ${r.nome} (${r.uf})…`;
 const ir = (slug: string): void => location.assign(`/c/${slug}`);
+// No celular o teclado cobre a metade de baixo da tela: o campo vai para o topo e a gaveta ganha o espaço que sobra.
+const TELA_ESTREITA = matchMedia('(max-width: 1023px)');
 
 let indice: Promise<EntradaIndice[]> | null = null;
 
@@ -156,6 +158,7 @@ function iniciar(raiz: HTMLElement): void {
   };
 
   campo.addEventListener('focus', () => {
+    if (TELA_ESTREITA.matches) raiz.scrollIntoView({ block: 'start' });
     carregar();
     desenhar();
   });

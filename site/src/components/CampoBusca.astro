@@ -1,6 +1,6 @@
 ---
 // Campo de busca como letreiro (design/DIRECTION.md, Home): faixa de largura total, filete de 3 px em --ink, texto 900
-// em caixa-alta; no foco o filete engrossa (nunca inverte para fundo --ink, que significa "líder").
+// em caixa-alta; no foco o filete engrossa, sempre em --ink (nunca em vermelho ou azul: são cores de candidato).
 // Combobox ARIA 1.2 com sugestões em linhas de destino. A ilha busca.ts só baixa /busca.json no primeiro foco do campo
 // (ou no primeiro toque em "usar minha localização"), nunca no carregamento da página.
 import Botao from './Botao.astro';
@@ -50,6 +50,7 @@ const idLista = `${rotulo}-lista`;
   .busca {
     display: grid;
     gap: var(--sp-2);
+    scroll-margin-top: var(--sp-2);
   }
 
   .letreiro {

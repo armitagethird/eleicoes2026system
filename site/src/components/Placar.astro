@@ -1,7 +1,8 @@
 ---
 // A FOLHA (design/DIRECTION.md, gestos 2 e 3): placar de dois candidatos para Brasil, UF ou cidade.
-// Menor número de urna sempre à esquerda (13 antes de 22); quem lidera veste --ink e o segundo --ink-2: a cor troca de
-// dono, as colunas nunca trocam de lugar. A seta de deslocamento vs 2022 é o único acento. Tolera dados ausentes.
+// Menor número de urna sempre à esquerda (13 antes de 22). A cor é do candidato (lib/cores.ts), não da posição: 13 vermelho
+// e 22 azul claro quem quer que lidere; quem lidera se diz em texto ("lidera") e pela barra. Barra, plaquinha, nome,
+// percentual, 2022 e seta de deslocamento usam a cor do candidato. Tolera dados ausentes.
 import Bandeira from './Bandeira.astro';
 import {
   AGUARDANDO_SECOES,
@@ -16,7 +17,9 @@ import {
   variacao2022,
 } from '../lib/copy.ts';
 import type { Candidato, Hist, UF } from '../lib/contratos.ts';
+import { corCandidato } from '../lib/cores.ts';
 import { percentual } from '../lib/format.ts';
+import { variacaoDe } from '../lib/variacao.ts';
 
 /** Nome e partido de um candidato (no modo pre os percentuais vêm do hist, que não tem nomes). */
 type Identidade = Pick<Candidato, 'n' | 'nome' | 'partido'>;
@@ -94,10 +97,11 @@ const completo = lados.length === 2 && lados.every((l) => l.pct !== null);
 const aguardando = modo !== 'pre' && (!completo || (numeroValido(secoesPct) && secoesPct < 1));
 const comNumeros = completo && !aguardando;
 
-// Empate não tem líder: as duas colunas ficam em --ink-2.
+const cores = lados.map((l, i) => corCandidato(l.n, i === 0 ? 0 : 1).css);
+
+// Empate não tem líder: nenhuma folha leva rótulo.
 const [p0, p1] = lados.map((l) => l.pct ?? 0);
 const lider = comNumeros && p0 !== p1 ? (p0 > p1 ? 0 : 1) : null;
-const posicao = (i: number): string => (lider === null ? 'segundo' : i === lider ? 'lider' : 'segundo');
 
 // Rótulo dentro da folha: "lidera" só em parcial; em final, "eleito" só com eleito: true no JSON (nunca inferido).
 const rotuloDaFolha = (i: number): string | null => {
@@ -109,9 +113,9 @@ const rotuloDaFolha = (i: number): string | null => {
 
 const segmentos = comNumeros
   ? [
-      { classe: posicao(0), p: p0, rotulo: rotuloDaFolha(0) },
-      ...(outros !== null && outros > 0 ? [{ classe: 'outros', p: outros, rotulo: null }] : []),
-      { classe: `${posicao(1)} dir`, p: p1, rotulo: rotuloDaFolha(1) },
+      { classe: 'esq', p: p0, cor: cores[0], rotulo: rotuloDaFolha(0) },
+      ...(outros !== null && outros > 0 ? [{ classe: 'outros', p: outros, cor: null, rotulo: null }] : []),
+      { classe: 'dir', p: p1, cor: cores[1], rotulo: rotuloDaFolha(1) },
     ].filter((s) => s.p > 0)
   : [];
 
@@ -120,12 +124,12 @@ const variacoes =
   props.modo === 'pre' || !comNumeros
     ? []
     : lados
-        .map((l, i) => ({ i, v: props.variacao?.[String(l.n)] }))
+        .map((l, i) => ({ i, v: variacaoDe(props.variacao, l.n, lados[1 - i].n) }))
         .filter((x): x is { i: number; v: number } => numeroValido(x.v) && x.v >= 0.05)
         .sort((a, b) => b.v - a.v);
 function setaDe({ i, v }: { i: number; v: number }) {
   const [numero, ...resto] = variacao2022(lados[i].nome ?? String(lados[i].n), v).split(' ');
-  return { lado: i === 0 ? 'esq' : 'dir', numero, resto: resto.join(' ') };
+  return { lado: i === 0 ? 'esq' : 'dir', cor: cores[i], numero, resto: resto.join(' ') };
 }
 const seta = variacoes[0] ? setaDe(variacoes[0]) : null;
 
@@ -137,7 +141,6 @@ const semSinal = (pct: number): string => percentual(pct).replace('%', '');
 const longo = comNumeros && lados.some((l) => (l.pct ?? 0) >= 99.95);
 const turno = modo === 'pre' ? PRIMEIRO_TURNO_2026 : TURNO_CARD;
 const nomeCargo = cargo === 'governador' ? CARGO_GOVERNADOR : 'presidente';
-const lider2022 = referencia2022 && referencia2022[0] !== referencia2022[1] ? (referencia2022[0] > referencia2022[1] ? 0 : 1) : null;
 ---
 
 <section class:list={['placar', modo, { longo }]} aria-label={`${lugar}: ${nomeCargo}, ${turno}`}>
@@ -149,7 +152,7 @@ const lider2022 = referencia2022 && referencia2022[0] !== referencia2022[1] ? (r
 
   {
     seta && (
-      <p class:list={['seta', seta.lado]}>
+      <p class:list={['seta', seta.lado]} style={`--cor:${seta.cor}`}>
         <svg class="triangulo" viewBox="0 0 10 12" aria-hidden="true">
           <path d={seta.lado === 'esq' ? 'M0 6 10 0v12z' : 'M10 6 0 0v12z'} />
         </svg>
@@ -170,7 +173,7 @@ const lider2022 = referencia2022 && referencia2022[0] !== referencia2022[1] ? (r
     <div class="barra" aria-hidden="true">
       {
         segmentos.map((s) => (
-          <span class:list={['folha', s.classe]} style={`--p:${s.p}`}>
+          <span class:list={['folha', s.classe]} style={s.cor ? `--p:${s.p};--cor:${s.cor}` : `--p:${s.p}`}>
             {s.rotulo && <span class="rotulo">{s.rotulo}</span>}
           </span>
         ))
@@ -182,7 +185,7 @@ const lider2022 = referencia2022 && referencia2022[0] !== referencia2022[1] ? (r
     lados.length === 2 && (
       <div class="colunas">
         {lados.map((l, i) => (
-          <div class:list={['coluna', i === 0 ? 'esq' : 'dir', posicao(i)]}>
+          <div class:list={['coluna', i === 0 ? 'esq' : 'dir']} style={`--cor:${cores[i]}`}>
             <p class="quem">
               <span class="placa-n">{l.n}</span>
               {l.nome && <span class="nome">{l.nome}</span>}
@@ -209,14 +212,14 @@ const lider2022 = referencia2022 && referencia2022[0] !== referencia2022[1] ? (r
         <p class="ref-rotulo">{SEGUNDO_TURNO_2022}</p>
         <div class="ref-linha">
           {referencia2022.map((pct, i) => (
-            <span class:list={['ref-pct', { dir: i === 1 }, lider2022 === i ? 'lider' : 'segundo']}>
+            <span class:list={['ref-pct', { dir: i === 1 }]} style={`--cor:${cores[i]}`}>
               <span class="sr-only">{lados[i].n}: </span>
               {percentual(pct)}
             </span>
           ))}
-          <span class="ref-barra" aria-hidden="true">
+          <span class="barra fina" aria-hidden="true">
             {referencia2022.map((pct, i) => (
-              <span class:list={['folha', lider2022 === i ? 'lider' : 'segundo']} style={`--p:${pct}`} />
+              <span class="folha" style={`--p:${pct};--cor:${cores[i]}`} />
             ))}
           </span>
         </div>
@@ -232,14 +235,6 @@ const lider2022 = referencia2022 && referencia2022[0] !== referencia2022[1] ? (r
     container-type: inline-size;
     display: grid;
     gap: var(--sp-2);
-  }
-
-  .lider {
-    --cor: var(--ink);
-  }
-
-  .segundo {
-    --cor: var(--ink-2);
   }
 
   /* Bandeira à esquerda, lugar e cargo empilhados ao lado. */
@@ -291,7 +286,7 @@ const lider2022 = referencia2022 && referencia2022[0] !== referencia2022[1] ? (r
     line-height: 1.15;
     letter-spacing: var(--track-caps);
     text-transform: uppercase;
-    color: var(--accent);
+    color: var(--cor);
   }
 
   /* À direita a frase continua lida na ordem (número, texto) e só a seta vai para a borda. */
@@ -321,7 +316,8 @@ const lider2022 = referencia2022 && referencia2022[0] !== referencia2022[1] ? (r
     text-wrap: balance;
   }
 
-  /* As folhas: dois segmentos proporcionais com a costura de 4 px em --bg e a marca de 50% acima e abaixo. */
+  /* A barra é a mesma do card e do mapa: folhas proporcionais, costura de 4 px em --bg e a marca de 50% acima e abaixo.
+     A fina (2022) só muda de altura. */
   .trilho {
     position: relative;
   }
@@ -331,16 +327,22 @@ const lider2022 = referencia2022 && referencia2022[0] !== referencia2022[1] ? (r
   }
 
   .barra {
+    --marca: var(--sp-1);
     position: relative;
     display: flex;
     gap: var(--stroke-2);
     height: var(--sp-6);
-    margin-block: var(--sp-1);
+    margin-block: var(--marca);
     background: var(--surface-1);
   }
 
   .barra:has(.folha) {
-    background: none;
+    background: var(--bg);
+  }
+
+  .barra.fina {
+    --marca: 4px;
+    height: var(--sp-2);
   }
 
   .barra::before,
@@ -349,7 +351,7 @@ const lider2022 = referencia2022 && referencia2022[0] !== referencia2022[1] ? (r
     position: absolute;
     left: calc(50% - 1px);
     width: var(--stroke-1);
-    height: var(--sp-1);
+    height: var(--marca);
     background: var(--ink-2);
   }
 
@@ -487,7 +489,7 @@ const lider2022 = referencia2022 && referencia2022[0] !== referencia2022[1] ? (r
     color: var(--ink);
   }
 
-  /* 2º turno de 2022 como régua fina: mesma ordem e mesma regra de cor, posição de 2022. */
+  /* 2º turno de 2022 como régua fina: mesma ordem, mesmas cores, mesma barra. */
   .ref {
     display: grid;
     gap: var(--sp-1);
@@ -514,12 +516,9 @@ const lider2022 = referencia2022 && referencia2022[0] !== referencia2022[1] ? (r
     grid-row: 1;
   }
 
-  .ref-barra {
-    display: flex;
-    gap: var(--stroke-1);
+  .ref-linha .barra {
     grid-column: 2;
     grid-row: 1;
-    height: var(--sp-1);
   }
 
   .linha {

@@ -1,6 +1,6 @@
 ---
-// Cabeçalho do site: wordmark (900, wdth 125, caixa-alta) e a pílula de estado (design/DIRECTION.md, Home).
-// O indicador "ao vivo" não usa acento: o acento é só da variação vs 2022 e do selo.
+// Cabeçalho do site: wordmark (900, wdth 125, caixa-alta), a pílula de estado e o link para os rankings
+// (design/DIRECTION.md, Home). O indicador "ao vivo" não usa acento (só do selo) nem cor de candidato: é --ink.
 import { pilula } from '../lib/copy.ts';
 import { SITE_NAME } from '../lib/site.ts';
 import type { Modo } from '../lib/status.ts';
@@ -14,45 +14,85 @@ interface Props {
 }
 
 const { modo, secoesPct, atualizado } = Astro.props;
-const naHome = Astro.url.pathname === '/';
+const { pathname } = Astro.url;
 ---
 
 <header class="cabecalho">
-  <a class="marca" href="/" aria-current={naHome ? 'page' : undefined}>{SITE_NAME}</a>
+  <a class="marca" href="/" aria-current={pathname === '/' ? 'page' : undefined}>{SITE_NAME}</a>
   <p class="pilula" data-modo={modo}>
     {modo === 'live' && <span class="sinal" aria-hidden="true" />}
     <span data-pilula>{pilula(modo, secoesPct, atualizado)}</span>
   </p>
+  <nav aria-label="Principal">
+    <a class="rankings" href="/rankings" aria-current={pathname.startsWith('/rankings') ? 'page' : undefined}>Rankings</a>
+  </nav>
 </header>
 
 <style>
+  /* Celular: wordmark e link na primeira linha, a pílula embaixo. A partir de 720 px tudo cabe numa linha só. */
   .cabecalho {
-    display: flex;
-    flex-wrap: wrap;
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    grid-template-areas:
+      'marca nav'
+      'pilula pilula';
     align-items: center;
-    justify-content: space-between;
     gap: var(--sp-1) var(--sp-2);
-    padding-block: var(--sp-2);
+    padding-block: var(--sp-1);
   }
 
-  .marca {
+  /* Os dois links têm 44 px de altura (alvo de toque do projeto) sem aumentar a letra. */
+  .marca,
+  .rankings {
+    display: inline-flex;
+    align-items: center;
+    min-height: 44px;
     font-family: var(--font-display);
-    font-size: var(--fs-3);
     font-weight: 900;
-    font-stretch: 125%;
     line-height: 1;
-    text-decoration: none;
     text-transform: uppercase;
   }
 
+  .marca {
+    grid-area: marca;
+    justify-self: start;
+    font-size: var(--fs-3);
+    font-stretch: 125%;
+    text-decoration: none;
+  }
+
+  .rankings {
+    font-size: var(--fs-2);
+    letter-spacing: var(--track-caps);
+    text-decoration: underline;
+    text-decoration-thickness: 3px;
+    text-underline-offset: 4px;
+  }
+
+  .rankings[aria-current='page'] {
+    text-decoration-color: var(--ink-2);
+  }
+
+  @media (hover: hover) {
+    .rankings:hover {
+      text-decoration-color: var(--ink-2);
+    }
+  }
+
+  nav {
+    grid-area: nav;
+  }
+
+  /* Indicador de estado, não controle: reto como as folhas e as placas (o raio de 8 px é só dos controles). */
   .pilula {
+    grid-area: pilula;
+    justify-self: start;
     display: inline-flex;
     align-items: center;
     gap: var(--sp-1);
     min-height: 32px;
     padding-inline: var(--sp-1);
     border: var(--stroke-1) solid var(--ink-2);
-    border-radius: var(--radius);
     font-family: var(--font-display);
     font-size: var(--fs-1);
     font-weight: 900;
@@ -67,17 +107,30 @@ const naHome = Astro.url.pathname === '/';
     border-color: var(--ink);
   }
 
-  /* Placa quadrada que pisca em degrau, como lâmpada de painel; com reduced-motion fica acesa. */
+  /* Placa quadrada que pisca em degrau, como lâmpada de painel. Três piscadas e fica acesa: o texto "ao vivo" já diz o
+     estado, e piscar sem parar por mais de 5 s não tem como pausar (WCAG 2.2.2). */
   .sinal {
     width: var(--sp-1);
     height: var(--sp-1);
     background: var(--ink);
-    animation: pisca 1.2s steps(1, end) infinite;
+    animation: pisca 1.2s steps(1, end) 3;
   }
 
   @keyframes pisca {
     50% {
       opacity: 0;
+    }
+  }
+
+  @media (min-width: 720px) {
+    .cabecalho {
+      grid-template-columns: minmax(0, 1fr) auto auto;
+      grid-template-areas: 'marca pilula nav';
+      column-gap: var(--sp-3);
+    }
+
+    .pilula {
+      justify-self: end;
     }
   }
 </style>

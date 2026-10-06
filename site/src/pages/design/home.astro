@@ -13,7 +13,7 @@ import statusPre from '../../../../contracts/fixtures/status.json';
 import Botao from '../../components/Botao.astro';
 import Placar from '../../components/Placar.astro';
 import Base from '../../layouts/Base.astro';
-import type { Cidade, Hist, Placar as PlacarJson, UF } from '../../lib/contratos.ts';
+import { UFS, type Cidade, type Hist, type Placar as PlacarJson, type UF } from '../../lib/contratos.ts';
 import { histBr, histCidade, municipios } from '../../lib/dados.ts';
 import { parseStatus } from '../../lib/status.ts';
 import Home from '../index.astro';
@@ -51,13 +51,21 @@ const ufs = import.meta.glob<PlacarJson>('../../../../contracts/fixtures/uf/*.js
 const cidade = (slug: string): Cidade => cidades[`../../../../contracts/fixtures/c/${slug}.json`];
 const rj = ufs['../../../../contracts/fixtures/uf/rj.json'];
 const minuscula = (uf: UF) => uf.toLowerCase() as Lowercase<UF>;
+// O mapa dos modos live e final lê os placares das 27 UFs; no final todas têm 100% das seções (a fixture é parcial).
+const placaresUf = (secoes?: number) =>
+  Object.fromEntries(
+    UFS.map((uf) => {
+      const placar = ufs[`../../../../contracts/fixtures/uf/${minuscula(uf)}.json`];
+      return [uf, { ...placar, secoes_pct: secoes ?? placar.secoes_pct }];
+    }),
+  );
 
 // Casos de borda do placar (reaproveitado nas páginas de UF e cidade), todos de fixtures.
 const variantes = [
   { titulo: 'aguardando (secoes_pct < 1)', c: cidade('bora-sp') },
   { titulo: '100% para um lado', c: cidade('serra-da-saudade-mg') },
   { titulo: 'margem de 0,2 ponto', c: cidade('santa-barbara-doeste-sp') },
-  { titulo: 'sem 2022: sem seta, monocromático', c: cidade('boa-esperanca-do-norte-mt') },
+  { titulo: 'sem 2022: sem seta nem referência', c: cidade('boa-esperanca-do-norte-mt') },
 ].map(({ titulo, c }) => ({
   titulo,
   props: {
@@ -72,10 +80,14 @@ const variantes = [
 // Só aqui: eleito: true marcado à mão no 22 para ver o rótulo do modo final (a fixture nunca marca eleito).
 const comEleito = br.presidente.cand.map((c) => ({ ...c, eleito: c.n === 22 }));
 const modos = [
-  { chave: 'live', props: { status: parseStatus(statusLive), placar: br } },
+  { chave: 'live', props: { status: parseStatus(statusLive), placar: br, ufs: placaresUf() } },
   {
     chave: 'final',
-    props: { status: parseStatus(statusFinal), placar: { ...br, secoes_pct: 100, atualizado: statusFinal.atualizado } },
+    props: {
+      status: parseStatus(statusFinal),
+      placar: { ...br, secoes_pct: 100, atualizado: statusFinal.atualizado },
+      ufs: placaresUf(100),
+    },
   },
   { chave: 'pre', props: { status: parseStatus(statusPre), hist: histBr() ?? brFicticio() } },
 ];
@@ -115,6 +127,18 @@ const modos = [
           cand={rj.governador?.cand}
           secoesPct={rj.secoes_pct}
           atualizado={rj.atualizado}
+        />
+      </div>
+      <div class="caso">
+        <p class="caso-titulo">variacao_2022 com uma chave só ({'{"13": -3.4}'}): a seta vai para o 22</p>
+        <Placar
+          modo="parcial"
+          lugar="Brasil"
+          bandeira="br"
+          cand={br.presidente.cand}
+          variacao={{ '13': -3.4 }}
+          secoesPct={br.secoes_pct}
+          atualizado={br.atualizado}
         />
       </div>
       <div class="caso">

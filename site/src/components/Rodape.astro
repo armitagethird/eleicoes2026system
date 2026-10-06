@@ -1,5 +1,6 @@
 ---
-// Rodapé: fonte dos números, link para os rankings e, enquanto as fixtures estiverem no ar, o aviso de dados fictícios.
+// Rodapé: fonte dos números e a marca numa linha só e, enquanto as fixtures estiverem no ar, o aviso de dados fictícios.
+// O link para os rankings fica no cabeçalho.
 import { AVISO_FICTICIO, FONTE_TSE } from '../lib/copy.ts';
 import { SITE_NAME } from '../lib/site.ts';
 
@@ -15,9 +16,8 @@ const { ficticio = true } = Astro.props;
   {ficticio && <p class="aviso">{AVISO_FICTICIO}</p>}
   <div class="linha">
     <p class="fonte">{FONTE_TSE}</p>
-    <a class="link" href="/rankings">Rankings</a>
+    <p class="marca">{SITE_NAME}</p>
   </div>
-  <p class="marca">{SITE_NAME}</p>
 </footer>
 
 <style>
@@ -38,45 +38,22 @@ const { ficticio = true } = Astro.props;
   .linha {
     display: flex;
     flex-wrap: wrap;
-    align-items: center;
+    align-items: baseline;
     justify-content: space-between;
-    gap: var(--sp-2);
+    gap: var(--sp-1) var(--sp-2);
   }
 
   .fonte,
-  .link,
   .marca {
     font-family: var(--font-display);
+    font-size: var(--fs-1);
     font-weight: 900;
     letter-spacing: var(--track-caps);
     text-transform: uppercase;
-  }
-
-  .fonte {
-    font-size: var(--fs-1);
     color: var(--ink-2);
-  }
-
-  /* Alvo de toque de 48 px sem aumentar a letra. */
-  .link {
-    display: inline-flex;
-    align-items: center;
-    min-height: 48px;
-    font-size: var(--fs-2);
-    text-decoration: underline;
-    text-decoration-thickness: 3px;
-    text-underline-offset: 4px;
-  }
-
-  @media (hover: hover) {
-    .link:hover {
-      text-decoration-color: var(--ink-2);
-    }
   }
 
   .marca {
-    font-size: var(--fs-1);
     font-stretch: 125%;
-    color: var(--ink-2);
   }
 </style>

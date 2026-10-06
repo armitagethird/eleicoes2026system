@@ -3,19 +3,23 @@
 // Mobile: cabeçalho, destino, busca, localização e o começo do painel na primeira dobra.
 // Desktop (≥ 1024 px): 12 colunas; à esquerda (5) busca, painel e placar; à direita (7) o mapa, sticky.
 // Como página, o modo vem de contracts/fixtures/status.json no build. /design/home importa esta página como componente
-// e passa `status` e `placar` para mostrar os modos live e final com as fixtures.
+// e passa `status`, `placar` e `ufs` para mostrar os modos live e final com as fixtures. Placar e mapa saem sempre na
+// mesma fase: sem os dados do 2º turno (o build não os conhece; o ao vivo é da Fase 3), os dois dizem "aguardando".
 import brFixture from '../../../contracts/fixtures/br.json';
 import statusFixture from '../../../contracts/fixtures/status.json';
 import CampoBusca from '../components/CampoBusca.astro';
 import Cabecalho from '../components/Cabecalho.astro';
 import Mapa from '../components/Mapa.astro';
 import Painel from '../components/Painel.astro';
+import Pesquisas from '../components/Pesquisas.astro';
 import Placar from '../components/Placar.astro';
 import Rodape from '../components/Rodape.astro';
 import Base from '../layouts/Base.astro';
+import type { Lugar } from '../lib/cartograma.ts';
 import type { Hist, Placar as PlacarJson } from '../lib/contratos.ts';
 import { histBr } from '../lib/dados.ts';
 import { ajustarDestino } from '../lib/destino.ts';
+import type { Fase, PlacarMapa } from '../lib/mapa-dados.ts';
 import { SITE_NAME } from '../lib/site.ts';
 import { parseStatus, type Status } from '../lib/status.ts';
 
@@ -24,6 +28,8 @@ interface Props {
   status?: Status;
   /** Só /design/home: o placar BR ao vivo (br.json). Na página, o modo live espera a ilha da Fase 3. */
   placar?: PlacarJson;
+  /** Só /design/home: os placares das 27 UFs (uf/{uf}.json) para o mapa nos modos live e final. */
+  ufs?: Partial<Record<Lugar, PlacarMapa>>;
   /** Só /design/home: hist BR do modo pre enquanto src/data/hist-br.json não existe. */
   hist?: Hist;
   /** Só /design/home: sem o <html> do Base, para empilhar os modos numa página só (ids levam o modo). */
@@ -31,10 +37,12 @@ interface Props {
 }
 
 const status = Astro.props.status ?? parseStatus(statusFixture);
-const { placar, hist = histBr(), embutida = false } = Astro.props;
+const { placar, ufs, hist = histBr(), embutida = false } = Astro.props;
 const Moldura = embutida ? Fragment : Base;
 const idTitulo = embutida ? `titulo-${status.modo}` : 'titulo-home';
 const presidente = placar?.presidente;
+const fase: Fase = status.modo === 'pre' ? 'pre' : status.modo === 'live' ? 'parcial' : 'final';
+const apuracao = { placares: { ...ufs, BR: placar }, atualizado: placar?.atualizado ?? null };
 
 // O hist só tem percentuais; nome e partido de 13 e 22 vêm do contrato (nomes reais, iguais em todos os arquivos).
 const nomes = brFixture.presidente.cand.map(({ n, nome, partido }) => ({ n, nome, partido }));
@@ -75,14 +83,15 @@ const linhasTitulo = linhas.map((l, i) => {
         <CampoBusca rotulo={idTitulo} />
 
         {
-          status.modo === 'pre' ? (
+          fase === 'pre' ? (
             <>
               <Painel inicio={status.inicio} />
               <Placar modo="pre" lugar="Brasil" bandeira="br" cand={nomes} hist={hist} />
+              <Pesquisas />
             </>
           ) : (
             <Placar
-              modo={status.modo === 'live' ? 'parcial' : 'final'}
+              modo={fase}
               lugar="Brasil"
               bandeira="br"
               cand={presidente?.cand}
@@ -95,7 +104,7 @@ const linhasTitulo = linhas.map((l, i) => {
       </div>
 
       <div class="lateral">
-        <Mapa />
+        <Mapa fase={fase} apuracao={apuracao} />
       </div>
     </main>
 
