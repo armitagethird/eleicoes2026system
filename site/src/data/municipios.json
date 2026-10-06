@@ -1,0 +1,502 @@
+[
+  {
+    "slug": "anapolis-go",
+    "nome": "Anápolis",
+    "uf": "GO",
+    "cod_tse": 90049,
+    "cod_ibge": 5201108,
+    "lat": -16.3281,
+    "lon": -48.953,
+    "eleitores": 303140
+  },
+  {
+    "slug": "aracaju-se",
+    "nome": "Aracaju",
+    "uf": "SE",
+    "cod_tse": 90026,
+    "cod_ibge": 2800308,
+    "lat": -10.9091,
+    "lon": -37.0677,
+    "eleitores": 458100
+  },
+  {
+    "slug": "belem-pa",
+    "nome": "Belém",
+    "uf": "PA",
+    "cod_tse": 90014,
+    "cod_ibge": 1501402,
+    "lat": -1.4554,
+    "lon": -48.4898,
+    "eleitores": 990590
+  },
+  {
+    "slug": "belo-horizonte-mg",
+    "nome": "Belo Horizonte",
+    "uf": "MG",
+    "cod_tse": 90013,
+    "cod_ibge": 3106200,
+    "lat": -19.9102,
+    "lon": -43.9266,
+    "eleitores": 1759830
+  },
+  {
+    "slug": "boa-esperanca-do-norte-mt",
+    "nome": "Boa Esperança do Norte",
+    "uf": "MT",
+    "cod_tse": 90031,
+    "cod_ibge": 5101837,
+    "lat": -13.5067,
+    "lon": -55.1486,
+    "eleitores": 4200
+  },
+  {
+    "slug": "boa-vista-rr",
+    "nome": "Boa Vista",
+    "uf": "RR",
+    "cod_tse": 90023,
+    "cod_ibge": 1400100,
+    "lat": 2.82384,
+    "lon": -60.6753,
+    "eleitores": 314250
+  },
+  {
+    "slug": "bora-sp",
+    "nome": "Borá",
+    "uf": "SP",
+    "cod_tse": 90033,
+    "cod_ibge": 3507209,
+    "lat": -22.2696,
+    "lon": -50.5409,
+    "eleitores": 690
+  },
+  {
+    "slug": "brasilia-df",
+    "nome": "Brasília",
+    "uf": "DF",
+    "cod_tse": 90007,
+    "cod_ibge": 5300108,
+    "lat": -15.7795,
+    "lon": -47.9297,
+    "eleitores": 2141210
+  },
+  {
+    "slug": "campina-grande-pb",
+    "nome": "Campina Grande",
+    "uf": "PB",
+    "cod_tse": 90042,
+    "cod_ibge": 2504009,
+    "lat": -7.22196,
+    "lon": -35.8731,
+    "eleitores": 318730
+  },
+  {
+    "slug": "campinas-sp",
+    "nome": "Campinas",
+    "uf": "SP",
+    "cod_tse": 90034,
+    "cod_ibge": 3509502,
+    "lat": -22.9053,
+    "lon": -47.0659,
+    "eleitores": 865680
+  },
+  {
+    "slug": "campo-grande-ms",
+    "nome": "Campo Grande",
+    "uf": "MS",
+    "cod_tse": 90012,
+    "cod_ibge": 5002704,
+    "lat": -20.4486,
+    "lon": -54.6295,
+    "eleitores": 682560
+  },
+  {
+    "slug": "caxias-do-sul-rs",
+    "nome": "Caxias do Sul",
+    "uf": "RS",
+    "cod_tse": 90038,
+    "cod_ibge": 4305108,
+    "lat": -29.1629,
+    "lon": -51.1792,
+    "eleitores": 352260
+  },
+  {
+    "slug": "cuiaba-mt",
+    "nome": "Cuiabá",
+    "uf": "MT",
+    "cod_tse": 90011,
+    "cod_ibge": 5103403,
+    "lat": -15.601,
+    "lon": -56.0974,
+    "eleitores": 494670
+  },
+  {
+    "slug": "curitiba-pr",
+    "nome": "Curitiba",
+    "uf": "PR",
+    "cod_tse": 90016,
+    "cod_ibge": 4106902,
+    "lat": -25.4195,
+    "lon": -49.2646,
+    "eleitores": 1348030
+  },
+  {
+    "slug": "feira-de-santana-ba",
+    "nome": "Feira de Santana",
+    "uf": "BA",
+    "cod_tse": 90039,
+    "cod_ibge": 2910800,
+    "lat": -12.2664,
+    "lon": -38.9663,
+    "eleitores": 468370
+  },
+  {
+    "slug": "florianopolis-sc",
+    "nome": "Florianópolis",
+    "uf": "SC",
+    "cod_tse": 90024,
+    "cod_ibge": 4205407,
+    "lat": -27.5945,
+    "lon": -48.5477,
+    "eleitores": 408280
+  },
+  {
+    "slug": "fortaleza-ce",
+    "nome": "Fortaleza",
+    "uf": "CE",
+    "cod_tse": 90006,
+    "cod_ibge": 2304400,
+    "lat": -3.71664,
+    "lon": -38.5423,
+    "eleitores": 1845820
+  },
+  {
+    "slug": "goiania-go",
+    "nome": "Goiânia",
+    "uf": "GO",
+    "cod_tse": 90009,
+    "cod_ibge": 5208707,
+    "lat": -16.6864,
+    "lon": -49.2643,
+    "eleitores": 1092400
+  },
+  {
+    "slug": "imperatriz-ma",
+    "nome": "Imperatriz",
+    "uf": "MA",
+    "cod_tse": 90043,
+    "cod_ibge": 2105302,
+    "lat": -5.51847,
+    "lon": -47.4777,
+    "eleitores": 207560
+  },
+  {
+    "slug": "ji-parana-ro",
+    "nome": "Ji-Paraná",
+    "uf": "RO",
+    "cod_tse": 90047,
+    "cod_ibge": 1100122,
+    "lat": -10.8777,
+    "lon": -61.9322,
+    "eleitores": 94490
+  },
+  {
+    "slug": "joao-pessoa-pb",
+    "nome": "João Pessoa",
+    "uf": "PB",
+    "cod_tse": 90015,
+    "cod_ibge": 2507507,
+    "lat": -7.11509,
+    "lon": -34.8641,
+    "eleitores": 633790
+  },
+  {
+    "slug": "joinville-sc",
+    "nome": "Joinville",
+    "uf": "SC",
+    "cod_tse": 90036,
+    "cod_ibge": 4209102,
+    "lat": -26.3045,
+    "lon": -48.8487,
+    "eleitores": 468400
+  },
+  {
+    "slug": "juazeiro-do-norte-ce",
+    "nome": "Juazeiro do Norte",
+    "uf": "CE",
+    "cod_tse": 90040,
+    "cod_ibge": 2307304,
+    "lat": -7.19621,
+    "lon": -39.3076,
+    "eleitores": 217450
+  },
+  {
+    "slug": "londrina-pr",
+    "nome": "Londrina",
+    "uf": "PR",
+    "cod_tse": 90037,
+    "cod_ibge": 4113700,
+    "lat": -23.304,
+    "lon": -51.1691,
+    "eleitores": 422530
+  },
+  {
+    "slug": "macapa-ap",
+    "nome": "Macapá",
+    "uf": "AP",
+    "cod_tse": 90003,
+    "cod_ibge": 1600303,
+    "lat": 0.034934,
+    "lon": -51.0694,
+    "eleitores": 336630
+  },
+  {
+    "slug": "maceio-al",
+    "nome": "Maceió",
+    "uf": "AL",
+    "cod_tse": 90002,
+    "cod_ibge": 2704302,
+    "lat": -9.66599,
+    "lon": -35.735,
+    "eleitores": 728020
+  },
+  {
+    "slug": "manaus-am",
+    "nome": "Manaus",
+    "uf": "AM",
+    "cod_tse": 90004,
+    "cod_ibge": 1302603,
+    "lat": -3.11866,
+    "lon": -60.0212,
+    "eleitores": 1568400
+  },
+  {
+    "slug": "mossoro-rn",
+    "nome": "Mossoró",
+    "uf": "RN",
+    "cod_tse": 90046,
+    "cod_ibge": 2408003,
+    "lat": -5.18374,
+    "lon": -37.3474,
+    "eleitores": 201080
+  },
+  {
+    "slug": "natal-rn",
+    "nome": "Natal",
+    "uf": "RN",
+    "cod_tse": 90020,
+    "cod_ibge": 2408102,
+    "lat": -5.79357,
+    "lon": -35.1986,
+    "eleitores": 570990
+  },
+  {
+    "slug": "niteroi-rj",
+    "nome": "Niterói",
+    "uf": "RJ",
+    "cod_tse": 90050,
+    "cod_ibge": 3303302,
+    "lat": -22.8832,
+    "lon": -43.1034,
+    "eleitores": 366130
+  },
+  {
+    "slug": "palmas-to",
+    "nome": "Palmas",
+    "uf": "TO",
+    "cod_tse": 90027,
+    "cod_ibge": 1721000,
+    "lat": -10.24,
+    "lon": -48.3558,
+    "eleitores": 230050
+  },
+  {
+    "slug": "parnaiba-pi",
+    "nome": "Parnaíba",
+    "uf": "PI",
+    "cod_tse": 90045,
+    "cod_ibge": 2207702,
+    "lat": -2.90585,
+    "lon": -41.7754,
+    "eleitores": 123240
+  },
+  {
+    "slug": "petrolina-pe",
+    "nome": "Petrolina",
+    "uf": "PE",
+    "cod_tse": 90041,
+    "cod_ibge": 2611101,
+    "lat": -9.38866,
+    "lon": -40.5027,
+    "eleitores": 293960
+  },
+  {
+    "slug": "porto-alegre-rs",
+    "nome": "Porto Alegre",
+    "uf": "RS",
+    "cod_tse": 90021,
+    "cod_ibge": 4314902,
+    "lat": -30.0318,
+    "lon": -51.2065,
+    "eleitores": 1012960
+  },
+  {
+    "slug": "porto-velho-ro",
+    "nome": "Porto Velho",
+    "uf": "RO",
+    "cod_tse": 90022,
+    "cod_ibge": 1100205,
+    "lat": -8.76077,
+    "lon": -63.8999,
+    "eleitores": 349930
+  },
+  {
+    "slug": "recife-pe",
+    "nome": "Recife",
+    "uf": "PE",
+    "cod_tse": 90017,
+    "cod_ibge": 2611606,
+    "lat": -8.04666,
+    "lon": -34.8771,
+    "eleitores": 1131580
+  },
+  {
+    "slug": "rio-branco-ac",
+    "nome": "Rio Branco",
+    "uf": "AC",
+    "cod_tse": 90001,
+    "cod_ibge": 1200401,
+    "lat": -9.97499,
+    "lon": -67.8243,
+    "eleitores": 277210
+  },
+  {
+    "slug": "rio-de-janeiro-rj",
+    "nome": "Rio de Janeiro",
+    "uf": "RJ",
+    "cod_tse": 90019,
+    "cod_ibge": 3304557,
+    "lat": -22.9129,
+    "lon": -43.2003,
+    "eleitores": 4720530
+  },
+  {
+    "slug": "rondonopolis-mt",
+    "nome": "Rondonópolis",
+    "uf": "MT",
+    "cod_tse": 90048,
+    "cod_ibge": 5107602,
+    "lat": -16.4673,
+    "lon": -54.6372,
+    "eleitores": 186130
+  },
+  {
+    "slug": "salvador-ba",
+    "nome": "Salvador",
+    "uf": "BA",
+    "cod_tse": 90005,
+    "cod_ibge": 2927408,
+    "lat": -12.9718,
+    "lon": -38.5011,
+    "eleitores": 1837440
+  },
+  {
+    "slug": "santa-barbara-doeste-sp",
+    "nome": "Santa Bárbara d'Oeste",
+    "uf": "SP",
+    "cod_tse": 90028,
+    "cod_ibge": 3545803,
+    "lat": -22.7553,
+    "lon": -47.4143,
+    "eleitores": 139340
+  },
+  {
+    "slug": "santarem-pa",
+    "nome": "Santarém",
+    "uf": "PA",
+    "cod_tse": 90044,
+    "cod_ibge": 1506807,
+    "lat": -2.43849,
+    "lon": -54.6996,
+    "eleitores": 252280
+  },
+  {
+    "slug": "sao-joao-da-boa-vista-sp",
+    "nome": "São João da Boa Vista",
+    "uf": "SP",
+    "cod_tse": 90029,
+    "cod_ibge": 3549102,
+    "lat": -21.9707,
+    "lon": -46.7944,
+    "eleitores": 70340
+  },
+  {
+    "slug": "sao-luis-ma",
+    "nome": "São Luís",
+    "uf": "MA",
+    "cod_tse": 90010,
+    "cod_ibge": 2111300,
+    "lat": -2.53874,
+    "lon": -44.2825,
+    "eleitores": 788710
+  },
+  {
+    "slug": "sao-paulo-sp",
+    "nome": "São Paulo",
+    "uf": "SP",
+    "cod_tse": 90025,
+    "cod_ibge": 3550308,
+    "lat": -23.5329,
+    "lon": -46.6395,
+    "eleitores": 8703520
+  },
+  {
+    "slug": "serra-da-saudade-mg",
+    "nome": "Serra da Saudade",
+    "uf": "MG",
+    "cod_tse": 90032,
+    "cod_ibge": 3166600,
+    "lat": -19.4447,
+    "lon": -45.795,
+    "eleitores": 630
+  },
+  {
+    "slug": "teresina-pi",
+    "nome": "Teresina",
+    "uf": "PI",
+    "cod_tse": 90018,
+    "cod_ibge": 2211001,
+    "lat": -5.09194,
+    "lon": -42.8034,
+    "eleitores": 658390
+  },
+  {
+    "slug": "uberlandia-mg",
+    "nome": "Uberlândia",
+    "uf": "MG",
+    "cod_tse": 90035,
+    "cod_ibge": 3170206,
+    "lat": -18.9141,
+    "lon": -48.2749,
+    "eleitores": 542050
+  },
+  {
+    "slug": "vila-bela-da-santissima-trindade-mt",
+    "nome": "Vila Bela da Santíssima Trindade",
+    "uf": "MT",
+    "cod_tse": 90030,
+    "cod_ibge": 5105507,
+    "lat": -15.0068,
+    "lon": -59.9504,
+    "eleitores": 12750
+  },
+  {
+    "slug": "vitoria-es",
+    "nome": "Vitória",
+    "uf": "ES",
+    "cod_tse": 90008,
+    "cod_ibge": 3205309,
+    "lat": -20.3155,
+    "lon": -40.3128,
+    "eleitores": 245380
+  }
+]
