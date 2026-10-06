@@ -1,0 +1,162 @@
+---
+// A cidade em parcial ou final: o card inline como peça central e o botão COMPARTILHAR (ilha Compartilhar.ts).
+// O SVG é o mesmo renderCard que vira PNG no navegador. A ilha lê os dados de [data-cidade-dados] no toque, não daqui.
+// Ganchos para a ilha ao vivo (Fase 3): [data-card] recebe o SVG novo, [data-cidade-dados] os dados novos e
+// [data-conexao] o aviso de copy.semConexao quando o fetch falhar.
+import Botao from './Botao.astro';
+import { renderCard, type CardData } from './Card.ts';
+import { semConexao } from '../lib/copy.ts';
+import { PIX_KEY } from '../lib/site.ts';
+
+interface Props {
+  card: CardData;
+  slug: string;
+  /** Hora da última atualização (ISO 8601): vai no aviso de falha de rede. */
+  atualizado?: string | null;
+  /** Mostra o aviso de falha de rede (a ilha ao vivo o liga com a mesma frase). Só o playground o liga no HTML. */
+  semRede?: boolean;
+  /** Prefixo dos ids, para a mesma cidade aparecer em mais de um modo na mesma página (/design/cidade). */
+  id?: string;
+}
+
+const { card, slug, atualizado, semRede = false, id = 'ao-vivo' } = Astro.props;
+// "<" fora do JSON: um nome de cidade nunca fecha o <script> que o carrega.
+const dados = JSON.stringify({ card, slug }).replace(/</g, '\\u003c');
+---
+
+<section class="ao-vivo" aria-labelledby={`${id}-titulo`} data-cidade>
+  <h2 class="sr-only" id={`${id}-titulo`}>Card do 2º turno 2026 em {card.local} ({card.uf})</h2>
+  <figure class="card" data-card set:html={renderCard(card)} />
+  <p class="conexao" role="status" data-conexao hidden={!semRede}>{semRede ? semConexao(atualizado) : ''}</p>
+
+  <div class="acoes">
+    <Botao class="compartilhar" data-compartilhar>Compartilhar</Botao>
+    <p class="estado" role="status" data-compartilhar-estado></p>
+  </div>
+
+  {
+    PIX_KEY && (
+      <aside class="pix" data-pix hidden>
+        <p class="pix-texto">Gostou do card? Ajude a manter o site no ar com um Pix.</p>
+        <div class="pix-chave">
+          <code class="chave">{PIX_KEY}</code>
+          <Botao variante="secundario" class="copiar" data-pix-copiar={PIX_KEY}>
+            Copiar chave
+          </Botao>
+        </div>
+      </aside>
+    )
+  }
+
+  <script type="application/json" data-cidade-dados set:html={dados} />
+</section>
+
+<script>
+  // A ilha entra em dois tempos: só este carregador vai com a página. O Compartilhar (card, destino, copy: uns 10 KB em 3 saltos)
+  // sai do caminho do LCP, chega depois do load e já está em cache quando a pessoa toca. Se o toque vier antes, o próprio clique o espera.
+  const carregar = () => import('./Compartilhar.ts');
+  addEventListener('load', () => setTimeout(carregar, 1000));
+  document.addEventListener('click', (evento) => {
+    const alvo = evento.target as Element;
+    if (!alvo.closest('[data-compartilhar], [data-pix-copiar]')) return;
+    carregar()
+      .then(({ aoClicar }) => aoClicar(alvo))
+      .catch((erro: unknown) => {
+        const estado = alvo.closest('[data-cidade]')?.querySelector('[data-compartilhar-estado]');
+        if (estado) estado.textContent = `Não foi possível gerar o card: ${erro instanceof Error ? erro.message : String(erro)}`;
+      });
+  });
+</script>
+
+<style>
+  .ao-vivo {
+    display: grid;
+    gap: var(--sp-2);
+  }
+
+  /* Papel colado no muro: o card tem o mesmo fundo da página, então ganha um filete. No celular vai de borda a borda
+     (o card é a peça central e cada pixel de largura é legibilidade). */
+  .card {
+    margin-inline: calc(var(--sp-2) * -1);
+    border-block: var(--stroke-1) solid var(--surface-2);
+  }
+
+  .card :global(svg) {
+    width: 100%;
+    height: auto;
+  }
+
+  .conexao {
+    padding: var(--sp-1) var(--sp-2);
+    border: var(--stroke-1) solid var(--ink-2);
+    font-size: var(--fs-1);
+  }
+
+  .acoes {
+    display: grid;
+    gap: var(--sp-1);
+  }
+
+  .acoes :global(.compartilhar) {
+    width: 100%;
+    min-height: 56px;
+    font-size: var(--fs-3);
+  }
+
+  .estado {
+    min-height: 1.5em;
+    font-size: var(--fs-1);
+    color: var(--ink-2);
+  }
+
+  /* display: grid vence o [hidden] do navegador; o bloco só aparece depois de compartilhar. */
+  .pix[hidden] {
+    display: none;
+  }
+
+  .pix {
+    display: grid;
+    gap: var(--sp-1);
+    padding-top: var(--sp-2);
+    border-top: var(--stroke-1) solid var(--surface-2);
+    font-size: var(--fs-1);
+    color: var(--ink-2);
+  }
+
+  .pix-chave {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: var(--sp-1) var(--sp-2);
+  }
+
+  .chave {
+    font-family: var(--font-text);
+    font-size: var(--fs-2);
+    color: var(--ink);
+    overflow-wrap: anywhere;
+  }
+
+  .pix :global(.copiar) {
+    min-height: 40px;
+    font-size: var(--fs-1);
+  }
+
+  @media (min-width: 768px) {
+    .card {
+      margin-inline: 0;
+      border: var(--stroke-2) solid var(--surface-2);
+    }
+
+    .acoes {
+      grid-template-columns: auto minmax(0, 1fr);
+      align-items: center;
+      gap: var(--sp-2);
+    }
+
+    .acoes :global(.compartilhar) {
+      width: auto;
+      padding-inline: var(--sp-5);
+    }
+  }
+</style>

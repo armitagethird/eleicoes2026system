@@ -1,0 +1,296 @@
+---
+// Página da cidade (BRIEF, Fase 2; design/DIRECTION.md): onde o card vive e de onde é compartilhado.
+// Uma página por município (getStaticPaths lê src/data/municipios.json: 50 hoje, 5.571 depois). Tudo que não muda no dia
+// (nome, UF, hist de 2022 e do 1º turno) sai no HTML, sem JS; o JS da página é só a ilha Compartilhar, e só em parcial/final.
+//   pre:          o destaque é o Comparativo (2022 × 1º turno 2026); o card do 2º turno fica em espera, com a hora de início
+//                 como promessa, e não há botão de compartilhar.
+//   parcial/final: o card inline é a peça central, com o botão Compartilhar; o Comparativo vira contexto.
+// Como a home, o modo vem de contracts/fixtures/status.json no build, e o JSON ao vivo da cidade de contracts/fixtures/c.
+// /design/cidade importa esta página como componente e passa `status`, `cidade` e `embutida`.
+import brFixture from '../../../../contracts/fixtures/br.json';
+import statusFixture from '../../../../contracts/fixtures/status.json';
+import Bandeira from '../../components/Bandeira.astro';
+import Botao from '../../components/Botao.astro';
+import Cabecalho from '../../components/Cabecalho.astro';
+import { renderCard } from '../../components/Card.ts';
+import CidadeAoVivo from '../../components/CidadeAoVivo.astro';
+import Comparativo from '../../components/Comparativo.astro';
+import Rodape from '../../components/Rodape.astro';
+import Base from '../../layouts/Base.astro';
+import { urlBandeiraPng } from '../../lib/bandeiras.ts';
+import { cardDeCidade } from '../../lib/card-dados.ts';
+import { cardEmEspera } from '../../lib/cidade.ts';
+import { NOME_UF, type Cidade, type Municipio } from '../../lib/contratos.ts';
+import { descricaoCidade, esperaDoCard, tituloCidade } from '../../lib/copy.ts';
+import { histCidade, municipios } from '../../lib/dados.ts';
+import { ajustarDestino } from '../../lib/destino.ts';
+import { diaMes, hora } from '../../lib/format.ts';
+import { parseStatus, type Status } from '../../lib/status.ts';
+
+export function getStaticPaths() {
+  return municipios.map((m) => ({ params: { slug: m.slug }, props: { m } }));
+}
+
+interface Props {
+  m: Municipio;
+  /** Só /design/cidade: força o modo. */
+  status?: Status;
+  /** Só /design/cidade: o JSON ao vivo da cidade. Na página, vem de contracts/fixtures/c/{slug}.json quando o modo não é pre. */
+  cidade?: Cidade;
+  /** Só /design/cidade: sem o <html> do Base, para empilhar os modos numa página só (ids levam o modo). */
+  embutida?: boolean;
+  /** Só /design/cidade: mostra o aviso de falha de rede, que a ilha ao vivo (Fase 3) liga com a mesma frase. */
+  semRede?: boolean;
+}
+
+const { m, embutida = false, semRede = false } = Astro.props;
+const status = Astro.props.status ?? parseStatus(statusFixture);
+const fixturesAoVivo = import.meta.glob<Cidade>('../../../../contracts/fixtures/c/*.json', { eager: true, import: 'default' });
+const aoVivo = status.modo === 'pre' ? undefined : (Astro.props.cidade ?? fixturesAoVivo[`../../../../contracts/fixtures/c/${m.slug}.json`]);
+
+const Moldura = embutida ? Fragment : Base;
+const sufixo = embutida ? `-${status.modo}` : '';
+const hist = histCidade(m.slug);
+// O hist só tem percentuais; nome e partido de 13 e 22 vêm do contrato (nomes reais, iguais em todos os arquivos).
+const nomes = brFixture.presidente.cand.map(({ n, nome, partido }) => ({ n, nome, partido }));
+
+// Com seções apuradas o card é o ao vivo (e compartilhável). Sem elas (pre, ou menos de 1% apurado) é o card em espera.
+const cardAoVivo = aoVivo && cardDeCidade(aoVivo, hist, status.modo === 'final' ? 'final' : 'parcial');
+const apurando = Boolean(cardAoVivo) && (aoVivo?.secoes_pct ?? 0) >= 1;
+const card = { ...(cardAoVivo ?? cardEmEspera(m, nomes, status.inicio)), bandeiraHref: urlBandeiraPng(m.uf) };
+const legendaEspera = status.modo === 'pre' && status.inicio ? esperaDoCard(hora(status.inicio), diaMes(status.inicio)) : null;
+
+// DESTINO: o nome ajustado no build numa largura de referência e escrito em cqi, então encosta nas duas margens em qualquer
+// largura, sem JS. Até 1023 px, até duas linhas; no desktop, uma faixa só. O ajuste mede a caixa-alta; o HTML guarda a
+// caixa normal (o CSS põe em caixa-alta). Com o card ao vivo na página o nome já está nele (é a peça central e precisa
+// levar o nome para ser compartilhável), então o H1 só fica para leitor de tela e buscador: não repete o letreiro.
+const REFERENCIA = 1000;
+const emCqi = (px: number): string => `${(px / REFERENCIA) * 100}cqi`;
+const maiusculo = m.nome.toLocaleUpperCase('pt-BR');
+const [faixa] = ajustarDestino(maiusculo, { largura: REFERENCIA, tamMax: 150, tamMin: 60, maxLinhas: 1 }).linhas;
+const { linhas } = ajustarDestino(maiusculo, { largura: REFERENCIA, tamMax: 230, tamMin: 150 });
+const palavras = m.nome.trim().split(/\s+/);
+let usadas = 0;
+// O espaço entre as linhas fica dentro da primeira: no desktop as duas viram uma faixa no mesmo tamanho.
+const linhasTitulo = linhas.map((l, i) => {
+  const quantas = l.texto.split(' ').length;
+  const texto = palavras.slice(usadas, (usadas += quantas)).join(' ') + (i < linhas.length - 1 ? ' ' : '');
+  return { texto, estilo: `--t:${emCqi(l.tamanho)};--w:${l.wdth}%;--t1:${emCqi(faixa.tamanho)};--w1:${faixa.wdth}%` };
+});
+---
+
+<Moldura
+  titulo={tituloCidade(m.nome, m.uf)}
+  descricao={descricaoCidade(m.nome, m.uf)}
+  caminho={`/c/${m.slug}`}
+  og={`/og/${m.slug}.png`}
+  modificado={aoVivo?.atualizado ?? status.atualizado ?? undefined}
+>
+  <div class="pagina">
+    <Cabecalho modo={status.modo} secoesPct={aoVivo?.secoes_pct} atualizado={aoVivo?.atualizado} />
+
+    <main>
+      <header class="topo">
+        <a class="uf" href={`/uf/${m.uf.toLowerCase()}`} aria-label={`${m.uf} ${NOME_UF[m.uf]}: página do estado`}>
+          <Bandeira uf={m.uf.toLowerCase() as Lowercase<typeof m.uf>} largura={40} carregamento="eager" />
+          <span class="sigla">{m.uf}</span>
+          <span class="estado">{NOME_UF[m.uf]}</span>
+        </a>
+        {
+          apurando ? (
+            <h1 class="sr-only">
+              {m.nome} ({m.uf})
+            </h1>
+          ) : (
+            <h1 class="destino">
+              {linhasTitulo.map((l) => <span class="linha" style={l.estilo}>{l.texto}</span>)}
+              <span class="sr-only"> ({m.uf})</span>
+            </h1>
+          )
+        }
+      </header>
+
+      <div class="conteudo">
+        {
+          apurando ? (
+            <>
+              <div class="principal">
+                <CidadeAoVivo card={card} slug={m.slug} atualizado={aoVivo?.atualizado} semRede={semRede} id={`ao-vivo${sufixo}`} />
+              </div>
+              <div class="lateral">
+                <Comparativo hist={hist} cand={nomes} id={`comparativo${sufixo}`} />
+              </div>
+            </>
+          ) : (
+            <>
+              <div class="principal">
+                <Comparativo hist={hist} cand={nomes} destaque id={`comparativo${sufixo}`} />
+              </div>
+              <section class="lateral espera" aria-labelledby={`espera-titulo${sufixo}`}>
+                <h2 class="espera-titulo" id={`espera-titulo${sufixo}`}>
+                  Card do 2º turno
+                </h2>
+                <figure class="card" set:html={renderCard(card)} />
+                {legendaEspera && <p class="legenda">{legendaEspera}</p>}
+              </section>
+            </>
+          )
+        }
+      </div>
+
+      <p class="fim">
+        <Botao href="/" variante="secundario">Buscar outra cidade</Botao>
+      </p>
+    </main>
+
+    <Rodape />
+  </div>
+</Moldura>
+
+<style>
+  .pagina {
+    max-width: 1440px;
+    margin-inline: auto;
+    padding-inline: var(--sp-2);
+  }
+
+  .topo {
+    display: grid;
+    gap: var(--sp-1);
+    padding-top: var(--sp-1);
+  }
+
+  /* Alvo de toque de 48 px: a bandeira e a sigla levam à página do estado. */
+  .uf {
+    display: flex;
+    align-items: center;
+    gap: var(--sp-1);
+    min-height: 48px;
+    width: fit-content;
+    text-decoration: none;
+  }
+
+  @media (hover: hover) {
+    .uf:hover .estado {
+      text-decoration: underline;
+      text-decoration-thickness: 2px;
+      text-underline-offset: 4px;
+    }
+  }
+
+  .sigla {
+    font-family: var(--font-display);
+    font-size: var(--fs-3);
+    font-weight: 900;
+    line-height: 1;
+    letter-spacing: var(--track-caps);
+  }
+
+  .estado {
+    font-family: var(--font-display);
+    font-size: var(--fs-1);
+    font-weight: 900;
+    letter-spacing: var(--track-caps);
+    text-transform: uppercase;
+    color: var(--ink-2);
+  }
+
+  /* As linhas medem a largura do h1 (container): font-size em cqi vindo do ajuste do build. */
+  .destino {
+    container-type: inline-size;
+    padding-top: var(--sp-1);
+    line-height: 0.95;
+    text-transform: uppercase;
+    /* Antes da fonte carregar, a substituta pode ser mais larga: corta na horizontal em vez de criar rolagem. */
+    overflow-x: clip;
+  }
+
+  .linha {
+    display: block;
+    font-size: var(--t);
+    font-stretch: var(--w);
+    white-space: nowrap;
+  }
+
+  .conteudo {
+    display: grid;
+    gap: var(--sp-5);
+    padding-block: var(--sp-4) var(--sp-5);
+  }
+
+  .espera {
+    display: grid;
+    align-content: start;
+    gap: var(--sp-2);
+  }
+
+  .espera-titulo {
+    padding-top: var(--sp-1);
+    border-top: var(--stroke-2) solid var(--ink);
+    font-size: var(--fs-3);
+    font-stretch: 87.5%;
+    letter-spacing: var(--track-caps);
+    text-transform: uppercase;
+  }
+
+  /* O card tem o mesmo fundo da página: ganha um filete e, no celular, vai de borda a borda. */
+  .card {
+    margin-inline: calc(var(--sp-2) * -1);
+    border-block: var(--stroke-1) solid var(--surface-2);
+  }
+
+  .card :global(svg) {
+    width: 100%;
+    height: auto;
+  }
+
+  .legenda {
+    max-width: 60ch;
+    font-size: var(--fs-1);
+    color: var(--ink-2);
+  }
+
+  .fim {
+    padding-bottom: var(--sp-7);
+  }
+
+  @media (min-width: 768px) {
+    .pagina {
+      padding-inline: var(--sp-4);
+    }
+
+    .card {
+      margin-inline: 0;
+      border: var(--stroke-2) solid var(--surface-2);
+    }
+  }
+
+  @media (min-width: 1024px) {
+    .pagina {
+      padding-inline: var(--sp-6);
+    }
+
+    /* Letreiro de margem a margem: as linhas viram uma faixa só, no tamanho do ajuste de uma linha. */
+    .linha {
+      display: inline;
+      font-size: var(--t1);
+      font-stretch: var(--w1);
+    }
+
+    .conteudo {
+      grid-template-columns: repeat(12, minmax(0, 1fr));
+      align-items: start;
+      gap: var(--sp-4) var(--sp-3);
+    }
+
+    .principal {
+      grid-column: 1 / span 7;
+    }
+
+    .lateral {
+      position: sticky;
+      top: var(--sp-3);
+      grid-column: 8 / span 5;
+    }
+  }
+</style>

@@ -1,0 +1,384 @@
+---
+// COMPARATIVO da cidade (design/DIRECTION.md, gestos 2 e 3): 2º turno de 2022 × 1º turno de 2026 (13 · outros · 22), na
+// linguagem FOLHA do card e do mapa. A cor é do candidato (lib/cores.ts), nunca da posição: 13 vermelho à esquerda,
+// 22 azul claro à direita. A variação é só entre 13 e 22 (lib/cidade.ts) e a seta aponta para o lado de quem ganhou terreno.
+// Sem 2022 (cidade nova): só o 1º turno de 2026, com uma explicação neutra. Zero JS.
+import { variacaoEntreDois } from '../lib/cidade.ts';
+import type { Candidato, Hist } from '../lib/contratos.ts';
+import {
+  COMPARATIVO_TITULO,
+  OUTROS_CANDIDATOS,
+  PRIMEIRO_TURNO_2026,
+  SEGUNDO_TURNO_2022,
+  SEM_2022,
+  SEM_MUDANCA_2022,
+  notaSoEntreDois,
+  variacao2022,
+} from '../lib/copy.ts';
+import { corCandidato } from '../lib/cores.ts';
+import { percentual } from '../lib/format.ts';
+
+interface Props {
+  /** hist da cidade (src/data/hist). Ausente: o bloco não sai. */
+  hist?: Hist;
+  /** Nome e partido de 13 e 22 (o hist só tem percentuais). */
+  cand: Array<Pick<Candidato, 'n' | 'nome' | 'partido'>>;
+  /** Modo pre: a variação vira o título do bloco. Fora dele (card ao vivo), as folhas são só contexto. */
+  destaque?: boolean;
+  /** Prefixo dos ids, para a mesma cidade aparecer em mais de um modo na mesma página (/design/cidade). */
+  id?: string;
+}
+
+const { hist, cand, destaque = false, id = 'comparativo' } = Astro.props;
+
+const lados = ([13, 22] as const).map((n, i) => ({
+  n,
+  nome: cand.find((c) => c.n === n)?.nome,
+  partido: cand.find((c) => c.n === n)?.partido,
+  cor: corCandidato(n, i === 0 ? 0 : 1).css,
+}));
+
+const t1 = hist?.t1_2026.pct;
+const t2 = hist?.t2_2022?.pct;
+const turnos = [
+  ...(t2 ? [{ rotulo: SEGUNDO_TURNO_2022, pct: [t2['13'], t2['22']], outros: 0 }] : []),
+  ...(t1 ? [{ rotulo: PRIMEIRO_TURNO_2026, pct: [t1['13'], t1['22']], outros: t1.outros }] : []),
+].map((t) => ({
+  ...t,
+  // Centro do segmento "outros" em % da barra, sobre a soma real (os percentuais arredondados podem não fechar em 100).
+  meio: ((t.pct[0] + t.outros / 2) / (t.pct[0] + t.outros + t.pct[1])) * 100,
+  folhas: [
+    { classe: 'esq', p: t.pct[0], cor: lados[0].cor },
+    { classe: 'outros', p: t.outros, cor: null },
+    { classe: 'dir', p: t.pct[1], cor: lados[1].cor },
+  ].filter((f) => f.p > 0),
+}));
+
+// Quem ganhou terreno desde 2022 (variação do 13; o 22 é o espelho). Menos de 0,05 ponto não é mudança.
+const variacao = variacaoEntreDois(hist);
+const ganhou = variacao !== null && Math.abs(variacao) >= 0.05 ? (variacao > 0 ? 0 : 1) : null;
+const [numeroVariacao, ...restoVariacao] =
+  ganhou === null ? [] : variacao2022(lados[ganhou].nome ?? String(lados[ganhou].n), Math.abs(variacao ?? 0)).split(' ');
+
+const semSinal = (pct: number): string => percentual(pct).replace('%', '');
+const aviso = !t2 ? SEM_2022 : ganhou === null ? SEM_MUDANCA_2022 : null;
+---
+
+{
+  turnos.length > 0 && (
+    <section class:list={['comparativo', { destaque }]} aria-labelledby={`${id}-titulo`}>
+      <h2 class="titulo" id={`${id}-titulo`}>
+        {t2 ? COMPARATIVO_TITULO : PRIMEIRO_TURNO_2026}
+      </h2>
+
+      {
+        destaque && ganhou !== null && (
+          <p class:list={['variacao', ganhou === 0 ? 'esq' : 'dir']} style={`--cor:${lados[ganhou].cor}`}>
+            <svg class="triangulo" viewBox="0 0 10 12" aria-hidden="true">
+              <path d={ganhou === 0 ? 'M0 6 10 0v12z' : 'M10 6 0 0v12z'} />
+            </svg>
+            <strong class="pts">{numeroVariacao}</strong>
+            <span class="resto">{restoVariacao.join(' ')}</span>
+          </p>
+        )
+      }
+      {aviso && <p class="aviso">{aviso}</p>}
+
+      <div class="legenda">
+        {
+          lados.map((l, i) => (
+            <p class:list={['quem', i === 0 ? 'esq' : 'dir']} style={`--cor:${l.cor}`}>
+              <span class="placa-n">{l.n}</span>
+              {l.nome && <span class="nome">{l.nome}</span>}
+              {l.partido && <span class="partido">{l.partido}</span>}
+            </p>
+          ))
+        }
+      </div>
+
+      <div class="turnos">
+        {
+          turnos.map((t) => (
+            <div class="turno">
+              <h3 class="rotulo">{t.rotulo}</h3>
+              <div class="barra" aria-hidden="true">
+                {t.folhas.map((f) => (
+                  <span class:list={['folha', f.classe]} style={f.cor ? `--p:${f.p};--cor:${f.cor}` : `--p:${f.p}`} />
+                ))}
+              </div>
+              <p class="valores">
+                {lados.map((l, i) => (
+                  <span class:list={['pct', i === 0 ? 'esq' : 'dir']} style={`--cor:${l.cor}`}>
+                    <span class="sr-only">{l.n}: </span>
+                    {semSinal(t.pct[i])}
+                    <span class="sinal">%</span>
+                  </span>
+                ))}
+              </p>
+              {t.outros > 0 && (
+                <p class="legenda-outros" style={`--meio:${t.meio}`}>
+                  {OUTROS_CANDIDATOS} <span class="outros-pct">{percentual(t.outros)}</span>
+                </p>
+              )}
+            </div>
+          ))
+        }
+      </div>
+
+      {t1 && t2 && <p class="nota">{notaSoEntreDois(t1.outros)}</p>}
+    </section>
+  )
+}
+
+<style>
+  .comparativo {
+    container-type: inline-size;
+    display: grid;
+    gap: var(--sp-3);
+  }
+
+  .titulo {
+    padding-top: var(--sp-1);
+    border-top: var(--stroke-2) solid var(--ink);
+    font-size: var(--fs-3);
+    font-stretch: 87.5%;
+    letter-spacing: var(--track-caps);
+    text-transform: uppercase;
+    text-wrap: balance;
+  }
+
+  .rotulo,
+  .partido,
+  .legenda-outros {
+    font-family: var(--font-display);
+    font-size: var(--fs-1);
+    font-weight: 900;
+    line-height: 1.2;
+    letter-spacing: var(--track-caps);
+    text-transform: uppercase;
+    color: var(--ink-2);
+  }
+
+  /* Gesto 3: a seta aponta para o lado de quem ganhou terreno; número e texto na cor dele. */
+  .variacao {
+    --n: clamp(2.75rem, 17cqi, 5rem);
+    display: grid;
+    grid-template-columns: auto auto minmax(0, 1fr);
+    align-items: center;
+    gap: var(--sp-1) var(--sp-2);
+    font-family: var(--font-display);
+    font-size: var(--fs-2);
+    font-weight: 900;
+    line-height: 1.15;
+    letter-spacing: var(--track-caps);
+    text-transform: uppercase;
+    color: var(--cor);
+  }
+
+  /* À direita a frase continua lida na ordem (número, texto) e só a seta vai para a borda. */
+  .variacao.dir {
+    grid-template-columns: minmax(0, max-content) minmax(0, max-content) auto;
+    justify-content: end;
+    text-align: right;
+  }
+
+  .variacao .triangulo {
+    width: calc(var(--n) * 0.4);
+    height: calc(var(--n) * 0.72);
+    fill: currentColor;
+  }
+
+  .variacao.dir .triangulo {
+    order: 1;
+  }
+
+  .pts {
+    font-size: var(--n);
+    font-stretch: 87.5%;
+    letter-spacing: 0;
+    line-height: 0.9;
+  }
+
+  .resto {
+    text-wrap: balance;
+  }
+
+  /* Explicação, não manchete: texto corrido em --ink-2, sem competir com as barras e os percentuais. */
+  .aviso {
+    max-width: 60ch;
+    line-height: 1.5;
+    color: var(--ink-2);
+    text-wrap: balance;
+  }
+
+  /* Plaquinha com o número (--bg sobre a cor do candidato) antes do nome, como no card; o nome fica em --ink.
+     Mesma ordem das folhas: na coluna da direita é o conjunto que vai para a borda, não a plaquinha. */
+  .legenda {
+    display: flex;
+    justify-content: space-between;
+    gap: var(--sp-2);
+  }
+
+  .quem {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0 var(--sp-1);
+    min-width: 0;
+    font-family: var(--font-display);
+    font-size: var(--fs-2);
+    font-weight: 900;
+    font-stretch: 75%;
+    line-height: 1.2;
+    text-transform: uppercase;
+  }
+
+  .quem.dir {
+    justify-content: flex-end;
+    text-align: right;
+  }
+
+  .placa-n {
+    flex: none;
+    padding-inline: 0.3em;
+    background: var(--cor);
+    color: var(--bg);
+  }
+
+  .partido {
+    font-stretch: 100%;
+  }
+
+  .turnos {
+    display: grid;
+    gap: var(--sp-3);
+  }
+
+  .turno {
+    display: grid;
+    gap: var(--sp-1);
+  }
+
+  /* A barra é a mesma do card e do mapa: folhas proporcionais, costura de 4 px em --bg e a marca de 50% acima e abaixo. */
+  .barra {
+    position: relative;
+    display: flex;
+    gap: var(--stroke-2);
+    height: var(--sp-5);
+    margin-block: var(--sp-1);
+    background: var(--bg);
+  }
+
+  .barra::before,
+  .barra::after {
+    content: '';
+    position: absolute;
+    left: calc(50% - 1px);
+    width: var(--stroke-1);
+    height: var(--sp-1);
+    background: var(--ink-2);
+  }
+
+  .barra::before {
+    bottom: 100%;
+  }
+
+  .barra::after {
+    top: 100%;
+  }
+
+  .folha {
+    flex: var(--p) 1 0%;
+    min-width: 0;
+    background: var(--cor);
+    transform-origin: left center;
+    animation: entra var(--dur-3) var(--ease) both;
+  }
+
+  .folha.outros {
+    background: var(--surface-2);
+    transform-origin: center;
+  }
+
+  .folha.dir {
+    transform-origin: right center;
+  }
+
+  .turno:nth-child(2) .folha {
+    animation-delay: 120ms;
+  }
+
+  @keyframes entra {
+    from {
+      transform: scaleX(0);
+    }
+  }
+
+  .valores {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    align-items: end;
+    gap: var(--sp-1);
+  }
+
+  .pct {
+    grid-row: 1;
+    font-family: var(--font-display);
+    font-size: clamp(2.5rem, 14cqi, 4.5rem);
+    font-weight: 900;
+    font-stretch: 75%;
+    line-height: 0.9;
+    white-space: nowrap;
+    color: var(--cor);
+  }
+
+  .pct.esq {
+    grid-column: 1;
+  }
+
+  .pct.dir {
+    grid-column: 2;
+    justify-self: end;
+  }
+
+  .sinal {
+    margin-left: 0.04em;
+    font-size: 0.4em;
+  }
+
+  /* Rótulo sobre o segmento "outros", centrado nele (como o do Placar). No DOM vem depois dos percentuais (leitura: 13, 22, outros);
+     o order o sobe para antes da barra. O centro fica entre 30% e 70% e a largura é no máximo 60% da barra, então o rótulo nunca
+     sai da coluna nem chega perto dos percentuais, que ficam abaixo da barra. */
+  .legenda-outros {
+    order: -1;
+    position: relative;
+    left: clamp(30%, calc(var(--meio) * 1%), 70%);
+    translate: -50% 0;
+    width: max-content;
+    max-width: 60%;
+    margin-bottom: var(--sp-1);
+    text-align: center;
+    text-wrap: balance;
+  }
+
+  .rotulo {
+    order: -2;
+  }
+
+  .outros-pct {
+    display: block;
+    color: var(--ink);
+  }
+
+  /* Fora do destaque o bloco é só contexto do card: números menores, sem competir com ele. */
+  .comparativo:not(.destaque) .pct {
+    font-size: clamp(2rem, 9cqi, 3rem);
+  }
+
+  .nota {
+    max-width: 60ch;
+    font-size: var(--fs-1);
+    line-height: 1.5;
+    color: var(--ink-2);
+  }
+</style>

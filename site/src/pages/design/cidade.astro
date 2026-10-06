@@ -1,0 +1,183 @@
+---
+// Playground da página de cidade (só em dev; o build apaga /design), para aprovação do Romero: a página real empilhada em
+// pre, parcial, final e parcial sem conexão, com as fixtures de contracts/fixtures/c. Escolha a cidade com
+// /design/cidade?slug=sao-luis-ma. Página estática não recebe query string (nem no dev), então cada cidade vai pronta num
+// <template> e um script de poucas linhas clona o da cidade pedida. Âncoras #modo-pre, #modo-parcial, #modo-final e #modo-sem-conexao.
+//   pre:      o Comparativo em destaque e o card do 2º turno em espera
+//   parcial:  o card ao vivo de fixtures/c/{slug}.json e o botão Compartilhar (gera o PNG de verdade)
+//   final:    o mesmo JSON com 100% das seções e a hora de status.final.json; `eleito` segue false (cidade não elege)
+// Os números são fictícios; o hist (2022 e 1º turno) é o de src/data/hist.
+import statusFinal from '../../../../contracts/fixtures/status.final.json';
+import statusLive from '../../../../contracts/fixtures/status.live.json';
+import statusPre from '../../../../contracts/fixtures/status.json';
+import Base from '../../layouts/Base.astro';
+import type { Cidade } from '../../lib/contratos.ts';
+import { AVISO_FICTICIO } from '../../lib/copy.ts';
+import { municipios } from '../../lib/dados.ts';
+import { parseStatus } from '../../lib/status.ts';
+import Pagina from '../c/[slug].astro';
+
+const PADRAO = 'sao-luis-ma';
+// Casos de borda das fixtures (contracts/README.md): o que olhar em cada um.
+const BORDAS = [
+  { slug: 'bora-sp', olhar: 'menos de 1% das seções: card em espera, sem botão' },
+  { slug: 'boa-esperanca-do-norte-mt', olhar: 'sem 2022: só o 1º turno, com explicação neutra' },
+  { slug: 'serra-da-saudade-mg', olhar: '100% para o 22' },
+  { slug: 'santa-barbara-doeste-sp', olhar: 'margem de 0,2 ponto' },
+  { slug: 'sao-joao-da-boa-vista-sp', olhar: 'margem de 0,1 ponto: diferença em votos' },
+  { slug: 'vila-bela-da-santissima-trindade-mt', olhar: 'nome longo: o destino quebra em duas linhas' },
+];
+
+const fixtures = import.meta.glob<Cidade>('../../../../contracts/fixtures/c/*.json', { eager: true, import: 'default' });
+const fixtureDe = (slug: string): Cidade | undefined => fixtures[`../../../../contracts/fixtures/c/${slug}.json`];
+const modosDe = (cidade: Cidade) => [
+  { chave: 'pre', rotulo: 'pre', props: { status: parseStatus(statusPre) } },
+  { chave: 'parcial', rotulo: 'parcial', props: { status: parseStatus(statusLive), cidade } },
+  {
+    chave: 'final',
+    rotulo: 'final',
+    props: { status: parseStatus(statusFinal), cidade: { ...cidade, secoes_pct: 100, atualizado: statusFinal.atualizado } },
+  },
+  { chave: 'sem-conexao', rotulo: 'parcial, sem conexão', props: { status: parseStatus(statusLive), cidade, semRede: true } },
+];
+const comFixture = municipios.flatMap((m) => {
+  const cidade = fixtureDe(m.slug);
+  return cidade ? [{ m, modos: modosDe(cidade) }] : [];
+});
+---
+
+<Base titulo="Cidade: playground" descricao="A página de cidade em pre, parcial, final e sem conexão, com as fixtures." caminho="/design/cidade">
+  <nav class="indice" aria-label="Modos">
+    <p class="etiqueta" data-cidade-nome>{PADRAO}</p>
+    {['pre', 'parcial', 'final', 'sem-conexao'].map((chave) => <a href={`#modo-${chave}`}>{chave}</a>)}
+  </nav>
+
+  <p class="aviso" data-cidade-invalida hidden></p>
+  <p class="aviso">{AVISO_FICTICIO}</p>
+
+  <details class="cidades">
+    <summary>Trocar de cidade</summary>
+    <p class="subtitulo">Casos de borda</p>
+    <ul class="lista">
+      {
+        BORDAS.map((b) => (
+          <li>
+            <a href={`?slug=${b.slug}`}>{b.slug}</a> <span class="olhar">{b.olhar}</span>
+          </li>
+        ))
+      }
+    </ul>
+    <p class="subtitulo">Todas as cidades das fixtures</p>
+    <ul class="lista chips">
+      {comFixture.map(({ m }) => <li><a href={`?slug=${m.slug}`}>{m.nome} {m.uf}</a></li>)}
+    </ul>
+  </details>
+
+  <div id="palco" data-padrao={PADRAO}></div>
+
+  {
+    comFixture.map(({ m, modos }) => (
+      <template data-slug={m.slug} data-nome={`${m.nome} (${m.uf}) · ${m.slug}`}>
+        {modos.map(({ chave, rotulo, props }) => (
+          <section class="modo" id={`modo-${chave}`} aria-label={`Modo ${rotulo}`}>
+            <p class="etiqueta">modo {rotulo}</p>
+            <Pagina m={m} embutida {...props} />
+          </section>
+        ))}
+      </template>
+    ))
+  }
+</Base>
+
+<script>
+  const palco = document.querySelector<HTMLElement>('#palco');
+  const padrao = palco?.dataset.padrao ?? '';
+  const pedido = new URLSearchParams(location.search).get('slug');
+  const molde = (slug: string | null) => [...document.querySelectorAll<HTMLTemplateElement>('template[data-slug]')].find((t) => t.dataset.slug === slug);
+  const escolhido = molde(pedido) ?? molde(padrao);
+  if (palco && escolhido) {
+    palco.append(escolhido.content.cloneNode(true));
+    const nome = document.querySelector('[data-cidade-nome]');
+    if (nome) nome.textContent = escolhido.dataset.nome ?? '';
+    if (location.hash) document.querySelector(location.hash)?.scrollIntoView();
+  }
+  const invalida = document.querySelector<HTMLElement>('[data-cidade-invalida]');
+  if (invalida && pedido && escolhido?.dataset.slug !== pedido) {
+    invalida.textContent = `Não há fixture para "${pedido}": mostrando ${padrao}.`;
+    invalida.hidden = false;
+  }
+</script>
+
+<style>
+  .indice,
+  .etiqueta,
+  summary {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--sp-1) var(--sp-2);
+    padding: var(--sp-1) var(--sp-2);
+    background: var(--surface-2);
+    font-family: var(--font-display);
+    font-size: var(--fs-1);
+    font-weight: 900;
+    letter-spacing: var(--track-caps);
+    text-transform: uppercase;
+  }
+
+  .indice {
+    position: sticky;
+    top: 0;
+    z-index: 1;
+  }
+
+  .indice .etiqueta {
+    flex: 1 1 100%;
+    padding: 0;
+  }
+
+  .aviso {
+    margin: var(--sp-1) var(--sp-2) 0;
+    padding: var(--sp-1) var(--sp-2);
+    border: var(--stroke-1) solid var(--ink-2);
+    font-size: var(--fs-1);
+  }
+
+  .modo {
+    margin-top: var(--sp-8);
+  }
+
+  .cidades {
+    margin: var(--sp-2);
+  }
+
+  summary {
+    cursor: pointer;
+  }
+
+  .subtitulo {
+    margin-top: var(--sp-2);
+    font-family: var(--font-display);
+    font-size: var(--fs-1);
+    font-weight: 900;
+    letter-spacing: var(--track-caps);
+    text-transform: uppercase;
+    color: var(--ink-2);
+  }
+
+  .lista {
+    display: grid;
+    gap: var(--sp-1);
+    margin: var(--sp-1) 0 0;
+    padding: 0;
+    list-style: none;
+    font-size: var(--fs-1);
+  }
+
+  .chips {
+    grid-template-columns: repeat(auto-fill, minmax(min(100%, 200px), 1fr));
+  }
+
+  .olhar {
+    color: var(--ink-2);
+  }
+</style>
