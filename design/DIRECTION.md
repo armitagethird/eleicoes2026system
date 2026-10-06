@@ -4,7 +4,9 @@ Síntese de quatro propostas (letreiro, lambe-lambe, placa, coringa) e das crít
 
 ## A ideia em uma frase
 
-Cada cidade é um destino de letreiro de ônibus. O nome dela, em caixa-alta Archivo 900, ocupa a largura inteira, de margem a margem. O eixo de largura da fonte (wdth 62–125) estica NATAL e comprime SANTA BÁRBARA D'OESTE, então cada cidade tem uma silhueta tipográfica própria que se reconhece a 350 px antes de ler qualquer número. Embaixo vêm duas folhas de lambe-lambe coladas lado a lado: 13 sempre à esquerda, 22 sempre à direita, quem lidera em tinta clara, o segundo em cinza. O violeta só aparece onde algo **mudou desde 2022** e no selo.
+> **Atualização 06/10 (decisão do Romero): cor fixa por candidato.** 13 Lula = vermelho `--cand-13` (#F2464B); 22 Flávio Bolsonaro = azul claro `--cand-22` (#6CC4FF), em todo o site, no card e no mapa, como nos grandes veículos. Isto substitui toda menção abaixo a "líder = --ink / segundo = --ink-2" e a "acento na variação". Quem lidera se diz em texto ("LIDERA") e pela barra. A variação vs 2022 usa a cor do candidato que ganhou terreno. `--accent` (violeta) só no selo. Texto sobre preenchimento vermelho ou azul usa `--bg` (contraste 5,2:1 e 9,9:1).
+
+Cada cidade é um destino de letreiro de ônibus. O nome dela, em caixa-alta Archivo 900, ocupa a largura inteira, de margem a margem. O eixo de largura da fonte (wdth 62–125) estica NATAL e comprime SANTA BÁRBARA D'OESTE, então cada cidade tem uma silhueta tipográfica própria que se reconhece a 350 px antes de ler qualquer número. Embaixo vêm duas folhas de lambe-lambe coladas lado a lado: 13 sempre à esquerda, em vermelho; 22 sempre à direita, em azul claro.
 
 ## Os quatro gestos (é isto que torna o site memorável)
 
@@ -16,9 +18,9 @@ Cada cidade é um destino de letreiro de ônibus. O nome dela, em caixa-alta Arc
 
    Onde aparece: o nome da cidade no card, o H1 da página de cidade (renderizado no build, sem JS), o título "QUAL É A SUA CIDADE?" da home e as sugestões da busca. Nunca escala o glifo (nada de `textLength`/`lengthAdjust`, nada de `transform: scaleX`), só o eixo da fonte.
 
-2. **A FOLHA (cor da posição).** Quem lidera veste `--ink` e o segundo veste `--ink-2`. A cor muda de dono quando a liderança muda; as colunas nunca trocam de lugar (13 à esquerda, 22 à direita, sempre). A barra horizontal tem dois segmentos proporcionais, uma costura de 4 px em `--bg` e uma marca de 50%. No segmento do líder, quando ele é largo o bastante, vai o rótulo "LIDERA" em `--bg` (só em parcial).
+2. **A FOLHA (cor do candidato).** O 13 veste `--cand-13` (vermelho) e o 22 veste `--cand-22` (azul claro), sempre, quem quer que lidere. As colunas nunca trocam de lugar (13 à esquerda, 22 à direita). A barra horizontal tem dois segmentos proporcionais (vermelho e azul), uma costura de 4 px em `--bg` e uma marca de 50%. No segmento de quem lidera, quando ele é largo o bastante, vai o rótulo "LIDERA" em `--bg` (só em parcial). Os percentuais são grandes e na cor de cada candidato. No modo pre (1º turno), "outros" fica em `--surface-2` entre os dois.
 
-3. **A SETA DE DESLOCAMENTO (acento como verbo).** A variação vs 2022 é um número em `--accent` acompanhado de uma seta que aponta para o **lado** de quem ganhou terreno (◀ = 13, que está à esquerda; ▶ = 22, à direita). A seta codifica movimento, não candidato. Se não há 2022 (cidade nova, governador), não há seta nem acento: o site fica monocromático. As 28 bandeiras são a única outra cor.
+3. **A SETA DE DESLOCAMENTO.** A variação vs 2022 é um número acompanhado de uma seta que aponta para o **lado** de quem ganhou terreno (◀ = 13, à esquerda; ▶ = 22, à direita), na **cor desse candidato**. Se não há 2022 (cidade nova, governador), não há seta.
 
 4. **O PAINEL QUE VIRA (letreiro split-flap).** Os números que mudam viram como placas de painel de rodoviária. Vira só o algarismo que mudou, da direita para a esquerda, em `transform: scaleY` 2D, com até 240 ms por algarismo. Não há textura de LED nem número falso: a placa nunca mostra um valor que não seja o real. No modo `pre` o painel é a contagem regressiva "APURAÇÃO DO 2º TURNO EM 18 D 06 H 12 MIN", que vira a cada minuto. Com `prefers-reduced-motion`, o número apenas é trocado.
 
@@ -39,17 +41,19 @@ Os tokens estão em `site/src/styles/tokens.css` e a justificativa em `design/TO
 | Token | Valor | Uso |
 |---|---|---|
 | `--bg` | `#121110` | fundo (preto quente, muro à noite) |
-| `--ink` | `#F2EEE3` | líder, texto principal (16,3:1) |
-| `--ink-2` | `#8B867A` | segundo colocado, texto secundário (5,2:1) |
-| `--accent` | `#B57BFF` | variação vs 2022 e selo, nada mais (6,5:1) |
+| `--ink` | `#F2EEE3` | texto principal (16,3:1) |
+| `--ink-2` | `#8B867A` | texto secundário (5,2:1) |
+| `--cand-13` | `#F2464B` | Lula: vermelho, em todo lugar (5,2:1) |
+| `--cand-22` | `#6CC4FF` | Flávio Bolsonaro: azul claro, em todo lugar (9,9:1) |
+| `--accent` | `#B57BFF` | selo, nada mais (6,5:1) |
 | `--surface-1` | `#1B1A18` | placas, campos |
 | `--surface-2` | `#2B2924` | "outros" no 1º turno, separadores |
 
 Regras de uso:
-- O foco do teclado é `--ink`, nunca `--accent`.
-- Indicador de "ao vivo" não usa acento.
-- Nenhum vermelho, azul, verde ou amarelo fora das bandeiras.
-- O playground pode alternar o acento (`data-acento="teal" | "coral"`) só para aprovação.
+- O foco do teclado é `--ink`, nunca `--accent` nem cor de candidato.
+- Indicador de "ao vivo" não usa acento nem cor de candidato.
+- Vermelho e azul só como cores dos candidatos, nunca como cor de marca (logo, botões, fundo). Verde e amarelo só nas bandeiras.
+- O playground pode alternar o acento do selo (`data-acento="teal" | "coral"`) só para aprovação.
 
 ## Forma
 
@@ -74,9 +78,9 @@ Regras de uso:
 |---|---|---|
 | A | 48–92 | bandeira da UF (caixa 56×39), linha meta `MA · 2º TURNO 2026 · PARCIAL · 87% DAS SEÇÕES` em 28–30 px (`--ink-2`, números em `--ink`), selo à direita (placa `--accent`, texto `--bg`, raio 8, ≥ 28 px) |
 | B | 104–236 | DESTINO: nome da cidade com ajuste de largura em 1104 px, tamanho máximo de ~150 px; em 2 linhas o tamanho é menor e a zona B cresce até 268 |
-| C | 252–306 | variação: `◀ +3,4 PONTOS PARA LULA EM RELAÇÃO A 2022` em `--accent` (número ≥ 56 px, resto ≥ 30 px); se a margem atual for < 1 ponto, `DIFERENÇA DE 312 VOTOS` em `--ink` |
-| D | 318–362 | barra de 1104×40, dois segmentos proporcionais, costura de 4 px, marca de 50%, "LIDERA" dentro do líder |
-| E | 380–572 | duas colunas: `13 · LULA · PT` à esquerda e `22 · FLÁVIO BOLSONARO · PL` alinhado à direita (≥ 30 px, número em plaquinha); percentuais de 132 a 160 px, líder `--ink`, segundo `--ink-2` |
+| C | 252–306 | variação: `◀ +3,4 PONTOS PARA LULA EM RELAÇÃO A 2022` na cor do candidato que ganhou terreno (número ≥ 56 px, resto ≥ 30 px); se a margem atual for < 1 ponto, `DIFERENÇA DE 312 VOTOS` em `--ink` |
+| D | 318–362 | barra de 1104×40, segmentos proporcionais vermelho (13) e azul claro (22), costura de 4 px, marca de 50%, "LIDERA" em `--bg` dentro do segmento de quem lidera |
+| E | 380–572 | duas colunas: `13 · LULA · PT` à esquerda e `22 · FLÁVIO BOLSONARO · PL` alinhado à direita (≥ 30 px, número em plaquinha na cor do candidato); percentuais de 132 a 160 px, 13 em `--cand-13` e 22 em `--cand-22` |
 | F | 596–628 | rodapé: `DOMINIO.COM.BR · @CONTA` à esquerda e `FONTE: TSE · 18:42` à direita, ≥ 28 px |
 
 ### Regras gerais
@@ -126,9 +130,10 @@ Uma única entrada orquestrada: as placas do mapa entram em 20 ms de escalonamen
 - **Placa** (cerca de 48–56 px no mobile):
   - a bandeira intacta no topo;
   - a sigla em 900;
-  - a mini-barra de 2 segmentos (13 à esquerda, 22 à direita, líder `--ink`, segundo `--ink-2`);
-  - quando há variação vs 2022 de magnitude ≥ 0,5 ponto, a seta de deslocamento em `--accent` (no desktop, com o número).
-- **Proibido:** pintar a placa pela cor de quem lidera; legenda "esquerda/direita" com sentido ideológico. A legenda diz literalmente `13 À ESQUERDA · 22 À DIREITA (ORDEM DO NÚMERO DE URNA)` ou equivalente neutro.
+  - a mini-barra de 2 segmentos, grossa o bastante para ler de relance (≥ 8 px): 13 vermelho à esquerda, 22 azul claro à direita, proporcionais; no pre, "outros" em `--surface-2` no meio;
+  - quando há variação vs 2022 de magnitude ≥ 0,5 ponto, a seta de deslocamento na cor de quem ganhou terreno (no desktop, com o número).
+- O conjunto das placas forma o desenho do Brasil.
+- **Legenda:** `13 LULA` em vermelho e `22 FLÁVIO BOLSONARO` em azul claro. Nada de "esquerda/direita" com sentido ideológico.
 - **Interação:**
   - foco ou hover mostra uma placa de detalhe (nome da UF, os dois percentuais, a variação e o link) num painel fixo, não em tooltip flutuante;
   - toque ou clique leva a `/uf/{uf}`;
@@ -149,8 +154,8 @@ Uma única entrada orquestrada: as placas do mapa entram em 20 ms de escalonamen
 
 ## Pendências de aprovação do Romero (sinalizar no checkpoint, não decidir sozinho)
 
-1. Fonte Archivo e acento violeta `#B57BFF`. O playground alterna teal e coral.
-2. `--ink` claro no fundo escuro: o brief diz "tinta escura" para o líder, mas o card tem fundo escuro, então foi interpretado como a tinta de maior contraste.
-3. Seta e número em acento nas placas do mapa: é variação vs 2022, mas amplia o uso do acento.
-4. Governador sem comparação com 2022 (mostra a margem); cidade em `final` sem rótulo de posição.
+1. Fonte Archivo e acento violeta `#B57BFF` no selo. O playground alterna teal e coral.
+2. Tons dos candidatos: vermelho `#F2464B` e azul claro `#6CC4FF` (decidido o princípio; tom exato a aprovar).
+3. Placa do mapa com barra vermelho/azul; pintar a placa inteira com a cor de quem lidera (estilo G1) fica como opção a aprovar.
+4. Governador sem comparação com 2022 (mostra a margem); cidade em `final` sem rótulo de posição. Cores dos candidatos a governador: a definir com os candidatos reais (as fixtures usam nomes fictícios; enquanto isso, o de menor número usa `--cand-13` e o outro `--cand-22`).
 5. Selos ainda sem texto final em `copy.ts`; "virada" nos selos de ranking vem do próprio brief, não é "virada confirmada".

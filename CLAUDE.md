@@ -7,7 +7,7 @@ Site de resultados do 2º turno das eleições de 2026 (25/10), em tempo real, m
 ## Regras inegociáveis (brief, seção 4)
 
 - Candidatos sempre na mesma ordem, a do número de urna (13 antes de 22), em todo lugar, independentemente de quem lidera.
-- Cor pertence à posição, não ao candidato: líder = `--ink` (maior contraste contra `--bg`), segundo = `--ink-2`, um único `--accent`. Proibido como cor de marca: vermelho, azul, verde, amarelo (verde e amarelo só nas bandeiras). Nenhuma cor de partido, rótulo ideológico ou pesquisa eleitoral.
+- Cor fixa por candidato (decisão do Romero, 06/10): 13 Lula = vermelho `--cand-13`, 22 Flávio = azul claro `--cand-22`, iguais em todo o site, card e mapa; quem lidera se diz em texto ("lidera"), não em cor. `--accent` (violeta) só no selo. Vermelho e azul nunca como cor de marca (logo, botões, fundo); verde e amarelo só nas bandeiras. Nenhum rótulo ideológico nem pesquisa eleitoral.
 - Vocabulário só de `src/lib/copy.ts`: "lidera" em parcial; "eleito(a)" somente com `eleito: true` no JSON (nunca inferir de percentual); nunca "venceu", "virada confirmada", "projeção". Todo card traz `parcial · X% das seções · Fonte: TSE · HH:MM`.
 - Sem fotos de candidatos: só nome, número e partido em texto.
 - Palpite é local (`localStorage`), nunca enviado a servidor, nunca agregado. "Me avisa": consentimento explícito em texto; o POST vai para um endpoint placeholder atrás de feature flag.

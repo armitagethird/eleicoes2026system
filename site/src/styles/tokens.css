@@ -1,8 +1,8 @@
 /*
  * Tokens (valores justificados em design/TOKENS.md; direção em design/DIRECTION.md).
- * Cor pertence à posição, não ao candidato: --ink = quem lidera (maior contraste contra --bg),
- * --ink-2 = o segundo. --accent só para variação vs 2022 e selo.
- * Proibido como cor de marca: vermelho, azul, verde, amarelo.
+ * Cor fixa por candidato (decisão do Romero, 06/10): --cand-13 vermelho, --cand-22 azul claro, em todo o site.
+ * Texto sobre preenchimento de candidato usa --bg. --accent (violeta) só no selo.
+ * Vermelho e azul nunca como cor de marca (logo, botões, fundo).
  */
 :root {
   color-scheme: dark;
@@ -10,6 +10,8 @@
   --bg: #121110;
   --ink: #f2eee3;
   --ink-2: #8b867a;
+  --cand-13: #f2464b;
+  --cand-22: #6cc4ff;
   --accent: #b57bff;
   --surface-1: #1b1a18;
   --surface-2: #2b2924;

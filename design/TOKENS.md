@@ -7,9 +7,11 @@ Os valores vivem em `site/src/styles/tokens.css`. Cada linha abaixo diz por que 
 | Token | Valor | Por quê |
 |---|---|---|
 | `--bg` | `#121110` | Preto quente, de muro à noite e cartaz colado. O fundo escuro vem do card (brief, seção 3). |
-| `--ink` | `#F2EEE3` | Branco de papel de cartaz para quem lidera: 16,27:1 contra `--bg`. |
-| `--ink-2` | `#8B867A` | Cinza médio quente para o segundo colocado: 5,20:1 contra `--bg` (texto AA) e 3,13:1 contra `--ink`, então os dois segmentos da barra se distinguem sem matiz. |
-| `--accent` | `#B57BFF` | Violeta, que não pertence a nenhum campo político brasileiro: 6,50:1 contra `--bg` e 5,01:1 contra `--surface-2`. É reservado à variação vs 2022 e ao selo. |
+| `--ink` | `#F2EEE3` | Branco de papel de cartaz para o texto principal: 16,27:1 contra `--bg`. |
+| `--ink-2` | `#8B867A` | Cinza médio quente para texto secundário: 5,20:1 contra `--bg` (texto AA). |
+| `--cand-13` | `#F2464B` | Vermelho do Lula (decisão do Romero, 06/10: cor fixa por candidato, como Globo, G1 e CNN). Dá 5,17:1 contra `--bg`, o que serve como texto; `--bg` sobre ele também fica em 5,17:1. |
+| `--cand-22` | `#6CC4FF` | Azul claro do Flávio Bolsonaro: 9,86:1 contra `--bg`; `--bg` sobre ele fica em 9,86:1. Tem luminância bem diferente do vermelho (1,91:1 entre os dois), então os dois se distinguem também em escala de cinza e para daltônicos. |
+| `--accent` | `#B57BFF` | Violeta, só no selo: 6,50:1 contra `--bg`. Não compete com o vermelho nem com o azul dos candidatos. |
 | `--surface-1` | `#1B1A18` | Superfície de placa e de campo. `--ink` sobre ela fica em 15,0:1. |
 | `--surface-2` | `#2B2924` | "Outros" no 1º turno e separadores. `--ink-2` sobre ela fica em 4,01:1. |
 

@@ -31,10 +31,10 @@ O card da cidade é o produto. O site existe para levar a pessoa ao card em um t
 
 Referência: lambe-lambe, letreiro de ônibus, placa de rua. Tipográfico, denso em informação, alto contraste, sem enfeite. Não é grafite: sem textura, grão, stencil, texto inclinado ou sombra. Tudo isso morre a 350 px de largura na timeline do X.
 
-### Cor pertence à posição, não ao candidato
+### Cor pertence ao candidato (decisão do Romero, 06/10/2026)
 
-- Quem **lidera** é tinta escura (`--ink`); o **segundo** é cinza médio (`--ink-2`). A cor troca de dono quando a liderança troca. Isso é apartidarismo por construção.
-- **Um único acento** (`--accent`) para o número de variação vs 2022 e para o selo. Escolha um tom que não pertença a nenhum campo: violeta, teal ou coral. **Proibido como cor de marca: vermelho, azul, verde, amarelo.**
+- Revoga a regra original de "cor pertence à posição". Como fazem os grandes veículos (Globo, G1, CNN), cada candidato tem **cor fixa** em todo o site, no card e no mapa: **13 Lula = vermelho (`--cand-13`)**, **22 Flávio Bolsonaro = azul claro (`--cand-22`)**. A cor não troca quando a liderança troca; quem lidera é indicado por texto ("lidera") e pela barra.
+- **Um único acento** (`--accent`, violeta) só para o selo. A variação vs 2022 usa a cor do candidato que ganhou terreno. **Proibido como cor de marca do site** (logo, botões, fundo): vermelho, azul, verde, amarelo; vermelho e azul existem só como cores dos candidatos.
 - Fundo escuro no card (`--bg`). O site herda o card: tema escuro como padrão; tema claro via `prefers-color-scheme` só se custar menos de uma hora.
 - Verde e amarelo aparecem **apenas** nas bandeiras (ver 3.4).
 
@@ -58,7 +58,7 @@ Crie `src/styles/tokens.css` com: 3 cores (`--bg`, `--ink`, `--ink-2`) + `--acce
 
 - Candidatos sempre na **mesma ordem: número de urna** (13 antes de 22), em todo lugar, independentemente de quem lidera.
 - Vocabulário fixo, em `src/lib/copy.ts`: `lidera` em parcial; `eleito(a)` **somente** quando o JSON marcar `eleito: true`; nunca "venceu", "virada confirmada", "projeção". Todo card traz `parcial · X% das seções · Fonte: TSE · HH:MM`.
-- Nenhuma cor de partido, nenhum rótulo ideológico, nenhuma pesquisa eleitoral.
+- Cores fixas por candidato (13 vermelho, 22 azul claro; seção 3), iguais em todo o site. Nenhum rótulo ideológico, nenhuma pesquisa eleitoral.
 - **Sem fotos de candidatos.** Só nome, número e partido em texto. Foto pesa, envelhece a página e muda a leitura emocional do card.
 - **Palpite é local**: fica em `localStorage`, nunca é enviado a servidor nenhum, nunca vira agregado. Não crie endpoint para isso. (Enquete é proibida no período eleitoral; coletar palpites já seria uma.)
 - Formulário "me avisa": consentimento explícito em texto, um envio prometido ("às 17h do dia 25, com o link da sua cidade") e um de resultado final. Nesta fase o `POST` vai para um endpoint placeholder atrás de feature flag.
@@ -193,7 +193,7 @@ Aceite: `npm run build` gera 5.570 páginas com dados históricos reais; o card 
 4. `pages/design.astro`: playground com uma grade de variantes — parcial 10%, parcial 87%, final, virou, com selo, sem selo, governador, palpite, nome de cidade longo, margem de 0,1 ponto, 100% para um lado (cidade pequena). Esta página é o critério de aceite da fase: eu olho e aprovo.
 5. Componentes mínimos: `Placar.astro`, `Bandeira.astro`, botão primário, campo de busca. Nada além disso.
 
-Aceite: card legível a 350 px de largura; nenhuma cor de partido; ordem 13 → 22 em todas as variantes; `tabular-nums` em todos os números.
+Aceite: card legível a 350 px de largura; 13 sempre vermelho e 22 sempre azul claro; ordem 13 → 22 em todas as variantes; `tabular-nums` em todos os números.
 
 ### Fase 2 — Páginas com dados históricos (2 dias) → CHECKPOINT
 
