@@ -1,8 +1,9 @@
 ---
-// Bandeira intacta numa caixa fixa 10:7 (proporção da bandeira do Brasil). Bandeiras com outra proporção
-// ficam inteiras dentro da caixa (object-fit: contain): nunca recorte, filtro, fundo ou distorção (Lei 5.700/1971).
-// PROVISÓRIO: serve o SVG otimizado; o raster gerado a partir do SVG oficial substitui o src mantendo esta interface.
-import { NOME_UF, type UF } from '../lib/contratos.ts';
+// Bandeira intacta numa caixa fixa 10:7 (proporção da bandeira do Brasil). Cada raster tem a proporção da própria
+// bandeira e fica inteiro dentro da caixa (object-fit: contain): nunca recorte, filtro, opacidade, fundo ou
+// distorção (Lei 5.700/1971). Os WebP vêm do SVG oficial renderizado no Chrome (npm run flags:raster).
+import type { UF } from '../lib/contratos.ts';
+import { altBandeira, rasterBandeira } from '../lib/bandeiras.ts';
 
 interface Props {
   /** Sigla minúscula da UF ou "br". */
@@ -13,19 +14,19 @@ interface Props {
 }
 
 const { uf, largura = 40, carregamento = 'lazy' } = Astro.props;
-const arquivos = import.meta.glob<string>('../assets/flags/*.svg', { eager: true, query: '?url', import: 'default' });
-const src = arquivos[`../assets/flags/${uf}.svg`];
-const nome = uf === 'br' ? 'Brasil' : NOME_UF[uf.toUpperCase() as UF];
+const { src, srcset } = rasterBandeira(uf, largura);
 const altura = Math.round(largura * 0.7);
 ---
 
 <img
   class="bandeira"
   src={src}
-  alt={`Bandeira ${uf === 'br' ? 'do Brasil' : `de ${nome}`}`}
+  srcset={srcset}
+  alt={altBandeira(uf)}
   width={largura}
   height={altura}
   loading={carregamento}
+  fetchpriority={carregamento === 'eager' ? 'high' : undefined}
   decoding="async"
 />
 
