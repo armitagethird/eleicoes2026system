@@ -1,0 +1,150 @@
+---
+// 404 (BRIEF, Fase 2): o letreiro de ônibus que errou o destino. "DESTINO NÃO ENCONTRADO" é DESTINO (design/DIRECTION.md),
+// de margem a margem, e logo abaixo o campo de busca, o caminho mais curto de volta ao card de uma cidade.
+// O Cloudflare Pages serve este arquivo em qualquer URL desconhecida, por isso nada aqui depende do caminho.
+import statusFixture from '../../../contracts/fixtures/status.json';
+import Botao from '../components/Botao.astro';
+import Cabecalho from '../components/Cabecalho.astro';
+import CampoBusca from '../components/CampoBusca.astro';
+import Rodape from '../components/Rodape.astro';
+import Base from '../layouts/Base.astro';
+import { ajustarDestino } from '../lib/destino.ts';
+import { SITE_NAME } from '../lib/site.ts';
+import { parseStatus } from '../lib/status.ts';
+
+const status = parseStatus(statusFixture);
+
+// Mesmo ajuste da home e da cidade: no build, numa largura de referência, escrito em cqi. Duas linhas até 1023 px; no
+// desktop, uma faixa só. O ajuste mede a caixa-alta; o HTML guarda a caixa normal (o CSS põe em caixa-alta).
+const TITULO = 'Destino não encontrado';
+const REFERENCIA = 1000;
+const emCqi = (px: number): string => `${(px / REFERENCIA) * 100}cqi`;
+const maiusculo = TITULO.toLocaleUpperCase('pt-BR');
+const [faixa] = ajustarDestino(maiusculo, { largura: REFERENCIA, tamMax: 140, tamMin: 60, maxLinhas: 1 }).linhas;
+const { linhas } = ajustarDestino(maiusculo, { largura: REFERENCIA, tamMax: 230, tamMin: 190 });
+const palavras = TITULO.split(' ');
+let usadas = 0;
+// O espaço entre as linhas fica dentro da primeira: no desktop as duas viram uma faixa no mesmo tamanho.
+const linhasTitulo = linhas.map((l, i) => {
+  const quantas = l.texto.split(' ').length;
+  const texto = palavras.slice(usadas, (usadas += quantas)).join(' ') + (i < linhas.length - 1 ? ' ' : '');
+  return { texto, estilo: `--t:${emCqi(l.tamanho)};--w:${l.wdth}%;--t1:${emCqi(faixa.tamanho)};--w1:${faixa.wdth}%` };
+});
+---
+
+<Base titulo={`Página não encontrada: ${SITE_NAME}`} descricao="Esta página não existe. Busque a sua cidade para ver o 2º turno." caminho="/404">
+  <meta slot="head" name="robots" content="noindex" />
+  <div class="pagina">
+    <Cabecalho modo={status.modo} />
+
+    <main class="erro">
+      <p class="codigo">Erro 404</p>
+      <h1 class="destino">
+        {linhasTitulo.map((l) => <span class="linha" style={l.estilo}>{l.texto}</span>)}
+      </h1>
+
+      <div class="saida">
+        <p class="texto">Esta página não existe ou mudou de lugar. Procure o destino pela cidade.</p>
+        <div class="busca">
+          <p class="rotulo" id="rotulo-404">Qual é a sua cidade?</p>
+          <CampoBusca rotulo="rotulo-404" />
+        </div>
+        <p class="volta">
+          <Botao href="/" variante="secundario">Voltar ao início</Botao>
+        </p>
+      </div>
+    </main>
+
+    <Rodape />
+  </div>
+</Base>
+
+<style>
+  .pagina {
+    max-width: 1440px;
+    margin-inline: auto;
+    padding-inline: var(--sp-2);
+  }
+
+  .erro {
+    display: grid;
+    row-gap: var(--sp-3);
+    padding-block: var(--sp-1) var(--sp-7);
+  }
+
+  .codigo,
+  .rotulo {
+    font-family: var(--font-display);
+    font-size: var(--fs-1);
+    font-weight: 900;
+    letter-spacing: var(--track-caps);
+    text-transform: uppercase;
+    color: var(--ink-2);
+  }
+
+  /* As linhas medem a largura do h1 (container): font-size em cqi vindo do ajuste do build. */
+  .destino {
+    container-type: inline-size;
+    line-height: 0.9;
+    text-transform: uppercase;
+    /* Antes da fonte carregar, a substituta pode ser mais larga: corta na horizontal em vez de criar rolagem. */
+    overflow-x: clip;
+  }
+
+  .linha {
+    display: block;
+    font-size: var(--t);
+    font-stretch: var(--w);
+    white-space: nowrap;
+  }
+
+  .saida {
+    display: grid;
+    align-content: start;
+    gap: var(--sp-3);
+  }
+
+  .texto {
+    max-width: 40ch;
+    font-size: var(--fs-2);
+    text-wrap: balance;
+  }
+
+  .busca {
+    display: grid;
+    gap: var(--sp-1);
+  }
+
+  @media (min-width: 768px) {
+    .pagina {
+      padding-inline: var(--sp-4);
+    }
+  }
+
+  @media (min-width: 1024px) {
+    .pagina {
+      padding-inline: var(--sp-6);
+    }
+
+    .erro {
+      grid-template-columns: repeat(12, minmax(0, 1fr));
+      column-gap: var(--sp-3);
+    }
+
+    .codigo,
+    .destino {
+      grid-column: 1 / -1;
+    }
+
+    .saida {
+      grid-column: 1 / span 5;
+    }
+
+    /* Letreiro de margem a margem: as duas linhas viram uma faixa só, no tamanho do ajuste de uma linha. */
+    .linha {
+      display: inline;
+      font-size: var(--t1);
+      font-stretch: var(--w1);
+    }
+  }
+</style>

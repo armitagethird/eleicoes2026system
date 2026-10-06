@@ -1,0 +1,446 @@
+---
+// Página do estado (BRIEF, Fase 2; design/DIRECTION.md): o nome em DESTINO, a bandeira, o placar do estado, o governador
+// (só nas UFs que o têm) e as cidades por número de eleitores, cada uma levando ao card.
+// Uma página por UF (getStaticPaths: 27). Tudo que não muda no dia sai no HTML, sem JS. Como a home e a cidade, o modo vem
+// de contracts/fixtures/status.json e o JSON ao vivo da UF de contracts/fixtures/uf, no build; a ilha ao vivo é da Fase 3.
+//   pre:           1º turno 2026 da UF (13 · outros · 22) com o 2º turno de 2022 como referência; governador só avisa o dia.
+//   parcial/final: o 2º turno da UF, com a variação vs 2022, e o do governador quando o JSON o traz.
+import brFixture from '../../../../contracts/fixtures/br.json';
+import statusFixture from '../../../../contracts/fixtures/status.json';
+import Bandeira from '../../components/Bandeira.astro';
+import Cabecalho from '../../components/Cabecalho.astro';
+import Placar from '../../components/Placar.astro';
+import { estiloNome } from '../../components/rankings.ts';
+import Rodape from '../../components/Rodape.astro';
+import Base from '../../layouts/Base.astro';
+import { NOME_UF, UFS, type Municipio, type Placar as PlacarJson, type UF } from '../../lib/contratos.ts';
+import { CARGO_GOVERNADOR, GOVERNADOR_PRE, TURNO_CARD, descricaoUf, tituloUf } from '../../lib/copy.ts';
+import { histUf, municipios } from '../../lib/dados.ts';
+import { ajustarDestino } from '../../lib/destino.ts';
+import { numero } from '../../lib/format.ts';
+import { parseStatus } from '../../lib/status.ts';
+
+export function getStaticPaths() {
+  return UFS.map((uf) => ({
+    params: { uf: uf.toLowerCase() },
+    props: {
+      uf,
+      cidades: municipios.filter((m) => m.uf === uf).sort((a, b) => b.eleitores - a.eleitores || a.nome.localeCompare(b.nome, 'pt-BR')),
+    },
+  }));
+}
+
+interface Props {
+  uf: UF;
+  /** Cidades da UF, das mais eleitores para as menos. */
+  cidades: Municipio[];
+}
+
+const { uf, cidades } = Astro.props;
+const sigla = uf.toLowerCase() as Lowercase<UF>;
+const nome = NOME_UF[uf];
+const status = parseStatus(statusFixture);
+const fixturesUf = import.meta.glob<PlacarJson>('../../../../contracts/fixtures/uf/*.json', { eager: true, import: 'default' });
+const doEstado = fixturesUf[`../../../../contracts/fixtures/uf/${sigla}.json`];
+const aoVivo = status.modo === 'pre' ? undefined : doEstado;
+const governador = aoVivo?.governador;
+// O governador existe onde o JSON do estado o traz (a lista de UFs é do contrato, não daqui). No pre só o aviso, sem número.
+const temGovernador = Boolean(doEstado?.governador);
+// Dois blocos lado a lado (tablet); e, com dois placares de verdade (ao vivo), alto demais para ficar fixo ao rolar a lista.
+const duo = aoVivo ? Boolean(governador) : temGovernador;
+const alta = Boolean(aoVivo && governador);
+
+// O hist só tem percentuais; nome e partido de 13 e 22 vêm do contrato (nomes reais, iguais em todos os arquivos).
+const nomes = brFixture.presidente.cand.map(({ n, nome: quem, partido }) => ({ n, nome: quem, partido }));
+
+// DESTINO: o nome ajustado no build numa largura de referência e escrito em cqi, então encosta nas duas margens em qualquer
+// largura, sem JS. Até 1023 px, até duas linhas; no desktop, uma faixa só. O ajuste mede a caixa-alta; o HTML guarda a
+// caixa normal (o CSS põe em caixa-alta).
+const REFERENCIA = 1000;
+const emCqi = (px: number): string => `${(px / REFERENCIA) * 100}cqi`;
+const maiusculo = nome.toLocaleUpperCase('pt-BR');
+const [faixa] = ajustarDestino(maiusculo, { largura: REFERENCIA, tamMax: 150, tamMin: 60, maxLinhas: 1 }).linhas;
+const { linhas } = ajustarDestino(maiusculo, { largura: REFERENCIA, tamMax: 230, tamMin: 150 });
+const palavras = nome.split(' ');
+let usadas = 0;
+// O espaço entre as linhas fica dentro da primeira: no desktop as duas viram uma faixa no mesmo tamanho.
+const linhasTitulo = linhas.map((l, i) => {
+  const quantas = l.texto.split(' ').length;
+  const texto = palavras.slice(usadas, (usadas += quantas)).join(' ') + (i < linhas.length - 1 ? ' ' : '');
+  return { texto, estilo: `--t:${emCqi(l.tamanho)};--w:${l.wdth}%;--t1:${emCqi(faixa.tamanho)};--w1:${faixa.wdth}%` };
+});
+
+const NOME_CIDADE_MAX = 28;
+const lista = cidades.map((c) => ({ ...c, estilo: estiloNome(c.nome, NOME_CIDADE_MAX), eleitoresTexto: numero(c.eleitores) }));
+const faseAoVivo = status.modo === 'final' ? 'final' : 'parcial';
+---
+
+<Base
+  titulo={tituloUf(nome, uf)}
+  descricao={descricaoUf(nome, uf)}
+  caminho={`/uf/${sigla}`}
+  modificado={aoVivo?.atualizado ?? status.atualizado ?? undefined}
+>
+  <div class="pagina">
+    <Cabecalho modo={status.modo} secoesPct={aoVivo?.secoes_pct} atualizado={aoVivo?.atualizado} />
+
+    <main>
+      <header class="topo">
+        <div class="faixa">
+          <p class="uf" aria-hidden="true">
+            <Bandeira uf={sigla} largura={40} carregamento="eager" />
+            <span class="sigla">{uf}</span>
+          </p>
+          <a class="volta" href="/#mapa">Voltar ao mapa</a>
+        </div>
+        <h1 class="destino">
+          {linhasTitulo.map((l) => <span class="linha" style={l.estilo}>{l.texto}</span>)}
+        </h1>
+      </header>
+
+      <div class="corpo">
+        <div class:list={['placares', { duo, alta }]}>
+          {
+            aoVivo ? (
+              <>
+                <Placar
+                  modo={faseAoVivo}
+                  lugar={nome}
+                  cand={aoVivo.presidente.cand}
+                  variacao={aoVivo.presidente.variacao_2022}
+                  secoesPct={aoVivo.secoes_pct}
+                  atualizado={aoVivo.atualizado}
+                />
+                {governador && (
+                  <Placar
+                    modo={faseAoVivo}
+                    lugar={nome}
+                    cargo="governador"
+                    cand={governador.cand}
+                    secoesPct={aoVivo.secoes_pct}
+                    atualizado={aoVivo.atualizado}
+                  />
+                )}
+              </>
+            ) : (
+              <>
+                <Placar modo="pre" lugar={nome} cand={nomes} hist={histUf(uf)} />
+                {temGovernador && (
+                  <section class="governador" aria-labelledby="governador-titulo">
+                    <h2 class="sr-only" id="governador-titulo">
+                      {nome}
+                    </h2>
+                    <p class="gov-meta">
+                      {CARGO_GOVERNADOR} · {TURNO_CARD}
+                    </p>
+                    <p class="gov-aviso">{GOVERNADOR_PRE}</p>
+                  </section>
+                )}
+              </>
+            )
+          }
+        </div>
+
+        {
+          lista.length > 0 && (
+            <section class="cidades" aria-labelledby="cidades-titulo">
+              <h2 class="titulo" id="cidades-titulo">
+                Cidades
+              </h2>
+              <p class="contagem">
+                {numero(lista.length)} {lista.length === 1 ? 'cidade' : 'cidades'} · por número de eleitores
+              </p>
+              <ol class="lista" role="list">
+                {lista.map((c) => (
+                  <li>
+                    <a class="item" href={`/c/${c.slug}`}>
+                      <span class="caixa">
+                        <span class="nome" style={c.estilo}>
+                          {c.nome}
+                        </span>
+                      </span>
+                      <span class="eleitores">
+                        {c.eleitoresTexto}
+                        <span class="sr-only"> eleitores</span>
+                      </span>
+                    </a>
+                  </li>
+                ))}
+              </ol>
+            </section>
+          )
+        }
+      </div>
+    </main>
+
+    <Rodape />
+  </div>
+</Base>
+
+<style>
+  .pagina {
+    max-width: 1440px;
+    margin-inline: auto;
+    padding-inline: var(--sp-2);
+  }
+
+  .topo {
+    display: grid;
+    gap: var(--sp-1);
+    padding-top: var(--sp-1);
+  }
+
+  .faixa {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--sp-2);
+  }
+
+  .uf {
+    display: flex;
+    align-items: center;
+    gap: var(--sp-1);
+  }
+
+  .sigla {
+    font-family: var(--font-display);
+    font-size: var(--fs-3);
+    font-weight: 900;
+    line-height: 1;
+    letter-spacing: var(--track-caps);
+  }
+
+  /* Alvo de toque de 48 px sem aumentar a letra. */
+  .volta {
+    display: inline-flex;
+    align-items: center;
+    min-height: 48px;
+    font-family: var(--font-display);
+    font-size: var(--fs-1);
+    font-weight: 900;
+    letter-spacing: var(--track-caps);
+    text-transform: uppercase;
+    text-decoration: underline;
+    text-decoration-thickness: 3px;
+    text-underline-offset: 4px;
+  }
+
+  @media (hover: hover) {
+    .volta:hover {
+      text-decoration-color: var(--ink-2);
+    }
+  }
+
+  /* As linhas medem a largura do h1 (container): font-size em cqi vindo do ajuste do build. */
+  .destino {
+    container-type: inline-size;
+    line-height: 0.9;
+    text-transform: uppercase;
+    /* Antes da fonte carregar, a substituta pode ser mais larga: corta na horizontal em vez de criar rolagem. */
+    overflow-x: clip;
+  }
+
+  .linha {
+    display: block;
+    font-size: var(--t);
+    font-stretch: var(--w);
+    white-space: nowrap;
+  }
+
+  .corpo {
+    display: grid;
+    gap: var(--sp-5);
+    padding-block: var(--sp-4) var(--sp-7);
+  }
+
+  .placares {
+    display: grid;
+    align-content: start;
+    align-items: start;
+    gap: var(--sp-5);
+  }
+
+  /* O nome do estado já é o h1: o placar (de Placar.astro) mantém o h2 para leitor de tela e mostra só cargo e turno. */
+  .placares :global(.lugar) {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    margin: -1px;
+    overflow: hidden;
+    clip: rect(0 0 0 0);
+    white-space: nowrap;
+  }
+
+  /* Sem o nome do estado abrindo cada placar, o filete do bloco do governador no pre também separa os dois placares do ao vivo. */
+  .placares :global(.placar + .placar) {
+    padding-top: var(--sp-2);
+    border-top: var(--stroke-2) solid var(--ink);
+  }
+
+  /* Governador no pre: a mesma moldura do placar (cargo e turno), com o aviso do dia no lugar dos números. */
+  .governador {
+    display: grid;
+    gap: var(--sp-1);
+    padding-top: var(--sp-2);
+    border-top: var(--stroke-2) solid var(--ink);
+  }
+
+  .gov-meta,
+  .contagem,
+  .eleitores {
+    font-family: var(--font-display);
+    font-size: var(--fs-1);
+    font-weight: 900;
+    line-height: 1.2;
+    letter-spacing: var(--track-caps);
+    text-transform: uppercase;
+    color: var(--ink-2);
+  }
+
+  .gov-aviso {
+    font-family: var(--font-display);
+    font-size: var(--fs-4);
+    font-weight: 900;
+    font-stretch: 75%;
+    line-height: 1.05;
+    text-transform: uppercase;
+    text-wrap: balance;
+  }
+
+  .titulo {
+    padding-top: var(--sp-1);
+    border-top: var(--stroke-2) solid var(--ink);
+    font-size: var(--fs-3);
+    font-stretch: 87.5%;
+    letter-spacing: var(--track-caps);
+    text-transform: uppercase;
+  }
+
+  .contagem {
+    margin-top: var(--sp-1);
+  }
+
+  .lista {
+    display: grid;
+    margin: var(--sp-1) 0 0;
+    padding: 0;
+    list-style: none;
+  }
+
+  /* Até 853 linhas (MG): o navegador só desenha as que estão perto da tela. */
+  .lista > li {
+    content-visibility: auto;
+    contain-intrinsic-size: auto 56px;
+  }
+
+  /* Linha de destino compacta: nome ajustado à coluna pelo eixo wdth (estilo de components/rankings.ts) e o eleitorado. */
+  .item {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    align-items: center;
+    gap: var(--sp-2);
+    min-height: 56px;
+    padding-block: var(--sp-1);
+    border-bottom: var(--stroke-1) solid var(--surface-2);
+    color: inherit;
+    text-decoration: none;
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  /* O contorno de foco fica dentro da linha: content-visibility corta o que passa da caixa do <li>. */
+  .item:focus-visible {
+    outline-offset: -3px;
+  }
+
+  /* A caixa do nome é o container do ajuste: o font-size em cqi vem dela, e a altura é a da letra. */
+  .caixa {
+    container-type: inline-size;
+    min-width: 0;
+  }
+
+  .nome {
+    display: block;
+    font-family: var(--font-display);
+    font-weight: 900;
+    line-height: 1;
+    text-transform: uppercase;
+    white-space: nowrap;
+  }
+
+  @media (hover: hover) {
+    .item:hover {
+      background: var(--surface-1);
+    }
+
+    .item:hover .nome {
+      text-decoration: underline;
+      text-decoration-thickness: var(--stroke-2);
+      text-underline-offset: 0.12em;
+    }
+  }
+
+  .item:active {
+    transform: translateY(1px);
+  }
+
+  @media (min-width: 768px) {
+    .pagina {
+      padding-inline: var(--sp-4);
+    }
+
+    /* Um placar só não precisa da largura toda: o percentual de 144 px já é um cartaz. */
+    .placares {
+      max-width: 640px;
+    }
+
+    .placares.duo {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      column-gap: var(--sp-3);
+      max-width: none;
+    }
+
+    .lista {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      column-gap: var(--sp-3);
+    }
+  }
+
+  @media (min-width: 1024px) {
+    .pagina {
+      padding-inline: var(--sp-6);
+    }
+
+    /* Letreiro de margem a margem: as linhas viram uma faixa só, no tamanho do ajuste de uma linha. */
+    .linha {
+      display: inline;
+      font-size: var(--t1);
+      font-stretch: var(--w1);
+    }
+
+    .corpo {
+      grid-template-columns: repeat(12, minmax(0, 1fr));
+      align-items: start;
+      gap: var(--sp-4) var(--sp-3);
+    }
+
+    .placares,
+    .placares.duo {
+      grid-column: 1 / span 5;
+      grid-template-columns: minmax(0, 1fr);
+      max-width: none;
+    }
+
+    .cidades {
+      grid-column: 6 / span 7;
+    }
+  }
+
+  /* A lista é longa (MG: 853 cidades): o placar acompanha a rolagem, só onde cabe inteiro na janela. */
+  @media (min-width: 1024px) and (min-height: 760px) {
+    .placares:not(.alta) {
+      position: sticky;
+      top: var(--sp-3);
+    }
+  }
+</style>
