@@ -15,7 +15,7 @@ Site de resultados do 2º turno das eleições de 2026 (25/10), em tempo real, m
 - As 28 bandeiras (Brasil + 27 UFs) sempre intactas (Lei 5.700/1971), no mesmo tamanho; o Brasil nunca em destaque.
 - Nome, domínio, @ e chave Pix só via `src/lib/site.ts`; nunca em componente ou template.
 - Todo número que atualiza usa `tabular-nums` (já global em `base.css`).
-- Site 100% estático (Astro `output: 'static'`, sem SSR). Dados ao vivo = JSON em `/data/*`, `fetch` a cada 20 s. Página de cidade com no máximo 50 KB de JS gzip. Sem React, Tailwind, UI kit, libs de gráfico ou autocomplete, 3D. Mapa só nível UF (27), nunca polígonos municipais.
+- Site 100% estático (Astro `output: 'static'`, sem SSR). Dados ao vivo = JSON em `/data/*`, `fetch` a cada 20 s. Página de cidade com no máximo 50 KB de JS gzip. Sem React, Tailwind, UI kit, libs de gráfico ou autocomplete, 3D. Home: mapa só por UF (muro de 28). `/apuracao` (decisão do Romero, 06/10): mapa municipal real (5.571 polígonos do IBGE, projetados no build, desenhados em canvas, sem lib de mapa). Camadas de dados no formato de `src/lib/camada-mapa.ts`.
 
 Decisões já tomadas: o Brasil tem **5.571** municípios (ler a contagem da fonte, nunca fixar 5.570); `hist.t2_2022` é nullable; o card de governador mostra a margem entre os dois, não variação vs 2022; `PIX_KEY` vazio = bloco Pix oculto.
 

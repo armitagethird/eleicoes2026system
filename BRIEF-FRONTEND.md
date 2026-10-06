@@ -24,7 +24,9 @@ O card da cidade é o produto. O site existe para levar a pessoa ao card em um t
 - **CSS puro com custom properties**. Sem Tailwind, sem UI kit, sem biblioteca de componentes.
 - **Site 100% estático.** Dados ao vivo chegam como arquivos JSON estáticos em `/data/…` (gerados depois por um worker). O front só faz `fetch` desses arquivos a cada 20 s.
 - **O card é um template SVG** gerado por uma função TypeScript pura (`renderCard(dados): string`). O mesmo template é usado inline na página, convertido em PNG no navegador para compartilhar e, depois, renderizado no servidor para a OG. Uma fonte de verdade, três usos.
-- **Nada de 3D, Three.js, mapa municipal interativo, newsletter.** Fora de escopo, decidido.
+- **Nada de 3D, Three.js, newsletter.** Fora de escopo, decidido.
+- **Apuração em tempo real com mapa municipal (decisão do Romero, 06/10/2026).** `/apuracao` substitui `/rankings`: mapa geográfico de verdade (Brasil → UF → município, 5.571 polígonos do IBGE), navegável e interativo, ao vivo no dia 25, com "comparar com 2022". Antes do dia 25 mostra os mapas do 1º e do 2º turno de 2022 (e o 1º turno de 2026). As quatro listas de rankings viram um painel dessa página. Sem biblioteca de mapa: geometria projetada no build, desenho em canvas.
+- **Comparação histórica (decisão do Romero, 06/10/2026).** Página com gráfico de linha comparando 2018, 2022 e 2026. Em 2018 o candidato do Bolsonaro era o 17 (PSL): a cor segue o campo (PT vermelho, Bolsonaro azul), a aprovar.
 - **Pesquisas registradas no TSE na home (decisão do Romero, 06/10/2026).** Só pesquisas com registro no PesqEle e todas as informações do art. 10 da Res. TSE 23.600 visíveis junto de cada uma (período de coleta, margem de erro, nível de confiança, número de entrevistas, instituto e contratante, número de registro). Cada pesquisa aparece separada: sem média, agregador ou cálculo próprio sobre pesquisas. Sem enquete. Sem mercado de apostas (o Polymarket está proibido no Brasil desde 24/04/2026). O bloco some nos modos `live` e `final`.
 - **Nada de texto de matéria jornalística.** Só números do TSE e cálculos próprios.
 
@@ -226,7 +228,7 @@ Worker Java que lê o TSE e publica `/data`; renderizador SVG → PNG para `/og/
 - Backend, API, SSR, banco de dados, autenticação.
 - Ler o TSE diretamente do navegador.
 - Three.js, 3D, animações pesadas, parallax.
-- Mapa municipal interativo (5.570 polígonos). Mapa de UF só se for um SVG leve e sobrar tempo.
+- Biblioteca de mapa ou de gráfico (o mapa municipal e o gráfico de linha são feitos à mão: canvas e SVG).
 - Tailwind, React, bibliotecas de gráficos, bibliotecas de autocomplete.
 - Analytics pesado. No máximo Cloudflare Web Analytics, e só na Fase 3.
 - Qualquer agregação de palpites; média ou agregação de pesquisas; enquete; odds de mercado de apostas.

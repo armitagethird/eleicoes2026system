@@ -1,0 +1,67 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "camada-mapa.schema.json",
+  "title": "Camada do mapa de apuração",
+  "description": "Uma eleição/turno por arquivo. Histórico em /mapa/{id}.json (ETL); ao vivo em /data/apuracao.json (worker). Percentuais sobre votos válidos. Linha = [pct A, pct B, pct outros, número de quem lidera quando não é A nem B (0 = A ou B), % das seções].",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["v", "id", "rotulo", "atualizado", "candidatos", "br", "ufs", "municipios"],
+  "properties": {
+    "v": { "const": 1 },
+    "id": { "type": "string", "pattern": "^(20[0-9]{2}-t[12]|ao-vivo)$" },
+    "rotulo": { "type": "string", "minLength": 1 },
+    "atualizado": { "type": "string", "format": "date-time" },
+    "candidatos": {
+      "type": "array",
+      "minItems": 2,
+      "maxItems": 2,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["n", "nome", "partido", "cor"],
+        "properties": {
+          "n": { "type": "integer", "minimum": 10, "maximum": 99 },
+          "nome": { "type": "string", "minLength": 1 },
+          "partido": { "type": "string", "minLength": 1 },
+          "cor": { "enum": ["13", "22", null] }
+        }
+      }
+    },
+    "br": { "$ref": "#/$defs/linha" },
+    "ufs": {
+      "type": "object",
+      "propertyNames": { "$ref": "common.schema.json#/$defs/uf" },
+      "additionalProperties": { "$ref": "#/$defs/linha" }
+    },
+    "municipios": {
+      "type": "array",
+      "items": {
+        "type": "array",
+        "prefixItems": [
+          { "type": "integer", "minimum": 1000000, "maximum": 9999999 },
+          { "$ref": "common.schema.json#/$defs/pct" },
+          { "$ref": "common.schema.json#/$defs/pct" },
+          { "$ref": "common.schema.json#/$defs/pct" },
+          { "type": "integer", "minimum": 0, "maximum": 99 },
+          { "$ref": "common.schema.json#/$defs/pct" }
+        ],
+        "items": false,
+        "minItems": 6
+      }
+    }
+  },
+  "$defs": {
+    "linha": {
+      "type": "array",
+      "prefixItems": [
+        { "$ref": "common.schema.json#/$defs/pct" },
+        { "$ref": "common.schema.json#/$defs/pct" },
+        { "$ref": "common.schema.json#/$defs/pct" },
+        { "type": "integer", "minimum": 0, "maximum": 99 },
+        { "$ref": "common.schema.json#/$defs/pct" }
+      ],
+      "items": false,
+      "minItems": 5
+    }
+  }
+}
