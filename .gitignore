@@ -1,0 +1,19 @@
+node_modules/
+dist/
+.astro/
+.wrangler/
+
+# fixtures servidas em dev; geradas por `npm run fixtures` (não vão para produção por acidente)
+site/public/data/
+
+# relatórios de Lighthouse e screenshots temporários
+.lighthouse/
+*.tmp
+
+.env
+.env.*
+!.env.example
+
+npm-debug.log*
+.DS_Store
+.idea/

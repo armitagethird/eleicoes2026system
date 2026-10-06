@@ -1,0 +1,46 @@
+# Placar 2026
+
+Site de resultados do 2º turno das eleições de 2026 (25/10), em tempo real, mobile-first, feito por uma pessoa só. O card da cidade é o produto.
+
+**Fonte de verdade: `BRIEF-FRONTEND.md`.** Se algo do brief conflitar com o código ou com o que você descobrir, pare e pergunte. Nunca decida sozinho sobre cor, ordem de candidatos ou vocabulário.
+
+## Regras inegociáveis (brief, seção 4)
+
+- Candidatos sempre na mesma ordem, a do número de urna (13 antes de 22), em todo lugar, independentemente de quem lidera.
+- Cor pertence à posição, não ao candidato: líder = `--ink` (maior contraste contra `--bg`), segundo = `--ink-2`, um único `--accent`. Proibido como cor de marca: vermelho, azul, verde, amarelo (verde e amarelo só nas bandeiras). Nenhuma cor de partido, rótulo ideológico ou pesquisa eleitoral.
+- Vocabulário só de `src/lib/copy.ts`: "lidera" em parcial; "eleito(a)" somente com `eleito: true` no JSON (nunca inferir de percentual); nunca "venceu", "virada confirmada", "projeção". Todo card traz `parcial · X% das seções · Fonte: TSE · HH:MM`.
+- Sem fotos de candidatos: só nome, número e partido em texto.
+- Palpite é local (`localStorage`), nunca enviado a servidor, nunca agregado. "Me avisa": consentimento explícito em texto; o POST vai para um endpoint placeholder atrás de feature flag.
+- As 28 bandeiras (Brasil + 27 UFs) sempre intactas (Lei 5.700/1971), no mesmo tamanho; o Brasil nunca em destaque.
+- Nome, domínio, @ e chave Pix só via `src/lib/site.ts`; nunca em componente ou template.
+- Todo número que atualiza usa `tabular-nums` (já global em `base.css`).
+- Site 100% estático (Astro `output: 'static'`, sem SSR). Dados ao vivo = JSON em `/data/*`, `fetch` a cada 20 s. Página de cidade com no máximo 50 KB de JS gzip. Sem React, Tailwind, UI kit, libs de gráfico ou autocomplete, 3D. Mapa só nível UF (27), nunca polígonos municipais.
+
+Decisões já tomadas: o Brasil tem **5.571** municípios (ler a contagem da fonte, nunca fixar 5.570); `hist.t2_2022` é nullable; o card de governador mostra a margem entre os dois, não variação vs 2022; `PIX_KEY` vazio = bloco Pix oculto.
+
+## Estrutura
+
+```
+/site        Astro 7 + Preact. src/{pages,components,lib,styles,data,assets}, scripts/, tests/
+/contracts   schemas/ (JSON Schema 2020-12), fixtures/ (geradas), scripts/fixtures.ts
+/design      (Fase 1) TOKENS.md, prints
+/worker, /renderer   depois; não construir agora
+```
+
+## Comandos (em `/site`)
+
+```
+npm run dev | build | preview
+npm test                      # Vitest: format, copy, status, slug, schemas + fixtures
+npm run check                 # astro check
+npm run fixtures              # gera contracts/fixtures e copia para public/data (--modo=live|final troca status.json)
+npm run fonts | flags         # regeram public/fonts e src/assets/flags (só se mudar a fonte/bandeira)
+```
+
+Scripts `.ts` rodam direto no Node 24 (type stripping): só sintaxe apagável (sem `enum`), imports relativos com extensão `.ts`. Sem Python neste projeto.
+
+`site/public/data/` é gerado e fica fora do git: são fixtures fictícias, não podem ir para produção por acidente.
+
+## Commits
+
+Em português, no imperativo, um por item concluído, sem trailer `Co-Authored-By`.
