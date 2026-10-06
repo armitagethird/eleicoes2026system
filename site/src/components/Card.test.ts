@@ -80,8 +80,35 @@ function textos(svg: string): Texto[] {
 const porClasse = (svg: string, classe: string): Texto[] => textos(svg).filter((t) => t.classe.split(' ').includes(classe));
 const tokens = readFileSync(new URL('../styles/tokens.css', import.meta.url), 'utf8');
 const token = (nome: string): string => (tokens.match(new RegExp(`${nome}:\\s*(#[0-9a-fA-F]{6})`))?.[1] ?? '').toLowerCase();
+const BG = token('--bg');
 const INK = token('--ink');
 const INK_2 = token('--ink-2');
+const ACCENT = token('--accent');
+const COR_13 = token('--cand-13');
+const COR_22 = token('--cand-22');
+
+interface Forma {
+  tag: string;
+  classe: string;
+  n: string;
+  x: number;
+  w: number;
+  /** O que a forma pinta: o preenchimento, ou o traço dos contornos do palpite. */
+  cor: string;
+}
+
+/** Textos, retângulos e triângulos do SVG: o que sobra para conferir de quem é cada cor. */
+function formas(svg: string): Forma[] {
+  return [...svg.matchAll(/<(text|rect|polygon)\b([^>]*?)\/?>/g)].map(([, tag, atributos]) => {
+    const atributo = (nome: string): string => atributos.match(new RegExp(`(?:^|\\s)${nome}="([^"]*)"`))?.[1] ?? '';
+    const fill = atributo('fill');
+    return { tag, classe: atributo('class'), n: atributo('data-n'), x: Number(atributo('x')), w: Number(atributo('width')), cor: fill && fill !== 'none' ? fill : atributo('stroke') };
+  });
+}
+
+const porForma = (svg: string, classe: string): Forma[] => formas(svg).filter((f) => f.classe === classe);
+/** Cor de cada número de urna: 13 e 22 têm a sua; os demais (governador) ficam neutros por coluna. */
+const COR_POR_NUMERO: Record<string, string> = { '13': COR_13, '22': COR_22, '12': INK, '45': INK_2 };
 
 describe('renderCard: estrutura', () => {
   const svg = renderCard(BASE);
@@ -123,7 +150,7 @@ describe('renderCard: estrutura', () => {
   });
 });
 
-describe('renderCard: ordem e cor por posição', () => {
+describe('renderCard: ordem e cor fixa por candidato', () => {
   it.each(Object.entries(VARIANTES))('%s: coluna do menor número à esquerda, do maior à direita', (_, d) => {
     const svg = renderCard(d);
     const [menor, maior] = [...d.cand].sort((a, b) => a.n - b.n).map((c) => String(c.n));
@@ -139,33 +166,77 @@ describe('renderCard: ordem e cor por posição', () => {
     expect(renderCard(com({ cand: [flavio(41.4), lula(58.6)] }))).toBe(renderCard(BASE));
   });
 
-  it('o líder veste --ink e o segundo --ink-2, e a cor troca de dono com a liderança', () => {
-    const cores = (svg: string): string[] => porClasse(svg, 'pct').map((t) => t.fill);
-    expect(cores(renderCard(BASE))).toEqual([INK, INK_2]);
-    expect(cores(renderCard(VARIANTES['22 lidera']))).toEqual([INK_2, INK]);
-    const nomes = porClasse(renderCard(VARIANTES['22 lidera']), 'nome').map((t) => t.fill);
-    expect(nomes).toEqual([INK_2, INK]);
+  const semAguardando = Object.entries(VARIANTES).filter(([nome]) => nome !== 'aguardando');
+
+  it.each(semAguardando)('%s: barra, plaquinha e percentual de cada candidato na cor dele (13 vermelho, 22 azul claro)', (_, d) => {
+    const doCandidato = formas(renderCard(d)).filter((f) => ['barra', 'plaquinha', 'pct'].includes(f.classe));
+    for (const f of doCandidato) expect(f.cor, `${f.classe} do ${f.n}`).toBe(COR_POR_NUMERO[f.n]);
+    expect(new Set(doCandidato.map((f) => f.n))).toEqual(new Set(d.cand.map((c) => String(c.n))));
   });
 
-  it('empate exato: ninguém lidera, os dois em --ink e sem rótulo', () => {
+  it('a cor não troca quando a liderança troca: o 13 segue vermelho à esquerda e o 22 azul à direita', () => {
+    for (const d of [BASE, VARIANTES['22 lidera']]) {
+      const [esquerda, direita] = porForma(renderCard(d), 'barra');
+      expect([esquerda.n, esquerda.cor]).toEqual(['13', COR_13]);
+      expect([direita.n, direita.cor]).toEqual(['22', COR_22]);
+      expect(esquerda.x).toBeLessThan(direita.x);
+    }
+  });
+
+  it('a barra tem costura de 4 px e segmentos proporcionais aos percentuais', () => {
+    for (const d of [BASE, VARIANTES['22 lidera'], com({ cand: [lula(50), flavio(50)], diferencaVotos: 0 })]) {
+      const [esquerda, direita] = porForma(renderCard(d), 'barra');
+      expect(direita.x - (esquerda.x + esquerda.w)).toBe(4);
+      expect((esquerda.w + 2) / 1104).toBeCloseTo(d.cand[0].pct / 100, 2);
+    }
+  });
+
+  it('o nome do candidato fica em --ink, qualquer que seja a posição', () => {
+    for (const d of [BASE, VARIANTES['22 lidera']]) expect(porClasse(renderCard(d), 'nome').map((t) => t.fill)).toEqual([INK, INK]);
+  });
+
+  it('o número da plaquinha leva --bg, e o do palpite a cor do candidato', () => {
+    expect(porClasse(renderCard(BASE), 'placa').map((t) => t.fill)).toEqual([BG, BG]);
+    expect(porClasse(renderCard(VARIANTES.palpite), 'placa').map((t) => t.fill)).toEqual([COR_13, COR_22]);
+  });
+
+  it('empate exato: ninguém lidera e a cor de cada um continua a sua', () => {
     const svg = renderCard(com({ cand: [lula(50), flavio(50)], diferencaVotos: 0 }));
-    expect(porClasse(svg, 'pct').map((t) => t.fill)).toEqual([INK, INK]);
+    expect(porClasse(svg, 'pct').map((t) => t.fill)).toEqual([COR_13, COR_22]);
     expect(porClasse(svg, 'lidera')).toHaveLength(0);
   });
 
-  it('o rótulo de posição fica no segmento do líder', () => {
-    expect(porClasse(renderCard(BASE), 'lidera')[0].x).toBeLessThan(600);
-    expect(porClasse(renderCard(VARIANTES['22 lidera']), 'lidera')[0].x).toBeGreaterThan(600);
+  it('o rótulo LIDERA, em --bg, fica dentro do segmento do líder e só dele', () => {
+    for (const [d, lider] of [[BASE, '13'], [VARIANTES['22 lidera'], '22']] as const) {
+      const svg = renderCard(d);
+      const [rotulo, ...outros] = porClasse(svg, 'lidera');
+      const segmento = porForma(svg, 'barra').find((b) => b.n === lider);
+      expect(outros).toHaveLength(0);
+      expect(rotulo).toMatchObject({ conteudo: 'LIDERA', n: lider, fill: BG });
+      expect(rotulo.x).toBeGreaterThanOrEqual(segmento?.x ?? Infinity);
+      expect(rotulo.x).toBeLessThanOrEqual((segmento?.x ?? 0) + (segmento?.w ?? 0));
+    }
+  });
+
+  it('cor de candidato só em elemento do candidato: nome, título, meta, rótulo, rodapé e selo ficam fora', () => {
+    const permitidos = ['text.pct', 'rect.barra', 'rect.plaquinha', 'text.placa', 'text.frase', 'text.numero-frase', 'polygon.seta'];
+    for (const [nome, d] of Object.entries({ ...VARIANTES, 'com selo e 22 lidera': com({ cand: [lula(38.3), flavio(61.7)], selo: 'virou vs 2022' }) })) {
+      const pintadas = formas(renderCard(d)).filter((f) => [COR_13, COR_22].includes(f.cor));
+      for (const f of pintadas) expect(permitidos, `${nome}: ${f.tag}.${f.classe}`).toContain(`${f.tag}.${f.classe}`);
+    }
   });
 });
 
 describe('renderCard: zona de variação e margem', () => {
-  it('margem menor que 1 ponto: DIFERENÇA DE N VOTOS, sem seta nem acento', () => {
+  const frase = (svg: string): Texto[] => textos(svg).filter((t) => ['frase', 'numero-frase'].includes(t.classe));
+
+  it('margem menor que 1 ponto: DIFERENÇA DE N VOTOS em --ink, sem seta nem acento', () => {
     const svg = renderCard(VARIANTES['margem de 0,1 ponto']);
     const linha = textos(svg).map((t) => t.conteudo);
     expect(linha).toEqual(expect.arrayContaining(['DIFERENÇA DE', '312', 'VOTOS']));
+    expect(frase(svg).map((t) => t.fill)).toEqual([INK, INK, INK]);
     expect(svg).not.toContain('<polygon');
-    expect(svg).not.toContain(token('--accent'));
+    expect(svg).not.toContain(ACCENT);
   });
 
   it('1 voto de diferença usa o singular', () => {
@@ -173,21 +244,26 @@ describe('renderCard: zona de variação e margem', () => {
     expect(textos(svg).map((t) => t.conteudo)).toEqual(expect.arrayContaining(['1', 'VOTO']));
   });
 
-  it('variação vs 2022 em --accent com a seta apontando para o lado de quem ganhou terreno', () => {
-    const accent = token('--accent');
+  it('variação vs 2022 na cor do candidato que ganhou terreno, com a seta apontando para o lado dele', () => {
     const aponta = (svg: string): 'esquerda' | 'direita' => {
       const pontos = (svg.match(/<polygon class="seta" points="([^"]+)"/)?.[1] ?? '').split(' ').map((p) => Number(p.split(',')[0]));
       return pontos[1] < pontos[0] ? 'esquerda' : 'direita';
     };
-    const gana13 = renderCard(VARIANTES['13 ganhou terreno']);
-    const gana22 = renderCard(BASE);
-    expect(aponta(gana13)).toBe('esquerda');
-    expect(aponta(gana22)).toBe('direita');
-    expect(gana13).toContain(`<polygon class="seta" points="`);
-    expect(gana13).toContain(`fill="${accent}"`);
-    expect(textos(gana13).find((t) => t.classe === 'numero-frase')?.conteudo).toBe('+3,4');
-    expect(textos(gana22).find((t) => t.classe === 'numero-frase')?.conteudo).toBe('+3,4');
-    expect(textos(gana22).map((t) => t.conteudo)).toContain('PONTOS PARA FLÁVIO BOLSONARO EM RELAÇÃO A 2022');
+    const casos = [
+      ['13 ganhou terreno', VARIANTES['13 ganhou terreno'], 'esquerda', COR_13],
+      ['22 ganhou terreno', BASE, 'direita', COR_22],
+      ['13 ganhou terreno e o 22 lidera', VARIANTES['22 lidera'], 'esquerda', COR_13],
+      ['22 ganhou terreno e o 13 lidera', BASE, 'direita', COR_22],
+    ] as const;
+    for (const [nome, d, lado, cor] of casos) {
+      const svg = renderCard(d);
+      expect(aponta(svg), nome).toBe(lado);
+      expect(porForma(svg, 'seta').map((f) => f.cor), nome).toEqual([cor]);
+      expect(frase(svg).map((t) => t.fill), nome).toEqual([cor, cor]);
+    }
+    expect(textos(renderCard(VARIANTES['13 ganhou terreno'])).find((t) => t.classe === 'numero-frase')?.conteudo).toBe('+3,4');
+    expect(textos(renderCard(BASE)).find((t) => t.classe === 'numero-frase')?.conteudo).toBe('+3,4');
+    expect(textos(renderCard(BASE)).map((t) => t.conteudo)).toContain('PONTOS PARA FLÁVIO BOLSONARO EM RELAÇÃO A 2022');
   });
 
   it('o número da variação tem 64 px e a frase, 34 px', () => {
@@ -195,12 +271,13 @@ describe('renderCard: zona de variação e margem', () => {
     expect(textos(svg).find((t) => t.classe === 'numero-frase')?.size).toBe(64);
   });
 
-  it('sem 2022 (cidade nova) e no governador: a margem entre os dois, monocromático', () => {
+  it('sem 2022 (cidade nova) e no governador: a margem entre os dois, em --ink e sem seta', () => {
     for (const nome of ['sem 2022', 'governador']) {
       const svg = renderCard(VARIANTES[nome]);
       expect(textos(svg).map((t) => t.conteudo), nome).toEqual(expect.arrayContaining(['DIFERENÇA DE']));
+      expect(frase(svg).map((t) => t.fill), nome).toEqual([INK, INK, INK]);
       expect(svg, nome).not.toContain('<polygon');
-      expect(svg, nome).not.toContain(token('--accent'));
+      expect(svg, nome).not.toContain(ACCENT);
     }
   });
 
@@ -212,10 +289,13 @@ describe('renderCard: zona de variação e margem', () => {
     expect(renderCard(com({ variacao: 0.02 }))).not.toContain('<polygon');
   });
 
-  it('o acento do playground troca só a cor do acento', () => {
-    const teal = renderCard(com({ acento: 'teal' }));
-    expect(teal).toContain('#24ccc1');
-    expect(teal).not.toContain(token('--accent'));
+  it('o acento do playground troca só a cor do selo: nada mais no card é acento', () => {
+    for (const [nome, d] of Object.entries({ ...VARIANTES, 'com selo e variação': com({ selo: 'virou vs 2022' }) })) {
+      expect(renderCard({ ...d, acento: 'teal' }).replaceAll('#24ccc1', ACCENT), nome).toBe(renderCard(d));
+      const comAcento = formas(renderCard(d)).filter((f) => f.cor === ACCENT);
+      expect(comAcento.map((f) => f.tag), nome).toEqual(d.selo || d.modo === 'palpite' ? ['rect'] : []);
+    }
+    expect(renderCard(com({ selo: 'x', acento: 'teal' }))).toContain('#24ccc1');
   });
 });
 
@@ -251,21 +331,23 @@ describe('renderCard: modos', () => {
     expect(textos(renderCard(com({ secoesPct: 99.6 })))[0].conteudo).toContain('99% DAS SEÇÕES');
   });
 
-  it('palpite: selo, contornos sem preenchimento, sem lidera e sem fonte', () => {
+  it('palpite: selo, contornos na cor de cada candidato, sem lidera e sem fonte', () => {
     const svg = renderCard(VARIANTES.palpite);
     const conteudos = textos(svg).map((t) => t.conteudo);
     expect(conteudos).toEqual(expect.arrayContaining(['SEU PALPITE', 'PALPITE · NÃO É RESULTADO']));
     expect(svg).not.toMatch(/lidera|FONTE: TSE|PARCIAL/i);
-    expect(svg).toContain('fill="none" stroke="');
-    const cheios = [...svg.matchAll(/<rect [^>]*width="([\d.]+)"[^>]*fill="(#[0-9a-f]{6})"/g)].filter(([, largura, cor]) => Number(largura) > 10 && [INK, INK_2].includes(cor));
-    expect(cheios).toHaveLength(0);
-    expect([...renderCard(BASE).matchAll(/<rect [^>]*width="([\d.]+)"[^>]*fill="#(f2eee3|8b867a)"/g)].filter(([, largura]) => Number(largura) > 10)).not.toHaveLength(0);
+    for (const cor of [COR_13, COR_22]) expect(svg).toContain(`fill="none" stroke="${cor}"`);
+    const contornos = formas(svg).filter((f) => ['barra', 'plaquinha'].includes(f.classe));
+    expect(contornos.map((f) => f.cor)).toEqual([COR_13, COR_22, COR_13, COR_22]);
+    const cheios = (s: string): RegExpMatchArray[] => [...s.matchAll(/<rect [^>]*width="([\d.]+)"[^>]*fill="(#[0-9a-f]{6})"/g)].filter(([, largura, cor]) => Number(largura) > 10 && [COR_13, COR_22, INK, INK_2].includes(cor));
+    expect(cheios(svg)).toHaveLength(0);
+    expect(cheios(renderCard(BASE)).map(([, , cor]) => cor)).toEqual([COR_13, COR_22, COR_13, COR_22]);
   });
 
   it('o selo aparece em placa --accent com texto --bg', () => {
     const svg = renderCard(VARIANTES['com selo']);
     expect(svg).toMatch(/<rect [^>]*height="44" rx="8" fill="#b57bff"\/>/);
-    expect(textos(svg).find((t) => t.conteudo === 'MAIS DIVIDIDA DO MA')?.fill).toBe(token('--bg'));
+    expect(textos(svg).find((t) => t.conteudo === 'MAIS DIVIDIDA DO MA')?.fill).toBe(BG);
     expect(renderCard(BASE)).not.toContain('rx="8"');
   });
 });
@@ -280,6 +362,12 @@ describe('renderCard: sem seções apuradas', () => {
     expect(porClasse(svg, 'lidera')).toHaveLength(0);
     expect(svg).not.toMatch(/\d+,\d%|<polygon|DIFEREN/);
     expect(porClasse(svg, 'pct').map((t) => t.fill)).toEqual([INK_2, INK_2]);
+  });
+
+  it('a barra é neutra, sem segmento de candidato; as plaquinhas seguem na cor de cada um', () => {
+    expect(porForma(svg, 'barra')).toHaveLength(0);
+    expect(porForma(svg, 'barra-vazia').map((f) => f.cor)).toEqual([INK_2]);
+    expect(porForma(svg, 'plaquinha').map((f) => f.cor)).toEqual([COR_13, COR_22]);
   });
 
   it('1% das seções já é apuração', () => {
@@ -343,14 +431,14 @@ describe('renderCard: vocabulário e tokens', () => {
 
   it('as cores do SVG são as de styles/tokens.css, e o acento alternativo as do playground', () => {
     const svg = renderCard(com({ selo: 'x' }));
-    for (const nome of ['--bg', '--ink', '--ink-2', '--accent']) expect(svg, nome).toContain(token(nome));
+    for (const nome of ['--bg', '--ink', '--ink-2', '--cand-13', '--cand-22', '--accent']) expect(svg, nome).toContain(token(nome));
     const alternativas = [...tokens.matchAll(/\[data-acento='(\w+)'\]\s*\{\s*--accent:\s*(#[0-9a-f]{6})/g)];
     expect(alternativas.map((m) => m[1])).toEqual(['teal', 'coral']);
-    for (const [, nome, cor] of alternativas) expect(renderCard(com({ acento: nome as 'teal' | 'coral' })), nome).toContain(cor);
+    for (const [, nome, cor] of alternativas) expect(renderCard(com({ selo: 'x', acento: nome as 'teal' | 'coral' })), nome).toContain(cor);
   });
 
-  it('nenhuma cor de partido: só os quatro tokens e o acento escolhido', () => {
-    const permitidas = new Set([token('--bg'), INK, INK_2, token('--accent')]);
+  it('só as cores dos tokens: tinta, cinza, os dois candidatos e o acento escolhido', () => {
+    const permitidas = new Set([BG, INK, INK_2, COR_13, COR_22, ACCENT]);
     for (const [nome, d] of Object.entries(VARIANTES)) {
       for (const cor of renderCard(d).match(/#[0-9a-f]{6}/gi) ?? []) expect(permitidas.has(cor.toLowerCase()), `${nome}: ${cor}`).toBe(true);
     }

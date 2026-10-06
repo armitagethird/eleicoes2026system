@@ -1,5 +1,6 @@
-// Ilha do playground (/design): troca o acento (renderCard aceita `acento`) e baixa o PNG de cada variante pelo mesmo
-// caminho do botão Compartilhar (card-png.ts, com a fonte e a bandeira embutidas), para conferir a paridade com o inline.
+// Ilha do playground (/design): troca o acento do selo (renderCard aceita `acento`; é só a cor do selo, o vermelho e o azul
+// dos candidatos não mudam) e baixa o PNG de cada variante pelo mesmo caminho do botão Compartilhar (card-png.ts, com a
+// fonte e a bandeira embutidas), para conferir a paridade com o inline.
 import { carregarFonteCard, paraDataUri, svgParaPng } from '../lib/card-png.ts';
 import { renderCard, type Acento, type CardData } from './Card.ts';
 
@@ -15,7 +16,7 @@ const variantes = new Map((JSON.parse(dados.textContent) as Variante[]).map((v) 
 
 let acento: Acento = 'violeta';
 
-/** O acento vira data-acento no <html> (tokens.css) e o card é redesenhado: o SVG leva a cor escrita, não var(). */
+/** O acento vira data-acento no <html> (tokens.css) e o card é redesenhado (só o selo muda): o SVG leva a cor escrita, não var(). */
 function aplicarAcento(valor: Acento): void {
   acento = valor;
   document.documentElement.dataset.acento = valor;

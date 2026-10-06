@@ -15,17 +15,19 @@ import { AVISO_FICTICIO } from '../../lib/copy.ts';
 import { ajustarDestino } from '../../lib/destino.ts';
 import tokens from '../../styles/tokens.css?raw';
 
-// Amostras do seletor: as cores saem de tokens.css (a de Card.ts é a mesma, conferida em Card.test.ts).
-const corDoAcento = (padrao: RegExp): string => {
+// Amostras do seletor e cores citadas nos textos: saem de tokens.css (as de Card.ts e cores.ts são as mesmas, conferidas nos testes).
+const corDeTokens = (padrao: RegExp): string => {
   const cor = tokens.match(padrao)?.[1];
-  if (!cor) throw new Error(`/design: não achei a cor do acento em tokens.css (${padrao})`);
-  return cor;
+  if (!cor) throw new Error(`/design: não achei a cor em tokens.css (${padrao})`);
+  return cor.toUpperCase();
 };
 const ACENTOS = [
-  { valor: 'violeta', nome: 'Violeta', cor: corDoAcento(/--accent:\s*(#[0-9a-f]{6})/i) },
-  { valor: 'teal', nome: 'Teal', cor: corDoAcento(/\[data-acento='teal'\]\s*\{\s*--accent:\s*(#[0-9a-f]{6})/i) },
-  { valor: 'coral', nome: 'Coral', cor: corDoAcento(/\[data-acento='coral'\]\s*\{\s*--accent:\s*(#[0-9a-f]{6})/i) },
+  { valor: 'violeta', nome: 'Violeta', cor: corDeTokens(/--accent:\s*(#[0-9a-f]{6})/i) },
+  { valor: 'teal', nome: 'Teal', cor: corDeTokens(/\[data-acento='teal'\]\s*\{\s*--accent:\s*(#[0-9a-f]{6})/i) },
+  { valor: 'coral', nome: 'Coral', cor: corDeTokens(/\[data-acento='coral'\]\s*\{\s*--accent:\s*(#[0-9a-f]{6})/i) },
 ] as const satisfies ReadonlyArray<{ valor: Acento; nome: string; cor: string }>;
+const COR_13 = corDeTokens(/--cand-13:\s*(#[0-9a-f]{6})/i);
+const COR_22 = corDeTokens(/--cand-22:\s*(#[0-9a-f]{6})/i);
 
 const ATUALIZADO = '2026-10-25T18:42:10-03:00';
 
@@ -107,11 +109,11 @@ const casos: Array<{ titulo: string; itens: Caso[] }> = [
       { id: 'parcial-10', rotulo: 'Parcial, 10%', olhar: '10,4% das seções, às 17:48.', card: deCidade({ local: 'São Luís', uf: 'MA', secoes: 10.4, pct13: 58.6, variacao: -3.4, hora: '2026-10-25T17:48:00-03:00' }) },
       { id: 'parcial-87', rotulo: 'Parcial, 87%', olhar: 'O caso-base: 87,3% das seções e o 22 ganhando terreno desde 2022.', card: saoLuis },
       { id: 'final', rotulo: 'Final', olhar: '100% das seções: sem rótulo de posição; o 13 ganhou 5,7 pontos.', card: deCidade({ local: 'Natal', uf: 'RN', secoes: 100, pct13: 63.8, variacao: 5.7, hora: '2026-10-25T20:31:00-03:00', modo: 'final' }) },
-      { id: 'virou', rotulo: 'Virou vs 2022', olhar: 'A liderança mudou desde 2022: selo de virada em acento.', card: deCidade({ local: 'Juiz de Fora', uf: 'MG', secoes: 94.1, pct13: 48.2, variacao: -4.9, virou: true }) },
+      { id: 'virou', rotulo: 'Virou vs 2022', olhar: 'A liderança mudou desde 2022: o selo de virada é a única peça em acento.', card: deCidade({ local: 'Juiz de Fora', uf: 'MG', secoes: 94.1, pct13: 48.2, variacao: -4.9, virou: true }) },
       { id: 'com-selo', rotulo: 'Com selo', olhar: 'Selo de ranking à direita da linha de meta.', card: deCidade({ local: 'São Luís', uf: 'MA', secoes: 87.3, pct13: 51.3, variacao: 1.8, selos: ['mais_dividida_uf'] }) },
       { id: 'sem-selo', rotulo: 'Sem selo', olhar: 'Sem selo, a linha de meta tem a largura toda.', card: deCidade({ local: 'Campinas', uf: 'SP', secoes: 87.3, pct13: 44.3, variacao: 3.3 }) },
-      { id: 'governador', rotulo: 'Governador', olhar: 'Sem comparação com 2022: mostra a margem entre os dois.', card: deGovernadorDoRj(deGovernador(12, 'Fictício A', 39.4), deGovernador(45, 'Fictícia B', 60.6)) },
-      { id: 'palpite', rotulo: 'Palpite', olhar: 'Folhas em contorno, selo de palpite e rodapé que avisa que não é resultado.', card: comPalpite(saoLuis, 57) },
+      { id: 'governador', rotulo: 'Governador', olhar: 'Sem comparação com 2022: mostra a margem entre os dois. Números sem cor definida ficam neutros.', card: deGovernadorDoRj(deGovernador(12, 'Fictício A', 39.4), deGovernador(45, 'Fictícia B', 60.6)) },
+      { id: 'palpite', rotulo: 'Palpite', olhar: 'Contornos na cor de cada candidato, selo de palpite e rodapé que avisa que não é resultado.', card: comPalpite(saoLuis, 57) },
       { id: 'nome-longo', rotulo: 'Nome de cidade longo', olhar: 'Vila Bela da Santíssima Trindade: o nome quebra em duas linhas.', card: deCidade({ local: 'Vila Bela da Santíssima Trindade', uf: 'MT', secoes: 97.2, pct13: 46.9, variacao: 2.1, hora: '2026-10-25T19:05:00-03:00' }) },
       { id: 'margem-0-1', rotulo: 'Margem de 0,1 ponto', olhar: 'Abaixo de 1 ponto, a frase vira diferença em votos, sem seta.', card: deCidade({ local: 'São João da Boa Vista', uf: 'SP', secoes: 96.8, pct13: 49.95, variacao: 4.1, diferencaVotos: 312 }) },
       { id: 'cem-por-cento', rotulo: '100% para um lado', olhar: 'Cidade pequena, final: a barra tem um segmento só.', card: deCidade({ local: 'Una', uf: 'BA', secoes: 100, pct13: 100, variacao: 0.8, modo: 'final' }) },
@@ -120,9 +122,9 @@ const casos: Array<{ titulo: string; itens: Caso[] }> = [
   {
     titulo: 'Direção Destino',
     itens: [
-      { id: '22-lidera', rotulo: '22 lidera', olhar: 'A cor troca de dono; as colunas não trocam de lugar.', card: deCidade({ local: 'Jaú', uf: 'SP', secoes: 71.5, pct13: 38.3, variacao: 2.1 }) },
-      { id: 'sem-2022', rotulo: 'Sem 2022', olhar: 'Sem comparação não há seta nem acento: só tinta e cinza.', card: deCidade({ local: 'Rio Branco', uf: 'AC', secoes: 72, pct13: 41.3 }) },
-      { id: 'aguardando', rotulo: 'Aguardando seções', olhar: 'Menos de 1% das seções: nenhum percentual e nenhuma margem.', card: deCidade({ local: 'Natal', uf: 'RN', secoes: 0.4, pct13: 50, variacao: 0 }) },
+      { id: '22-lidera', rotulo: '22 lidera', olhar: 'A cor não troca: o 13 segue vermelho e à esquerda; o LIDERA vai para o segmento azul do 22.', card: deCidade({ local: 'Jaú', uf: 'SP', secoes: 71.5, pct13: 38.3, variacao: 2.1 }) },
+      { id: 'sem-2022', rotulo: 'Sem 2022', olhar: 'Sem comparação não há seta: a frase da margem fica em tinta neutra.', card: deCidade({ local: 'Rio Branco', uf: 'AC', secoes: 72, pct13: 41.3 }) },
+      { id: 'aguardando', rotulo: 'Aguardando seções', olhar: 'Menos de 1% das seções: barra neutra, nenhum percentual e nenhuma margem.', card: deCidade({ local: 'Natal', uf: 'RN', secoes: 0.4, pct13: 50, variacao: 0 }) },
       { id: 'governador-nome-longo', rotulo: 'Governador, nome longo', olhar: 'Nomes longos quebram em duas linhas, cada coluna no seu lado.', card: deGovernadorDoRj(deGovernador(12, 'Fictícia Aparecida dos Santos Pereira', 47.2), deGovernador(45, 'Fictício Antônio Carlos de Souza Lima', 52.8)) },
     ],
   },
@@ -160,14 +162,13 @@ const linhasTitulo = linhas.map((l) => {
 const aceite = [
   'Legível a 350 px de largura: veja a coluna estreita de cada variante.',
   'Ordem 13 antes de 22 em todas as variantes.',
-  'Nenhuma cor de partido: só tinta, cinza e um acento.',
+  '13 sempre vermelho e 22 sempre azul claro, também quando o 22 lidera; o violeta só no selo.',
   'Todo número com algarismos tabulares.',
 ];
 const pendencias = [
-  `Fonte Archivo e acento violeta ${ACENTOS[0].cor.toUpperCase()}. O seletor alterna teal e coral só para esta decisão.`,
-  'Líder em tinta clara sobre fundo escuro: o brief diz “tinta escura”, lido aqui como a tinta de maior contraste.',
-  'Seta e número em acento nas placas do mapa: é variação vs 2022, mas amplia o uso do acento.',
-  'Governador sem comparação com 2022 (mostra a margem) e cidade em final sem rótulo de posição.',
+  `Fonte Archivo e acento violeta ${ACENTOS[0].cor} no selo. O seletor alterna teal e coral só para esta decisão, e só o selo muda.`,
+  `Tons dos candidatos: vermelho ${COR_13} e azul claro ${COR_22}. O princípio está decidido; o tom exato falta aprovar.`,
+  'Governador sem comparação com 2022 (mostra a margem) e cidade em final sem rótulo de posição. Os candidatos a governador ficam em tinta neutra até a cor deles ser definida.',
   'Os textos dos selos ainda não têm versão final em copy.ts.',
 ];
 ---
@@ -191,14 +192,14 @@ const pendencias = [
       <div class="intro">
         <p>
           Todas as variantes do card em SVG inline, na mesma largura da timeline do X e no PNG que o botão exporta de
-          verdade. Troque o acento na barra abaixo.
+          verdade. A barra abaixo troca o acento do selo; o vermelho do 13 e o azul do 22 não mudam.
         </p>
         <p class="aviso">{AVISO_FICTICIO}</p>
       </div>
     </header>
 
     <div class="barra">
-      <p class="barra-rotulo" id="acento-rotulo">Acento</p>
+      <p class="barra-rotulo" id="acento-rotulo">Acento do selo</p>
       <div class="acentos" role="radiogroup" aria-labelledby="acento-rotulo" data-acentos>
         {
           ACENTOS.map(({ valor, nome, cor }) => (
@@ -210,7 +211,7 @@ const pendencias = [
           ))
         }
       </div>
-      <p class="barra-nota">Teal e coral existem só para esta aprovação.</p>
+      <p class="barra-nota">Só o selo muda de cor. Teal e coral existem só para esta aprovação.</p>
     </div>
 
     <main>
@@ -323,7 +324,7 @@ const pendencias = [
     font-size: var(--fs-1);
   }
 
-  /* Barra do acento: colada no topo ao rolar, para trocar o acento olhando qualquer variante. */
+  /* Barra do acento do selo: colada no topo ao rolar, para trocá-lo olhando qualquer variante. */
   .barra {
     position: sticky;
     top: 0;
@@ -351,8 +352,9 @@ const pendencias = [
     color: var(--ink-2);
   }
 
+  /* No celular o rótulo ocupa a própria linha: sem ele o seletor não diz que só o selo muda. */
   .barra-rotulo {
-    display: none;
+    flex: 0 0 100%;
   }
 
   .barra-nota {
@@ -390,7 +392,7 @@ const pendencias = [
       color var(--dur-1) var(--ease);
   }
 
-  /* Escolhido = filete e texto em --ink; nada de fundo cheio, que é a marca de "líder". */
+  /* Escolhido = filete e texto em --ink; vermelho e azul são só dos candidatos, nunca de controle. */
   .acento:has(:checked) {
     border-color: var(--ink);
     color: var(--ink);
@@ -587,7 +589,7 @@ const pendencias = [
     }
 
     .barra-rotulo {
-      display: block;
+      flex: none;
     }
 
     .acento {

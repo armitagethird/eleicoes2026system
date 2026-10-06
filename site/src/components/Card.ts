@@ -15,6 +15,7 @@ import {
   variacaoCard,
   type FraseCard,
 } from '../lib/copy.ts';
+import { corCandidato } from '../lib/cores.ts';
 import { ALTURAS, ajustarDestino, larguraTexto } from '../lib/destino.ts';
 import { percentual } from '../lib/format.ts';
 
@@ -55,11 +56,12 @@ export interface CardData {
   bandeiraHref?: string;
   /** Subset da fonte (data URI). Presente só ao exportar PNG; inline na página o SVG usa a fonte já carregada. */
   fonteDataUri?: string;
-  /** Só para o playground de aprovação (/design). */
+  /** Só para o playground de aprovação (/design). Troca a cor do selo e de mais nada. */
   acento?: Acento;
 }
 
 // Cores alinhadas a styles/tokens.css (Card.test.ts confere). O SVG não pode depender de custom properties: vira PNG isolado.
+// As dos candidatos vêm de lib/cores.ts: a cor é do número de urna, nunca da posição nem de quem lidera.
 const COR = { bg: '#121110', ink: '#f2eee3', ink2: '#8b867a' } as const;
 const ACENTOS: Record<Acento, string> = { violeta: '#b57bff', teal: '#24ccc1', coral: '#ff7a66' };
 
@@ -185,14 +187,14 @@ function zonaC(frase: FraseCard, { cor, seta, y }: OpcoesFrase): string {
     x += FRASE.seta + FRASE.folga;
   }
   if (antes) {
-    saida.push(texto(x, y, { size: FRASE.texto, wdth, fill: cor }, escapar(antes)));
+    saida.push(texto(x, y, { size: FRASE.texto, wdth, fill: cor }, escapar(antes), ' class="frase"'));
     x += larguraTexto(antes, wdth, FRASE.texto) + FRASE.folga;
   }
   saida.push(texto(x, y, { size: FRASE.numero, wdth: 125, fill: cor }, escapar(frase.numero), ' class="numero-frase"'));
   x += larguraNumero;
   if (depois) {
     x += FRASE.folga;
-    saida.push(texto(x, y, { size: FRASE.texto, wdth, fill: cor }, escapar(depois)));
+    saida.push(texto(x, y, { size: FRASE.texto, wdth, fill: cor }, escapar(depois), ' class="frase"'));
     x += larguraTexto(depois, wdth, FRASE.texto);
   }
   if (seta === 'dir') saida.push(triangulo(x + FRASE.folga));
@@ -205,7 +207,9 @@ function zonaAguardando(y: number): string {
   return texto(X0, y, { size: linhas[0].tamanho, wdth: linhas[0].wdth, fill: COR.ink }, escapar(linhas[0].texto), ' class="aguardando"');
 }
 
-interface Posicao {
+/** O que a barra e as colunas mostram de cada candidato: a cor é a dele; o rótulo de posição (lidera/eleito) é só de quem o tem. */
+interface Segmento {
+  n: number;
   fill: string;
   rotulo: string | null;
 }
@@ -215,12 +219,12 @@ interface OpcoesBarra {
   y: number;
   /** Fatia do candidato da esquerda, 0..100. */
   pctEsq: number;
-  esq: Posicao;
-  dir: Posicao;
+  esq: Segmento;
+  dir: Segmento;
   aguardando: boolean;
 }
 
-/** Zona D: dois segmentos proporcionais, costura de 4 px, marca de 50% e o rótulo de posição dentro do segmento do líder. */
+/** Zona D: dois segmentos proporcionais (13 à esquerda, 22 à direita), costura de 4 px, marca de 50% e o rótulo de posição em --bg dentro do segmento de quem o tem. */
 function zonaD({ modo, y, pctEsq, esq, dir, aguardando }: OpcoesBarra): string {
   if (aguardando) {
     return `<rect class="barra-vazia" x="${X0 + 2}" y="${y + 2}" width="${LARGURA_UTIL - 4}" height="${BARRA.altura - 4}" fill="none" stroke="${COR.ink2}" stroke-width="4"/>`;
@@ -237,14 +241,15 @@ function zonaD({ modo, y, pctEsq, esq, dir, aguardando }: OpcoesBarra): string {
   const saida = segmentos
     .filter((s) => s.visivel)
     .map(({ x, w, lado, ancora }) => {
+      const identidade = `class="barra" data-n="${lado.n}"`;
       const forma =
         modo === 'palpite'
-          ? `<rect x="${num(x + 2)}" y="${y + 2}" width="${num(w - 4)}" height="${BARRA.altura - 4}" fill="none" stroke="${lado.fill}" stroke-width="4"/>`
-          : `<rect x="${num(x)}" y="${y}" width="${num(w)}" height="${BARRA.altura}" fill="${lado.fill}"/>`;
+          ? `<rect x="${num(x + 2)}" y="${y + 2}" width="${num(w - 4)}" height="${BARRA.altura - 4}" fill="none" stroke="${lado.fill}" stroke-width="4" ${identidade}/>`
+          : `<rect x="${num(x)}" y="${y}" width="${num(w)}" height="${BARRA.altura}" fill="${lado.fill}" ${identidade}/>`;
       if (!lado.rotulo || larguraTexto(lado.rotulo, 100, TAMANHOS.lidera) + 32 > w) return forma;
       const xTexto = ancora === 'start' ? x + 16 : x + w - 16;
       const base = y + (BARRA.altura + TAMANHOS.lidera * CAP) / 2;
-      return forma + texto(xTexto, base, { size: TAMANHOS.lidera, wdth: 100, fill: COR.bg }, escapar(lado.rotulo), ` text-anchor="${ancora}" class="lidera"`);
+      return forma + texto(xTexto, base, { size: TAMANHOS.lidera, wdth: 100, fill: COR.bg }, escapar(lado.rotulo), ` text-anchor="${ancora}" data-n="${lado.n}" class="lidera"`);
     });
   saida.push(`<rect x="598" y="${y - 8}" width="4" height="8" fill="${COR.ink2}"/>`, `<rect x="598" y="${y + BARRA.altura}" width="4" height="8" fill="${COR.ink2}"/>`);
   return saida.join('');
@@ -252,11 +257,12 @@ function zonaD({ modo, y, pctEsq, esq, dir, aguardando }: OpcoesBarra): string {
 
 interface ColunaE {
   cand: CandidatoCard;
+  /** Cor do candidato: plaquinha, percentual e (no palpite) contorno. O nome fica sempre em --ink. */
   fill: string;
   lado: 'esq' | 'dir';
 }
 
-/** Rótulo "[13] LULA · PT": plaquinha com o número e o nome em até 2 linhas, todos no mesmo wdth nas duas colunas. */
+/** Rótulo "[13] LULA · PT": plaquinha com o número (--bg sobre a cor do candidato) e o nome em até 2 linhas, todos no mesmo wdth nas duas colunas. */
 function rotulos(colunas: ColunaE[], modo: ModoCard, yBase: number): { svg: string; linhas: number } {
   const size = TAMANHOS.rotulo;
   const larguraPlaca = (n: number): number => larguraTexto(String(n), 100, size) + 24;
@@ -270,13 +276,14 @@ function rotulos(colunas: ColunaE[], modo: ModoCard, yBase: number): { svg: stri
     const wPlaca = larguraPlaca(cand.n);
     const xPlaca = lado === 'esq' ? X0 : X1 - larguraTexto(linhas[0].texto, wdth, size) - PLACA.folga - wPlaca;
     const yPlaca = yBase - (PLACA.altura + size * CAP) / 2;
+    const identidade = `data-n="${cand.n}" class="plaquinha"`;
     const placa =
       modo === 'palpite'
-        ? `<rect x="${num(xPlaca + 2)}" y="${num(yPlaca + 2)}" width="${num(wPlaca - 4)}" height="${PLACA.altura - 4}" fill="none" stroke="${fill}" stroke-width="4"/>`
-        : `<rect x="${num(xPlaca)}" y="${num(yPlaca)}" width="${num(wPlaca)}" height="${PLACA.altura}" fill="${fill}"/>`;
+        ? `<rect x="${num(xPlaca + 2)}" y="${num(yPlaca + 2)}" width="${num(wPlaca - 4)}" height="${PLACA.altura - 4}" fill="none" stroke="${fill}" stroke-width="4" ${identidade}/>`
+        : `<rect x="${num(xPlaca)}" y="${num(yPlaca)}" width="${num(wPlaca)}" height="${PLACA.altura}" fill="${fill}" ${identidade}/>`;
     const numero = texto(xPlaca + wPlaca / 2, yBase, { size, wdth: 100, fill: modo === 'palpite' ? fill : COR.bg }, String(cand.n), ` text-anchor="middle" data-n="${cand.n}" class="placa"`);
     const nomes = linhas.map((l, j) =>
-      texto(lado === 'esq' ? X0 + wPlaca + PLACA.folga : X1, yBase + j * (size + 8), { size, wdth, fill }, escapar(l.texto), `${lado === 'dir' ? ' text-anchor="end"' : ''} data-n="${cand.n}" class="nome"`),
+      texto(lado === 'esq' ? X0 + wPlaca + PLACA.folga : X1, yBase + j * (size + 8), { size, wdth, fill: COR.ink }, escapar(l.texto), `${lado === 'dir' ? ' text-anchor="end"' : ''} data-n="${cand.n}" class="nome"`),
     );
     return placa + numero + nomes.join('');
   });
@@ -296,6 +303,7 @@ function escolherPercentuais(esq: string, dir: string, tetoDeAltura: number): { 
   return { size, wdth };
 }
 
+/** Sem seções apuradas não há número a pintar: o traço fica neutro. */
 function percentuais(colunas: ColunaE[], aguardando: boolean, tetoDeAltura: number): string {
   const numeros = colunas.map(({ cand }) => (aguardando ? '—' : numeroDoPercentual(cand.pct)));
   const { size, wdth } = escolherPercentuais(numeros[0], numeros[1], tetoDeAltura);
@@ -303,7 +311,7 @@ function percentuais(colunas: ColunaE[], aguardando: boolean, tetoDeAltura: numb
     .map(({ cand, fill, lado }, i) => {
       const sinal = aguardando ? '' : `<tspan font-size="${num(size * 0.4)}" dx="6">%</tspan>`;
       const atributos = `${lado === 'dir' ? ' text-anchor="end"' : ''} data-n="${cand.n}" class="pct"`;
-      return texto(lado === 'esq' ? X0 : X1, Y.percentuais, { size, wdth, fill }, numeros[i] + sinal, atributos);
+      return texto(lado === 'esq' ? X0 : X1, Y.percentuais, { size, wdth, fill: aguardando ? COR.ink2 : fill }, numeros[i] + sinal, atributos);
     })
     .join('');
 }
@@ -318,13 +326,13 @@ function rodape(d: CardData, modo: ModoCard): string {
 }
 
 /** Texto alternativo completo, em caixa normal: quem não vê o card recebe o mesmo que ele diz. */
-function descricao(d: CardData, modo: ModoCard, aguardando: boolean, frase: FraseCard | null, cand: CandidatoCard[], posicoes: Posicao[]): string {
+function descricao(d: CardData, modo: ModoCard, aguardando: boolean, frase: FraseCard | null, cand: CandidatoCard[], segmentos: Segmento[]): string {
   const lugar = d.uf === 'BR' ? d.local : `${d.local} (${d.uf})`;
   const cargo = d.cargo === 'governador' ? `${CARGO_GOVERNADOR}, ` : '';
   const apuracao = modo === 'palpite' ? RODAPE_PALPITE : aguardando ? AGUARDANDO_SECOES : apuracaoCard(modo, d.secoesPct);
   const candidatos = cand.map((c, i) => {
     const valor = aguardando ? '' : `: ${percentual(c.pct, 1)}`;
-    const rotulo = posicoes[i].rotulo ? ` (${posicoes[i].rotulo.toLowerCase()})` : '';
+    const rotulo = segmentos[i].rotulo ? ` (${segmentos[i].rotulo.toLowerCase()})` : '';
     return `${c.n} ${c.nome}, ${c.partido}${valor}${rotulo}`;
   });
   const destaque = frase ? [frase.antes, frase.numero, frase.depois].filter(Boolean).join(' ') : '';
@@ -332,7 +340,7 @@ function descricao(d: CardData, modo: ModoCard, aguardando: boolean, frase: Fras
   return [`${lugar}, ${cargo}${TURNO_CARD}, ${apuracao}.`, `${candidatos.join('. ')}.`, destaque && `${destaque}.`, fonte].filter(Boolean).join(' ');
 }
 
-/** O que a zona C diz, em ordem de prioridade (e a cor e a seta que a acompanham). */
+/** O que a zona C diz, em ordem de prioridade (e a cor e a seta que a acompanham). A margem é neutra; a variação é do candidato que ganhou terreno. */
 function escolherFrase(d: CardData, e: CandidatoCard, r: CandidatoCard, modo: ModoCard): { frase: FraseCard; cor: string; seta: OpcoesFrase['seta'] } {
   const margem = Math.abs(e.pct - r.pct);
   const margemEmPontos = { frase: diferencaPontosCard(margem), cor: COR.ink, seta: null };
@@ -340,8 +348,8 @@ function escolherFrase(d: CardData, e: CandidatoCard, r: CandidatoCard, modo: Mo
   if (margem < 1 && d.diferencaVotos !== undefined) return { frase: diferencaVotosCard(d.diferencaVotos), cor: COR.ink, seta: null };
   // Governador não tem comparação com 2022: mostra a margem entre os dois.
   if (d.cargo === 'presidente' && margem >= 1 && d.variacao !== undefined && Math.abs(d.variacao) >= 0.05) {
-    const ganhou = d.variacao > 0 ? e : r;
-    return { frase: variacaoCard(ganhou.nome, Math.abs(d.variacao)), cor: ACENTOS[d.acento ?? 'violeta'], seta: ganhou === e ? 'esq' : 'dir' };
+    const [ganhou, coluna] = d.variacao > 0 ? ([e, 0] as const) : ([r, 1] as const);
+    return { frase: variacaoCard(ganhou.nome, Math.abs(d.variacao)), cor: corCandidato(ganhou.n, coluna).hex, seta: coluna === 0 ? 'esq' : 'dir' };
   }
   return margemEmPontos;
 }
@@ -351,19 +359,21 @@ export function renderCard(d: CardData): string {
   const modo = d.modo;
   const aguardando = modo !== 'palpite' && d.secoesPct < 1;
 
-  // Cor pertence à posição: quem lidera veste --ink, o segundo --ink-2. Empate: os dois em --ink.
+  // Cor pertence ao candidato (cores.ts), nunca à posição: quem lidera se diz no rótulo e pela barra. Empate: ninguém lidera.
   const diferenca = e.pct - r.pct;
   const lider = aguardando || Math.abs(diferenca) < 1e-9 ? null : diferenca > 0 ? e : r;
-  const posicao = (c: CandidatoCard): Posicao => {
-    const fill = aguardando || (lider && lider !== c) ? COR.ink2 : COR.ink;
-    if (modo === 'palpite' || aguardando) return { fill, rotulo: null };
-    if (c.eleito) return { fill, rotulo: maiusculas(rotuloPosicao(true, c.feminino)) };
-    return { fill, rotulo: modo === 'parcial' && c === lider ? maiusculas(rotuloPosicao(false)) : null };
+  const rotuloDe = (c: CandidatoCard): string | null => {
+    if (modo === 'palpite' || aguardando) return null;
+    if (c.eleito) return maiusculas(rotuloPosicao(true, c.feminino));
+    return modo === 'parcial' && c === lider ? maiusculas(rotuloPosicao(false)) : null;
   };
-  const posicoes = [posicao(e), posicao(r)];
+  const segmentos: Segmento[] = [
+    { n: e.n, fill: corCandidato(e.n, 0).hex, rotulo: rotuloDe(e) },
+    { n: r.n, fill: corCandidato(r.n, 1).hex, rotulo: rotuloDe(r) },
+  ];
   const colunas: ColunaE[] = [
-    { cand: e, fill: posicoes[0].fill, lado: 'esq' },
-    { cand: r, fill: posicoes[1].fill, lado: 'dir' },
+    { cand: e, fill: segmentos[0].fill, lado: 'esq' },
+    { cand: r, fill: segmentos[1].fill, lado: 'dir' },
   ];
 
   const titulo = zonaB(d.local);
@@ -374,7 +384,7 @@ export function renderCard(d: CardData): string {
 
   const fonte = d.fonteDataUri ? `<style>@font-face{font-family:Archivo;font-weight:900;font-stretch:62% 125%;src:url(${d.fonteDataUri}) format("woff2")}</style>` : '';
   const tituloSvg = escapar(`${d.local}${d.uf === 'BR' ? '' : ` (${d.uf})`}, ${TURNO_CARD}`);
-  const descr = escapar(descricao(d, modo, aguardando, destaque?.frase ?? null, [e, r], posicoes));
+  const descr = escapar(descricao(d, modo, aguardando, destaque?.frase ?? null, [e, r], segmentos));
 
   return [
     `<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="675" viewBox="0 0 1200 675" role="img">`,
@@ -385,7 +395,7 @@ export function renderCard(d: CardData): string {
     zonaA(d, modo, modo === 'palpite' ? SELO_PALPITE : d.selo, ACENTOS[d.acento ?? 'violeta']),
     titulo.svg,
     destaque ? zonaC(destaque.frase, { cor: destaque.cor, seta: destaque.seta, y: Y.variacao + titulo.desce }) : zonaAguardando(Y.variacao + titulo.desce),
-    zonaD({ modo, y: Y.barra + titulo.desce, pctEsq: e.pct, esq: posicoes[0], dir: posicoes[1], aguardando }),
+    zonaD({ modo, y: Y.barra + titulo.desce, pctEsq: e.pct, esq: segmentos[0], dir: segmentos[1], aguardando }),
     rot.svg,
     percentuais(colunas, aguardando, tetoDosPercentuais),
     rodape(d, modo),
