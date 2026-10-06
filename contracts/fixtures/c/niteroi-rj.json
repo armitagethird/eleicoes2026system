@@ -1,0 +1,65 @@
+{
+  "v": 1,
+  "slug": "niteroi-rj",
+  "nome": "Niterói",
+  "uf": "RJ",
+  "cod_tse": 90050,
+  "cod_ibge": 3303302,
+  "eleitores": 366130,
+  "atualizado": "2026-10-25T18:42:10-03:00",
+  "secoes_pct": 38.6,
+  "presidente": {
+    "cand": [
+      {
+        "n": 13,
+        "nome": "Lula",
+        "partido": "PT",
+        "votos": 37784,
+        "pct": 34.32,
+        "eleito": false
+      },
+      {
+        "n": 22,
+        "nome": "Flávio Bolsonaro",
+        "partido": "PL",
+        "votos": 72309,
+        "pct": 65.68,
+        "eleito": false
+      }
+    ],
+    "variacao_2022": {
+      "13": 2.06,
+      "22": -2.06
+    },
+    "diferenca_votos": 34525
+  },
+  "governador": {
+    "cand": [
+      {
+        "n": 12,
+        "nome": "Fictício A",
+        "partido": "FIC",
+        "votos": 59560,
+        "pct": 54.1,
+        "eleito": false
+      },
+      {
+        "n": 45,
+        "nome": "Fictícia B",
+        "partido": "FIC",
+        "votos": 50533,
+        "pct": 45.9,
+        "eleito": false
+      }
+    ],
+    "variacao_2022": {},
+    "diferenca_votos": 9027
+  },
+  "selos": [],
+  "rank": {
+    "dividida_br": 45,
+    "dividida_uf": 2,
+    "virada_uf": null
+  },
+  "virou": false
+}

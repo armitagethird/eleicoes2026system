@@ -1,0 +1,15 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "status.schema.json",
+  "title": "/data/status.json",
+  "description": "pre = antes do dia 25 (1º turno final + 2022, sem bloco ao vivo); live = polling ligado; final = 100% apurado.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["v", "modo", "inicio", "atualizado"],
+  "properties": {
+    "v": { "const": 1 },
+    "modo": { "enum": ["pre", "live", "final"] },
+    "inicio": { "$ref": "common.schema.json#/$defs/dataHora" },
+    "atualizado": { "$ref": "common.schema.json#/$defs/dataHora" }
+  }
+}

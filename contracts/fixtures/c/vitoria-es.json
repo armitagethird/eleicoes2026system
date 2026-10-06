@@ -1,0 +1,67 @@
+{
+  "v": 1,
+  "slug": "vitoria-es",
+  "nome": "Vitória",
+  "uf": "ES",
+  "cod_tse": 90008,
+  "cod_ibge": 3205309,
+  "eleitores": 245380,
+  "atualizado": "2026-10-25T18:42:10-03:00",
+  "secoes_pct": 38.3,
+  "presidente": {
+    "cand": [
+      {
+        "n": 13,
+        "nome": "Lula",
+        "partido": "PT",
+        "votos": 21316,
+        "pct": 31.66,
+        "eleito": false
+      },
+      {
+        "n": 22,
+        "nome": "Flávio Bolsonaro",
+        "partido": "PL",
+        "votos": 46011,
+        "pct": 68.34,
+        "eleito": false
+      }
+    ],
+    "variacao_2022": {
+      "13": -0.42,
+      "22": 0.42
+    },
+    "diferenca_votos": 24695
+  },
+  "governador": {
+    "cand": [
+      {
+        "n": 12,
+        "nome": "Fictício A",
+        "partido": "FIC",
+        "votos": 27301,
+        "pct": 40.55,
+        "eleito": false
+      },
+      {
+        "n": 45,
+        "nome": "Fictícia B",
+        "partido": "FIC",
+        "votos": 40026,
+        "pct": 59.45,
+        "eleito": false
+      }
+    ],
+    "variacao_2022": {},
+    "diferenca_votos": 12725
+  },
+  "selos": [
+    "mais_unanime_br"
+  ],
+  "rank": {
+    "dividida_br": 47,
+    "dividida_uf": 1,
+    "virada_uf": null
+  },
+  "virou": false
+}

@@ -1,0 +1,65 @@
+{
+  "v": 1,
+  "slug": "brasilia-df",
+  "nome": "Brasília",
+  "uf": "DF",
+  "cod_tse": 90007,
+  "cod_ibge": 5300108,
+  "eleitores": 2141210,
+  "atualizado": "2026-10-25T18:42:10-03:00",
+  "secoes_pct": 76.6,
+  "presidente": {
+    "cand": [
+      {
+        "n": 13,
+        "nome": "Lula",
+        "partido": "PT",
+        "votos": 813982,
+        "pct": 60.9,
+        "eleito": false
+      },
+      {
+        "n": 22,
+        "nome": "Flávio Bolsonaro",
+        "partido": "PL",
+        "votos": 522606,
+        "pct": 39.1,
+        "eleito": false
+      }
+    ],
+    "variacao_2022": {
+      "13": 5.1,
+      "22": -5.1
+    },
+    "diferenca_votos": 291376
+  },
+  "governador": {
+    "cand": [
+      {
+        "n": 12,
+        "nome": "Fictício A",
+        "partido": "FIC",
+        "votos": 667091,
+        "pct": 49.91,
+        "eleito": false
+      },
+      {
+        "n": 45,
+        "nome": "Fictícia B",
+        "partido": "FIC",
+        "votos": 669497,
+        "pct": 50.09,
+        "eleito": false
+      }
+    ],
+    "variacao_2022": {},
+    "diferenca_votos": 2406
+  },
+  "selos": [],
+  "rank": {
+    "dividida_br": 36,
+    "dividida_uf": 1,
+    "virada_uf": null
+  },
+  "virou": false
+}

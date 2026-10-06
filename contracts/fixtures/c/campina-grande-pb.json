@@ -1,0 +1,44 @@
+{
+  "v": 1,
+  "slug": "campina-grande-pb",
+  "nome": "Campina Grande",
+  "uf": "PB",
+  "cod_tse": 90042,
+  "cod_ibge": 2504009,
+  "eleitores": 318730,
+  "atualizado": "2026-10-25T18:42:10-03:00",
+  "secoes_pct": 85.2,
+  "presidente": {
+    "cand": [
+      {
+        "n": 13,
+        "nome": "Lula",
+        "partido": "PT",
+        "votos": 136145,
+        "pct": 60.34,
+        "eleito": false
+      },
+      {
+        "n": 22,
+        "nome": "Flávio Bolsonaro",
+        "partido": "PL",
+        "votos": 89484,
+        "pct": 39.66,
+        "eleito": false
+      }
+    ],
+    "variacao_2022": {
+      "13": -0.78,
+      "22": 0.78
+    },
+    "diferenca_votos": 46661
+  },
+  "governador": null,
+  "selos": [],
+  "rank": {
+    "dividida_br": 32,
+    "dividida_uf": 2,
+    "virada_uf": null
+  },
+  "virou": false
+}

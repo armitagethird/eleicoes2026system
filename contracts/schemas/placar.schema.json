@@ -1,0 +1,32 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "placar.schema.json",
+  "title": "/data/br.json e /data/uf/{uf}.json (mesma forma)",
+  "description": "governador é null em br.json e em todas as UFs exceto AC, AM, DF, ES, RJ, RN e TO.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["v", "turno", "atualizado", "secoes_pct", "comparecimento_pct", "abstencao_pct", "presidente", "governador"],
+  "properties": {
+    "v": { "const": 1 },
+    "turno": { "const": 2 },
+    "atualizado": { "$ref": "common.schema.json#/$defs/dataHora" },
+    "secoes_pct": { "$ref": "common.schema.json#/$defs/pct" },
+    "comparecimento_pct": { "$ref": "common.schema.json#/$defs/pct" },
+    "abstencao_pct": { "$ref": "common.schema.json#/$defs/pct" },
+    "presidente": { "$ref": "#/$defs/cargo" },
+    "governador": { "oneOf": [{ "type": "null" }, { "$ref": "#/$defs/cargo" }] }
+  },
+  "$defs": {
+    "cargo": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["cand", "variacao_2022", "brancos", "nulos"],
+      "properties": {
+        "cand": { "$ref": "common.schema.json#/$defs/candidatos" },
+        "variacao_2022": { "$ref": "common.schema.json#/$defs/variacao2022" },
+        "brancos": { "type": "integer", "minimum": 0 },
+        "nulos": { "type": "integer", "minimum": 0 }
+      }
+    }
+  }
+}

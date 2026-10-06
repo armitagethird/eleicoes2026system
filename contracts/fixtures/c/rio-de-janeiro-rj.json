@@ -1,0 +1,67 @@
+{
+  "v": 1,
+  "slug": "rio-de-janeiro-rj",
+  "nome": "Rio de Janeiro",
+  "uf": "RJ",
+  "cod_tse": 90019,
+  "cod_ibge": 3304557,
+  "eleitores": 4720530,
+  "atualizado": "2026-10-25T18:42:10-03:00",
+  "secoes_pct": 68.4,
+  "presidente": {
+    "cand": [
+      {
+        "n": 13,
+        "nome": "Lula",
+        "partido": "PT",
+        "votos": 1237592,
+        "pct": 51.02,
+        "eleito": false
+      },
+      {
+        "n": 22,
+        "nome": "Flávio Bolsonaro",
+        "partido": "PL",
+        "votos": 1188108,
+        "pct": 48.98,
+        "eleito": false
+      }
+    ],
+    "variacao_2022": {
+      "13": 0.33,
+      "22": -0.33
+    },
+    "diferenca_votos": 49484
+  },
+  "governador": {
+    "cand": [
+      {
+        "n": 12,
+        "nome": "Fictício A",
+        "partido": "FIC",
+        "votos": 1217944,
+        "pct": 50.21,
+        "eleito": false
+      },
+      {
+        "n": 45,
+        "nome": "Fictícia B",
+        "partido": "FIC",
+        "votos": 1207756,
+        "pct": 49.79,
+        "eleito": false
+      }
+    ],
+    "variacao_2022": {},
+    "diferenca_votos": 10188
+  },
+  "selos": [
+    "mais_dividida_uf"
+  ],
+  "rank": {
+    "dividida_br": 6,
+    "dividida_uf": 1,
+    "virada_uf": null
+  },
+  "virou": false
+}

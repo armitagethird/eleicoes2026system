@@ -1,0 +1,35 @@
+{
+  "v": 1,
+  "turno": 2,
+  "atualizado": "2026-10-25T18:42:10-03:00",
+  "secoes_pct": 85.2,
+  "comparecimento_pct": 82.7,
+  "abstencao_pct": 17.3,
+  "presidente": {
+    "cand": [
+      {
+        "n": 13,
+        "nome": "Lula",
+        "partido": "PT",
+        "votos": 746583,
+        "pct": 49.52,
+        "eleito": false
+      },
+      {
+        "n": 22,
+        "nome": "Flávio Bolsonaro",
+        "partido": "PL",
+        "votos": 761068,
+        "pct": 50.48,
+        "eleito": false
+      }
+    ],
+    "variacao_2022": {
+      "13": 18.73,
+      "22": -18.73
+    },
+    "brancos": 48634,
+    "nulos": 64845
+  },
+  "governador": null
+}

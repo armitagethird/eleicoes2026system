@@ -1,0 +1,44 @@
+{
+  "v": 1,
+  "slug": "salvador-ba",
+  "nome": "Salvador",
+  "uf": "BA",
+  "cod_tse": 90005,
+  "cod_ibge": 2927408,
+  "eleitores": 1837440,
+  "atualizado": "2026-10-25T18:42:10-03:00",
+  "secoes_pct": 82.3,
+  "presidente": {
+    "cand": [
+      {
+        "n": 13,
+        "nome": "Lula",
+        "partido": "PT",
+        "votos": 608749,
+        "pct": 60.5,
+        "eleito": false
+      },
+      {
+        "n": 22,
+        "nome": "Flávio Bolsonaro",
+        "partido": "PL",
+        "votos": 397447,
+        "pct": 39.5,
+        "eleito": false
+      }
+    ],
+    "variacao_2022": {
+      "13": 1.19,
+      "22": -1.19
+    },
+    "diferenca_votos": 211302
+  },
+  "governador": null,
+  "selos": [],
+  "rank": {
+    "dividida_br": 33,
+    "dividida_uf": 2,
+    "virada_uf": null
+  },
+  "virou": false
+}

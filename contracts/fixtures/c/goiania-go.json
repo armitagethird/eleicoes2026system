@@ -1,0 +1,46 @@
+{
+  "v": 1,
+  "slug": "goiania-go",
+  "nome": "Goiânia",
+  "uf": "GO",
+  "cod_tse": 90009,
+  "cod_ibge": 5208707,
+  "eleitores": 1092400,
+  "atualizado": "2026-10-25T18:42:10-03:00",
+  "secoes_pct": 53.7,
+  "presidente": {
+    "cand": [
+      {
+        "n": 13,
+        "nome": "Lula",
+        "partido": "PT",
+        "votos": 183032,
+        "pct": 40.19,
+        "eleito": false
+      },
+      {
+        "n": 22,
+        "nome": "Flávio Bolsonaro",
+        "partido": "PL",
+        "votos": 272384,
+        "pct": 59.81,
+        "eleito": false
+      }
+    ],
+    "variacao_2022": {
+      "13": -1.39,
+      "22": 1.39
+    },
+    "diferenca_votos": 89352
+  },
+  "governador": null,
+  "selos": [
+    "mais_dividida_uf"
+  ],
+  "rank": {
+    "dividida_br": 30,
+    "dividida_uf": 1,
+    "virada_uf": null
+  },
+  "virou": false
+}

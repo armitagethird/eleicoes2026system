@@ -1,0 +1,46 @@
+{
+  "v": 1,
+  "slug": "serra-da-saudade-mg",
+  "nome": "Serra da Saudade",
+  "uf": "MG",
+  "cod_tse": 90032,
+  "cod_ibge": 3166600,
+  "eleitores": 630,
+  "atualizado": "2026-10-25T18:42:10-03:00",
+  "secoes_pct": 100,
+  "presidente": {
+    "cand": [
+      {
+        "n": 13,
+        "nome": "Lula",
+        "partido": "PT",
+        "votos": 0,
+        "pct": 0,
+        "eleito": false
+      },
+      {
+        "n": 22,
+        "nome": "Flávio Bolsonaro",
+        "partido": "PL",
+        "votos": 492,
+        "pct": 100,
+        "eleito": false
+      }
+    ],
+    "variacao_2022": {
+      "13": -48.59,
+      "22": 48.59
+    },
+    "diferenca_votos": 492
+  },
+  "governador": null,
+  "selos": [
+    "mais_unanime_br"
+  ],
+  "rank": {
+    "dividida_br": 49,
+    "dividida_uf": 3,
+    "virada_uf": null
+  },
+  "virou": false
+}

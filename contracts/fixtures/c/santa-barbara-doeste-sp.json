@@ -1,0 +1,46 @@
+{
+  "v": 1,
+  "slug": "santa-barbara-doeste-sp",
+  "nome": "Santa Bárbara d'Oeste",
+  "uf": "SP",
+  "cod_tse": 90028,
+  "cod_ibge": 3545803,
+  "eleitores": 139340,
+  "atualizado": "2026-10-25T18:42:10-03:00",
+  "secoes_pct": 96.4,
+  "presidente": {
+    "cand": [
+      {
+        "n": 13,
+        "nome": "Lula",
+        "partido": "PT",
+        "votos": 50742,
+        "pct": 50.1,
+        "eleito": false
+      },
+      {
+        "n": 22,
+        "nome": "Flávio Bolsonaro",
+        "partido": "PL",
+        "votos": 50540,
+        "pct": 49.9,
+        "eleito": false
+      }
+    ],
+    "variacao_2022": {
+      "13": -15.73,
+      "22": 15.73
+    },
+    "diferenca_votos": 202
+  },
+  "governador": null,
+  "selos": [
+    "mais_dividida_br"
+  ],
+  "rank": {
+    "dividida_br": 3,
+    "dividida_uf": 2,
+    "virada_uf": null
+  },
+  "virou": false
+}

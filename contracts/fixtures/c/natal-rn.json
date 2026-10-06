@@ -1,0 +1,67 @@
+{
+  "v": 1,
+  "slug": "natal-rn",
+  "nome": "Natal",
+  "uf": "RN",
+  "cod_tse": 90020,
+  "cod_ibge": 2408102,
+  "eleitores": 570990,
+  "atualizado": "2026-10-25T18:42:10-03:00",
+  "secoes_pct": 83.4,
+  "presidente": {
+    "cand": [
+      {
+        "n": 13,
+        "nome": "Lula",
+        "partido": "PT",
+        "votos": 199132,
+        "pct": 56.03,
+        "eleito": false
+      },
+      {
+        "n": 22,
+        "nome": "Flávio Bolsonaro",
+        "partido": "PL",
+        "votos": 156270,
+        "pct": 43.97,
+        "eleito": false
+      }
+    ],
+    "variacao_2022": {
+      "13": -3.95,
+      "22": 3.95
+    },
+    "diferenca_votos": 42862
+  },
+  "governador": {
+    "cand": [
+      {
+        "n": 12,
+        "nome": "Fictício A",
+        "partido": "FIC",
+        "votos": 216475,
+        "pct": 60.91,
+        "eleito": false
+      },
+      {
+        "n": 45,
+        "nome": "Fictícia B",
+        "partido": "FIC",
+        "votos": 138927,
+        "pct": 39.09,
+        "eleito": false
+      }
+    ],
+    "variacao_2022": {},
+    "diferenca_votos": 77548
+  },
+  "selos": [
+    "mais_dividida_uf"
+  ],
+  "rank": {
+    "dividida_br": 18,
+    "dividida_uf": 1,
+    "virada_uf": null
+  },
+  "virou": false
+}

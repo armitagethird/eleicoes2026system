@@ -1,0 +1,46 @@
+{
+  "v": 1,
+  "slug": "porto-velho-ro",
+  "nome": "Porto Velho",
+  "uf": "RO",
+  "cod_tse": 90022,
+  "cod_ibge": 1100205,
+  "eleitores": 349930,
+  "atualizado": "2026-10-25T18:42:10-03:00",
+  "secoes_pct": 87.7,
+  "presidente": {
+    "cand": [
+      {
+        "n": 13,
+        "nome": "Lula",
+        "partido": "PT",
+        "votos": 158386,
+        "pct": 62.48,
+        "eleito": false
+      },
+      {
+        "n": 22,
+        "nome": "Flávio Bolsonaro",
+        "partido": "PL",
+        "votos": 95112,
+        "pct": 37.52,
+        "eleito": false
+      }
+    ],
+    "variacao_2022": {
+      "13": -0.23,
+      "22": 0.23
+    },
+    "diferenca_votos": 63274
+  },
+  "governador": null,
+  "selos": [
+    "mais_dividida_uf"
+  ],
+  "rank": {
+    "dividida_br": 40,
+    "dividida_uf": 1,
+    "virada_uf": null
+  },
+  "virou": false
+}

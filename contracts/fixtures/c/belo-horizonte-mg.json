@@ -1,0 +1,44 @@
+{
+  "v": 1,
+  "slug": "belo-horizonte-mg",
+  "nome": "Belo Horizonte",
+  "uf": "MG",
+  "cod_tse": 90013,
+  "cod_ibge": 3106200,
+  "eleitores": 1759830,
+  "atualizado": "2026-10-25T18:42:10-03:00",
+  "secoes_pct": 90.9,
+  "presidente": {
+    "cand": [
+      {
+        "n": 13,
+        "nome": "Lula",
+        "partido": "PT",
+        "votos": 739129,
+        "pct": 61.34,
+        "eleito": false
+      },
+      {
+        "n": 22,
+        "nome": "Flávio Bolsonaro",
+        "partido": "PL",
+        "votos": 465842,
+        "pct": 38.66,
+        "eleito": false
+      }
+    ],
+    "variacao_2022": {
+      "13": -3.32,
+      "22": 3.32
+    },
+    "diferenca_votos": 273287
+  },
+  "governador": null,
+  "selos": [],
+  "rank": {
+    "dividida_br": 38,
+    "dividida_uf": 2,
+    "virada_uf": null
+  },
+  "virou": false
+}

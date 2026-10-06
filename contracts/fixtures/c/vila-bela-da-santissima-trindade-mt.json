@@ -1,0 +1,46 @@
+{
+  "v": 1,
+  "slug": "vila-bela-da-santissima-trindade-mt",
+  "nome": "Vila Bela da Santíssima Trindade",
+  "uf": "MT",
+  "cod_tse": 90030,
+  "cod_ibge": 5105507,
+  "eleitores": 12750,
+  "atualizado": "2026-10-25T18:42:10-03:00",
+  "secoes_pct": 78.2,
+  "presidente": {
+    "cand": [
+      {
+        "n": 13,
+        "nome": "Lula",
+        "partido": "PT",
+        "votos": 3288,
+        "pct": 44.24,
+        "eleito": false
+      },
+      {
+        "n": 22,
+        "nome": "Flávio Bolsonaro",
+        "partido": "PL",
+        "votos": 4145,
+        "pct": 55.76,
+        "eleito": false
+      }
+    ],
+    "variacao_2022": {
+      "13": -11.83,
+      "22": 11.83
+    },
+    "diferenca_votos": 857
+  },
+  "governador": null,
+  "selos": [
+    "maior_virada_uf"
+  ],
+  "rank": {
+    "dividida_br": 17,
+    "dividida_uf": 2,
+    "virada_uf": 1
+  },
+  "virou": true
+}

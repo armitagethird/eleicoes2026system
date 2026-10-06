@@ -1,0 +1,44 @@
+{
+  "v": 1,
+  "slug": "belem-pa",
+  "nome": "Belém",
+  "uf": "PA",
+  "cod_tse": 90014,
+  "cod_ibge": 1501402,
+  "eleitores": 990590,
+  "atualizado": "2026-10-25T18:42:10-03:00",
+  "secoes_pct": 75.6,
+  "presidente": {
+    "cand": [
+      {
+        "n": 13,
+        "nome": "Lula",
+        "partido": "PT",
+        "votos": 348027,
+        "pct": 58.55,
+        "eleito": false
+      },
+      {
+        "n": 22,
+        "nome": "Flávio Bolsonaro",
+        "partido": "PL",
+        "votos": 246383,
+        "pct": 41.45,
+        "eleito": false
+      }
+    ],
+    "variacao_2022": {
+      "13": 3.34,
+      "22": -3.34
+    },
+    "diferenca_votos": 101644
+  },
+  "governador": null,
+  "selos": [],
+  "rank": {
+    "dividida_br": 23,
+    "dividida_uf": 2,
+    "virada_uf": null
+  },
+  "virou": false
+}

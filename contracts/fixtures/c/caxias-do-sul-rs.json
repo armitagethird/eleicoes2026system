@@ -1,0 +1,44 @@
+{
+  "v": 1,
+  "slug": "caxias-do-sul-rs",
+  "nome": "Caxias do Sul",
+  "uf": "RS",
+  "cod_tse": 90038,
+  "cod_ibge": 4305108,
+  "eleitores": 352260,
+  "atualizado": "2026-10-25T18:42:10-03:00",
+  "secoes_pct": 41.8,
+  "presidente": {
+    "cand": [
+      {
+        "n": 13,
+        "nome": "Lula",
+        "partido": "PT",
+        "votos": 42245,
+        "pct": 36.92,
+        "eleito": false
+      },
+      {
+        "n": 22,
+        "nome": "Flávio Bolsonaro",
+        "partido": "PL",
+        "votos": 72179,
+        "pct": 63.08,
+        "eleito": false
+      }
+    ],
+    "variacao_2022": {
+      "13": 2.73,
+      "22": -2.73
+    },
+    "diferenca_votos": 29934
+  },
+  "governador": null,
+  "selos": [],
+  "rank": {
+    "dividida_br": 41,
+    "dividida_uf": 2,
+    "virada_uf": null
+  },
+  "virou": false
+}

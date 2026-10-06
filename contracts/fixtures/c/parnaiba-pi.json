@@ -1,0 +1,44 @@
+{
+  "v": 1,
+  "slug": "parnaiba-pi",
+  "nome": "Parnaíba",
+  "uf": "PI",
+  "cod_tse": 90045,
+  "cod_ibge": 2207702,
+  "eleitores": 123240,
+  "atualizado": "2026-10-25T18:42:10-03:00",
+  "secoes_pct": 37,
+  "presidente": {
+    "cand": [
+      {
+        "n": 13,
+        "nome": "Lula",
+        "partido": "PT",
+        "votos": 13646,
+        "pct": 36.38,
+        "eleito": false
+      },
+      {
+        "n": 22,
+        "nome": "Flávio Bolsonaro",
+        "partido": "PL",
+        "votos": 23864,
+        "pct": 63.62,
+        "eleito": false
+      }
+    ],
+    "variacao_2022": {
+      "13": 5.17,
+      "22": -5.17
+    },
+    "diferenca_votos": 10218
+  },
+  "governador": null,
+  "selos": [],
+  "rank": {
+    "dividida_br": 42,
+    "dividida_uf": 2,
+    "virada_uf": null
+  },
+  "virou": false
+}

@@ -1,0 +1,23 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "municipios.schema.json",
+  "title": "src/data/municipios.json",
+  "description": "Lista de municípios. slug único no país. cod_tse NÃO é o código do IBGE.",
+  "type": "array",
+  "minItems": 1,
+  "items": {
+    "type": "object",
+    "additionalProperties": false,
+    "required": ["slug", "nome", "uf", "cod_tse", "cod_ibge", "lat", "lon", "eleitores"],
+    "properties": {
+      "slug": { "$ref": "common.schema.json#/$defs/slug" },
+      "nome": { "type": "string", "minLength": 1 },
+      "uf": { "$ref": "common.schema.json#/$defs/uf" },
+      "cod_tse": { "type": "integer", "minimum": 1 },
+      "cod_ibge": { "type": "integer", "minimum": 1000000, "maximum": 9999999 },
+      "lat": { "type": "number", "minimum": -34, "maximum": 6 },
+      "lon": { "type": "number", "minimum": -75, "maximum": -28 },
+      "eleitores": { "type": "integer", "minimum": 0 }
+    }
+  }
+}

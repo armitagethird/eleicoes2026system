@@ -1,0 +1,46 @@
+{
+  "v": 1,
+  "slug": "imperatriz-ma",
+  "nome": "Imperatriz",
+  "uf": "MA",
+  "cod_tse": 90043,
+  "cod_ibge": 2105302,
+  "eleitores": 207560,
+  "atualizado": "2026-10-25T18:42:10-03:00",
+  "secoes_pct": 62.3,
+  "presidente": {
+    "cand": [
+      {
+        "n": 13,
+        "nome": "Lula",
+        "partido": "PT",
+        "votos": 46615,
+        "pct": 45.89,
+        "eleito": false
+      },
+      {
+        "n": 22,
+        "nome": "Flávio Bolsonaro",
+        "partido": "PL",
+        "votos": 54965,
+        "pct": 54.11,
+        "eleito": false
+      }
+    ],
+    "variacao_2022": {
+      "13": -1.05,
+      "22": 1.05
+    },
+    "diferenca_votos": 8350
+  },
+  "governador": null,
+  "selos": [
+    "mais_dividida_uf"
+  ],
+  "rank": {
+    "dividida_br": 14,
+    "dividida_uf": 1,
+    "virada_uf": null
+  },
+  "virou": false
+}

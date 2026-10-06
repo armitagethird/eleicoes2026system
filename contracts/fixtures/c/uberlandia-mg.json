@@ -1,0 +1,46 @@
+{
+  "v": 1,
+  "slug": "uberlandia-mg",
+  "nome": "Uberlândia",
+  "uf": "MG",
+  "cod_tse": 90035,
+  "cod_ibge": 3170206,
+  "eleitores": 542050,
+  "atualizado": "2026-10-25T18:42:10-03:00",
+  "secoes_pct": 57.4,
+  "presidente": {
+    "cand": [
+      {
+        "n": 13,
+        "nome": "Lula",
+        "partido": "PT",
+        "votos": 113293,
+        "pct": 43.64,
+        "eleito": false
+      },
+      {
+        "n": 22,
+        "nome": "Flávio Bolsonaro",
+        "partido": "PL",
+        "votos": 146315,
+        "pct": 56.36,
+        "eleito": false
+      }
+    ],
+    "variacao_2022": {
+      "13": -0.27,
+      "22": 0.27
+    },
+    "diferenca_votos": 33022
+  },
+  "governador": null,
+  "selos": [
+    "mais_dividida_uf"
+  ],
+  "rank": {
+    "dividida_br": 20,
+    "dividida_uf": 1,
+    "virada_uf": null
+  },
+  "virou": false
+}

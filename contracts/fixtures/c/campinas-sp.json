@@ -1,0 +1,46 @@
+{
+  "v": 1,
+  "slug": "campinas-sp",
+  "nome": "Campinas",
+  "uf": "SP",
+  "cod_tse": 90034,
+  "cod_ibge": 3509502,
+  "eleitores": 865680,
+  "atualizado": "2026-10-25T18:42:10-03:00",
+  "secoes_pct": 72.6,
+  "presidente": {
+    "cand": [
+      {
+        "n": 13,
+        "nome": "Lula",
+        "partido": "PT",
+        "votos": 172784,
+        "pct": 34.01,
+        "eleito": false
+      },
+      {
+        "n": 22,
+        "nome": "Flávio Bolsonaro",
+        "partido": "PL",
+        "votos": 335254,
+        "pct": 65.99,
+        "eleito": false
+      }
+    ],
+    "variacao_2022": {
+      "13": -32.28,
+      "22": 32.28
+    },
+    "diferenca_votos": 162470
+  },
+  "governador": null,
+  "selos": [
+    "maior_virada_uf"
+  ],
+  "rank": {
+    "dividida_br": 46,
+    "dividida_uf": 4,
+    "virada_uf": 1
+  },
+  "virou": true
+}

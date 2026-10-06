@@ -1,0 +1,41 @@
+{
+  "v": 1,
+  "slug": "bora-sp",
+  "nome": "Borá",
+  "uf": "SP",
+  "cod_tse": 90033,
+  "cod_ibge": 3507209,
+  "eleitores": 690,
+  "atualizado": "2026-10-25T18:42:10-03:00",
+  "secoes_pct": 0.4,
+  "presidente": {
+    "cand": [
+      {
+        "n": 13,
+        "nome": "Lula",
+        "partido": "PT",
+        "votos": 0,
+        "pct": 0,
+        "eleito": false
+      },
+      {
+        "n": 22,
+        "nome": "Flávio Bolsonaro",
+        "partido": "PL",
+        "votos": 2,
+        "pct": 100,
+        "eleito": false
+      }
+    ],
+    "variacao_2022": {},
+    "diferenca_votos": 2
+  },
+  "governador": null,
+  "selos": [],
+  "rank": {
+    "dividida_br": null,
+    "dividida_uf": null,
+    "virada_uf": null
+  },
+  "virou": false
+}

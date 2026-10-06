@@ -1,0 +1,65 @@
+{
+  "v": 1,
+  "slug": "rio-branco-ac",
+  "nome": "Rio Branco",
+  "uf": "AC",
+  "cod_tse": 90001,
+  "cod_ibge": 1200401,
+  "eleitores": 277210,
+  "atualizado": "2026-10-25T18:42:10-03:00",
+  "secoes_pct": 62.2,
+  "presidente": {
+    "cand": [
+      {
+        "n": 13,
+        "nome": "Lula",
+        "partido": "PT",
+        "votos": 66294,
+        "pct": 51.84,
+        "eleito": false
+      },
+      {
+        "n": 22,
+        "nome": "Flávio Bolsonaro",
+        "partido": "PL",
+        "votos": 61587,
+        "pct": 48.16,
+        "eleito": false
+      }
+    ],
+    "variacao_2022": {
+      "13": 4.96,
+      "22": -4.96
+    },
+    "diferenca_votos": 4707
+  },
+  "governador": {
+    "cand": [
+      {
+        "n": 12,
+        "nome": "Fictício A",
+        "partido": "FIC",
+        "votos": 58608,
+        "pct": 45.83,
+        "eleito": false
+      },
+      {
+        "n": 45,
+        "nome": "Fictícia B",
+        "partido": "FIC",
+        "votos": 69273,
+        "pct": 54.17,
+        "eleito": false
+      }
+    ],
+    "variacao_2022": {},
+    "diferenca_votos": 10665
+  },
+  "selos": [],
+  "rank": {
+    "dividida_br": 7,
+    "dividida_uf": 1,
+    "virada_uf": 1
+  },
+  "virou": true
+}

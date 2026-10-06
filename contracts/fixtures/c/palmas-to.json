@@ -1,0 +1,65 @@
+{
+  "v": 1,
+  "slug": "palmas-to",
+  "nome": "Palmas",
+  "uf": "TO",
+  "cod_tse": 90027,
+  "cod_ibge": 1721000,
+  "eleitores": 230050,
+  "atualizado": "2026-10-25T18:42:10-03:00",
+  "secoes_pct": 73.3,
+  "presidente": {
+    "cand": [
+      {
+        "n": 13,
+        "nome": "Lula",
+        "partido": "PT",
+        "votos": 57899,
+        "pct": 47.6,
+        "eleito": false
+      },
+      {
+        "n": 22,
+        "nome": "Flávio Bolsonaro",
+        "partido": "PL",
+        "votos": 63737,
+        "pct": 52.4,
+        "eleito": false
+      }
+    ],
+    "variacao_2022": {
+      "13": -6.17,
+      "22": 6.17
+    },
+    "diferenca_votos": 5838
+  },
+  "governador": {
+    "cand": [
+      {
+        "n": 12,
+        "nome": "Fictício A",
+        "partido": "FIC",
+        "votos": 50674,
+        "pct": 41.66,
+        "eleito": false
+      },
+      {
+        "n": 45,
+        "nome": "Fictícia B",
+        "partido": "FIC",
+        "votos": 70962,
+        "pct": 58.34,
+        "eleito": false
+      }
+    ],
+    "variacao_2022": {},
+    "diferenca_votos": 20288
+  },
+  "selos": [],
+  "rank": {
+    "dividida_br": 10,
+    "dividida_uf": 1,
+    "virada_uf": 1
+  },
+  "virou": true
+}

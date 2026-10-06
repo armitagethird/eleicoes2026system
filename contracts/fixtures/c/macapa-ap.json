@@ -1,0 +1,44 @@
+{
+  "v": 1,
+  "slug": "macapa-ap",
+  "nome": "Macapá",
+  "uf": "AP",
+  "cod_tse": 90003,
+  "cod_ibge": 1600303,
+  "eleitores": 336630,
+  "atualizado": "2026-10-25T18:42:10-03:00",
+  "secoes_pct": 41.2,
+  "presidente": {
+    "cand": [
+      {
+        "n": 13,
+        "nome": "Lula",
+        "partido": "PT",
+        "votos": 48406,
+        "pct": 43.06,
+        "eleito": false
+      },
+      {
+        "n": 22,
+        "nome": "Flávio Bolsonaro",
+        "partido": "PL",
+        "votos": 64009,
+        "pct": 56.94,
+        "eleito": false
+      }
+    ],
+    "variacao_2022": {
+      "13": 9.22,
+      "22": -9.22
+    },
+    "diferenca_votos": 15603
+  },
+  "governador": null,
+  "selos": [],
+  "rank": {
+    "dividida_br": 21,
+    "dividida_uf": 1,
+    "virada_uf": null
+  },
+  "virou": false
+}

@@ -1,0 +1,46 @@
+{
+  "v": 1,
+  "slug": "juazeiro-do-norte-ce",
+  "nome": "Juazeiro do Norte",
+  "uf": "CE",
+  "cod_tse": 90040,
+  "cod_ibge": 2307304,
+  "eleitores": 217450,
+  "atualizado": "2026-10-25T18:42:10-03:00",
+  "secoes_pct": 99.1,
+  "presidente": {
+    "cand": [
+      {
+        "n": 13,
+        "nome": "Lula",
+        "partido": "PT",
+        "votos": 70406,
+        "pct": 41.05,
+        "eleito": false
+      },
+      {
+        "n": 22,
+        "nome": "Flávio Bolsonaro",
+        "partido": "PL",
+        "votos": 101107,
+        "pct": 58.95,
+        "eleito": false
+      }
+    ],
+    "variacao_2022": {
+      "13": -18.2,
+      "22": 18.2
+    },
+    "diferenca_votos": 30701
+  },
+  "governador": null,
+  "selos": [
+    "mais_dividida_uf"
+  ],
+  "rank": {
+    "dividida_br": 24,
+    "dividida_uf": 1,
+    "virada_uf": 1
+  },
+  "virou": true
+}

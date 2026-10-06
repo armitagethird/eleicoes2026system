@@ -1,0 +1,23 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "rankings.schema.json",
+  "title": "/data/rankings.json",
+  "description": "Quatro listas de slugs, já ordenadas. dividida: menor margem primeiro. unanime: maior percentual do líder primeiro. virada: cidades que viraram, maior mudança de margem primeiro. capitais: as 27 capitais, mais eleitores primeiro.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["dividida", "unanime", "virada", "capitais"],
+  "properties": {
+    "dividida": { "$ref": "#/$defs/lista" },
+    "unanime": { "$ref": "#/$defs/lista" },
+    "virada": { "$ref": "#/$defs/lista" },
+    "capitais": { "$ref": "#/$defs/lista" }
+  },
+  "$defs": {
+    "lista": {
+      "type": "array",
+      "uniqueItems": true,
+      "maxItems": 100,
+      "items": { "$ref": "common.schema.json#/$defs/slug" }
+    }
+  }
+}

@@ -1,0 +1,48 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "common.schema.json",
+  "title": "Definições compartilhadas",
+  "$defs": {
+    "dataHora": {
+      "description": "ISO 8601 com offset (RFC 3339). Sempre America/Sao_Paulo (-03:00) na origem.",
+      "type": "string",
+      "format": "date-time"
+    },
+    "pct": { "type": "number", "minimum": 0, "maximum": 100 },
+    "uf": {
+      "description": "Sigla da UF em maiúsculas (27 unidades, incluindo DF).",
+      "enum": ["AC","AL","AM","AP","BA","CE","DF","ES","GO","MA","MG","MS","MT","PA","PB","PE","PI","PR","RJ","RN","RO","RR","RS","SC","SE","SP","TO"]
+    },
+    "slug": {
+      "description": "nome-uf normalizado: sem acento, minúsculo, hífens, apóstrofo removido. Único no país.",
+      "type": "string",
+      "pattern": "^[a-z0-9]+(-[a-z0-9]+)*-[a-z]{2}$"
+    },
+    "candidato": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["n", "nome", "partido", "votos", "pct", "eleito"],
+      "properties": {
+        "n": { "description": "Número de urna. É a chave de ordenação em toda a interface.", "type": "integer", "minimum": 10, "maximum": 99 },
+        "nome": { "type": "string", "minLength": 1 },
+        "partido": { "type": "string", "minLength": 1 },
+        "votos": { "type": "integer", "minimum": 0 },
+        "pct": { "description": "Percentual sobre votos válidos (0 a 100).", "type": "number", "minimum": 0, "maximum": 100 },
+        "eleito": { "description": "true somente quando o resultado do cargo está oficialmente definido. Nunca inferir de percentual.", "type": "boolean" }
+      }
+    },
+    "candidatos": {
+      "description": "Exatamente dois, em ordem crescente de número de urna (13 antes de 22). A ordem não depende de quem lidera.",
+      "type": "array",
+      "minItems": 2,
+      "maxItems": 2,
+      "items": { "$ref": "#/$defs/candidato" }
+    },
+    "variacao2022": {
+      "description": "Pontos percentuais vs 2º turno de 2022, por número de urna, com sinal. Objeto vazio quando não há 2022 (cidade criada depois) ou quando o cargo não tem histórico (governador).",
+      "type": "object",
+      "additionalProperties": false,
+      "patternProperties": { "^[0-9]{2}$": { "type": "number" } }
+    }
+  }
+}

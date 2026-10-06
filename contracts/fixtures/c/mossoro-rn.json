@@ -1,0 +1,65 @@
+{
+  "v": 1,
+  "slug": "mossoro-rn",
+  "nome": "Mossoró",
+  "uf": "RN",
+  "cod_tse": 90046,
+  "cod_ibge": 2408003,
+  "eleitores": 201080,
+  "atualizado": "2026-10-25T18:42:10-03:00",
+  "secoes_pct": 73.7,
+  "presidente": {
+    "cand": [
+      {
+        "n": 13,
+        "nome": "Lula",
+        "partido": "PT",
+        "votos": 70266,
+        "pct": 57.9,
+        "eleito": false
+      },
+      {
+        "n": 22,
+        "nome": "Flávio Bolsonaro",
+        "partido": "PL",
+        "votos": 51092,
+        "pct": 42.1,
+        "eleito": false
+      }
+    ],
+    "variacao_2022": {
+      "13": 3.88,
+      "22": -3.88
+    },
+    "diferenca_votos": 19174
+  },
+  "governador": {
+    "cand": [
+      {
+        "n": 12,
+        "nome": "Fictício A",
+        "partido": "FIC",
+        "votos": 66577,
+        "pct": 54.86,
+        "eleito": false
+      },
+      {
+        "n": 45,
+        "nome": "Fictícia B",
+        "partido": "FIC",
+        "votos": 54781,
+        "pct": 45.14,
+        "eleito": false
+      }
+    ],
+    "variacao_2022": {},
+    "diferenca_votos": 11796
+  },
+  "selos": [],
+  "rank": {
+    "dividida_br": 22,
+    "dividida_uf": 2,
+    "virada_uf": null
+  },
+  "virou": false
+}

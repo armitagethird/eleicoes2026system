@@ -1,0 +1,46 @@
+{
+  "v": 1,
+  "slug": "joao-pessoa-pb",
+  "nome": "João Pessoa",
+  "uf": "PB",
+  "cod_tse": 90015,
+  "cod_ibge": 2507507,
+  "eleitores": 633790,
+  "atualizado": "2026-10-25T18:42:10-03:00",
+  "secoes_pct": 79.2,
+  "presidente": {
+    "cand": [
+      {
+        "n": 13,
+        "nome": "Lula",
+        "partido": "PT",
+        "votos": 232779,
+        "pct": 59.53,
+        "eleito": false
+      },
+      {
+        "n": 22,
+        "nome": "Flávio Bolsonaro",
+        "partido": "PL",
+        "votos": 158249,
+        "pct": 40.47,
+        "eleito": false
+      }
+    ],
+    "variacao_2022": {
+      "13": 2.11,
+      "22": -2.11
+    },
+    "diferenca_votos": 74530
+  },
+  "governador": null,
+  "selos": [
+    "mais_dividida_uf"
+  ],
+  "rank": {
+    "dividida_br": 27,
+    "dividida_uf": 1,
+    "virada_uf": null
+  },
+  "virou": false
+}

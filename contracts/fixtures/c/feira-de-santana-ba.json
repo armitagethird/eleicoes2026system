@@ -1,0 +1,46 @@
+{
+  "v": 1,
+  "slug": "feira-de-santana-ba",
+  "nome": "Feira de Santana",
+  "uf": "BA",
+  "cod_tse": 90039,
+  "cod_ibge": 2910800,
+  "eleitores": 468370,
+  "atualizado": "2026-10-25T18:42:10-03:00",
+  "secoes_pct": 56.9,
+  "presidente": {
+    "cand": [
+      {
+        "n": 13,
+        "nome": "Lula",
+        "partido": "PT",
+        "votos": 82457,
+        "pct": 40.64,
+        "eleito": false
+      },
+      {
+        "n": 22,
+        "nome": "Flávio Bolsonaro",
+        "partido": "PL",
+        "votos": 120439,
+        "pct": 59.36,
+        "eleito": false
+      }
+    ],
+    "variacao_2022": {
+      "13": -2.94,
+      "22": 2.94
+    },
+    "diferenca_votos": 37982
+  },
+  "governador": null,
+  "selos": [
+    "mais_dividida_uf"
+  ],
+  "rank": {
+    "dividida_br": 26,
+    "dividida_uf": 1,
+    "virada_uf": null
+  },
+  "virou": false
+}

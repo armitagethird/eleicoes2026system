@@ -1,0 +1,67 @@
+{
+  "v": 1,
+  "slug": "manaus-am",
+  "nome": "Manaus",
+  "uf": "AM",
+  "cod_tse": 90004,
+  "cod_ibge": 1302603,
+  "eleitores": 1568400,
+  "atualizado": "2026-10-25T18:42:10-03:00",
+  "secoes_pct": 61.3,
+  "presidente": {
+    "cand": [
+      {
+        "n": 13,
+        "nome": "Lula",
+        "partido": "PT",
+        "votos": 390307,
+        "pct": 50.08,
+        "eleito": false
+      },
+      {
+        "n": 22,
+        "nome": "Flávio Bolsonaro",
+        "partido": "PL",
+        "votos": 389061,
+        "pct": 49.92,
+        "eleito": false
+      }
+    ],
+    "variacao_2022": {
+      "13": 3.79,
+      "22": -3.79
+    },
+    "diferenca_votos": 1246
+  },
+  "governador": {
+    "cand": [
+      {
+        "n": 12,
+        "nome": "Fictício A",
+        "partido": "FIC",
+        "votos": 327724,
+        "pct": 42.05,
+        "eleito": false
+      },
+      {
+        "n": 45,
+        "nome": "Fictícia B",
+        "partido": "FIC",
+        "votos": 451644,
+        "pct": 57.95,
+        "eleito": false
+      }
+    ],
+    "variacao_2022": {},
+    "diferenca_votos": 123920
+  },
+  "selos": [
+    "mais_dividida_br"
+  ],
+  "rank": {
+    "dividida_br": 2,
+    "dividida_uf": 1,
+    "virada_uf": 1
+  },
+  "virou": true
+}

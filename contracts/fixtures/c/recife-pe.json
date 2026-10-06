@@ -1,0 +1,46 @@
+{
+  "v": 1,
+  "slug": "recife-pe",
+  "nome": "Recife",
+  "uf": "PE",
+  "cod_tse": 90017,
+  "cod_ibge": 2611606,
+  "eleitores": 1131580,
+  "atualizado": "2026-10-25T18:42:10-03:00",
+  "secoes_pct": 71.7,
+  "presidente": {
+    "cand": [
+      {
+        "n": 13,
+        "nome": "Lula",
+        "partido": "PT",
+        "votos": 355852,
+        "pct": 53.69,
+        "eleito": false
+      },
+      {
+        "n": 22,
+        "nome": "Flávio Bolsonaro",
+        "partido": "PL",
+        "votos": 306938,
+        "pct": 46.31,
+        "eleito": false
+      }
+    ],
+    "variacao_2022": {
+      "13": 0.9,
+      "22": -0.9
+    },
+    "diferenca_votos": 48914
+  },
+  "governador": null,
+  "selos": [
+    "mais_dividida_uf"
+  ],
+  "rank": {
+    "dividida_br": 12,
+    "dividida_uf": 1,
+    "virada_uf": null
+  },
+  "virou": false
+}

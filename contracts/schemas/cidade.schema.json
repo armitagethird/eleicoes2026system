@@ -1,0 +1,50 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "cidade.schema.json",
+  "title": "/data/c/{slug}.json",
+  "description": "governador é null exceto nas cidades de AC, AM, DF, ES, RJ, RN e TO. Se secoes_pct < 1, o front mostra 'aguardando primeiras seções'. selos e rank vêm prontos do worker.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["v", "slug", "nome", "uf", "cod_tse", "cod_ibge", "eleitores", "atualizado", "secoes_pct", "presidente", "governador", "selos", "rank", "virou"],
+  "properties": {
+    "v": { "const": 1 },
+    "slug": { "$ref": "common.schema.json#/$defs/slug" },
+    "nome": { "type": "string", "minLength": 1 },
+    "uf": { "$ref": "common.schema.json#/$defs/uf" },
+    "cod_tse": { "type": "integer", "minimum": 1 },
+    "cod_ibge": { "type": "integer", "minimum": 1000000, "maximum": 9999999 },
+    "eleitores": { "type": "integer", "minimum": 0 },
+    "atualizado": { "$ref": "common.schema.json#/$defs/dataHora" },
+    "secoes_pct": { "$ref": "common.schema.json#/$defs/pct" },
+    "presidente": { "$ref": "#/$defs/cargo" },
+    "governador": { "oneOf": [{ "type": "null" }, { "$ref": "#/$defs/cargo" }] },
+    "selos": {
+      "type": "array",
+      "uniqueItems": true,
+      "items": { "enum": ["mais_dividida_br", "mais_dividida_uf", "mais_unanime_br", "maior_virada_br", "maior_virada_uf"] }
+    },
+    "rank": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["dividida_br", "dividida_uf", "virada_uf"],
+      "properties": {
+        "dividida_br": { "type": ["integer", "null"], "minimum": 1 },
+        "dividida_uf": { "type": ["integer", "null"], "minimum": 1 },
+        "virada_uf": { "description": "null quando a cidade não virou.", "type": ["integer", "null"], "minimum": 1 }
+      }
+    },
+    "virou": { "description": "true quando quem lidera agora não é quem liderou o 2º turno de 2022 na cidade.", "type": "boolean" }
+  },
+  "$defs": {
+    "cargo": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["cand", "variacao_2022", "diferenca_votos"],
+      "properties": {
+        "cand": { "$ref": "common.schema.json#/$defs/candidatos" },
+        "variacao_2022": { "$ref": "common.schema.json#/$defs/variacao2022" },
+        "diferenca_votos": { "description": "Módulo da diferença de votos entre os dois candidatos.", "type": "integer", "minimum": 0 }
+      }
+    }
+  }
+}

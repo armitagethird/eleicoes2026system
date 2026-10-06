@@ -1,0 +1,44 @@
+{
+  "v": 1,
+  "slug": "fortaleza-ce",
+  "nome": "Fortaleza",
+  "uf": "CE",
+  "cod_tse": 90006,
+  "cod_ibge": 2304400,
+  "eleitores": 1845820,
+  "atualizado": "2026-10-25T18:42:10-03:00",
+  "secoes_pct": 49.2,
+  "presidente": {
+    "cand": [
+      {
+        "n": 13,
+        "nome": "Lula",
+        "partido": "PT",
+        "votos": 286839,
+        "pct": 40.65,
+        "eleito": false
+      },
+      {
+        "n": 22,
+        "nome": "Flávio Bolsonaro",
+        "partido": "PL",
+        "votos": 418793,
+        "pct": 59.35,
+        "eleito": false
+      }
+    ],
+    "variacao_2022": {
+      "13": 1.83,
+      "22": -1.83
+    },
+    "diferenca_votos": 131954
+  },
+  "governador": null,
+  "selos": [],
+  "rank": {
+    "dividida_br": 25,
+    "dividida_uf": 2,
+    "virada_uf": null
+  },
+  "virou": false
+}

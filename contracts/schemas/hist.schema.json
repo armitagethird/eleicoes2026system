@@ -1,0 +1,51 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "hist.schema.json",
+  "title": "src/data/hist/{slug}.json (embutido no build; não muda no dia)",
+  "description": "Percentuais sobre votos válidos. t2_2022 é null para município sem 2022 (ex.: Boa Esperança do Norte/MT, criado depois).",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["t2_2022", "t1_2026"],
+  "properties": {
+    "t2_2022": {
+      "oneOf": [
+        { "type": "null" },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["pct", "comparecimento_pct"],
+          "properties": {
+            "pct": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": ["13", "22"],
+              "properties": {
+                "13": { "$ref": "common.schema.json#/$defs/pct" },
+                "22": { "$ref": "common.schema.json#/$defs/pct" }
+              }
+            },
+            "comparecimento_pct": { "$ref": "common.schema.json#/$defs/pct" }
+          }
+        }
+      ]
+    },
+    "t1_2026": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["pct", "comparecimento_pct"],
+      "properties": {
+        "pct": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["13", "22", "outros"],
+          "properties": {
+            "13": { "$ref": "common.schema.json#/$defs/pct" },
+            "22": { "$ref": "common.schema.json#/$defs/pct" },
+            "outros": { "$ref": "common.schema.json#/$defs/pct" }
+          }
+        },
+        "comparecimento_pct": { "$ref": "common.schema.json#/$defs/pct" }
+      }
+    }
+  }
+}
