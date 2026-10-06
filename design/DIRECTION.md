@@ -172,6 +172,6 @@ Decisão do Romero em 06/10. Base legal: Res. TSE 23.600, art. 10.
 
 1. Fonte Archivo e acento violeta `#B57BFF` no selo. O playground alterna teal e coral.
 2. Tons dos candidatos: vermelho `#F2464B` e azul claro `#6CC4FF` (decidido o princípio; tom exato a aprovar).
-3. Placa do mapa com barra vermelho/azul; pintar a placa inteira com a cor de quem lidera (estilo G1) fica como opção a aprovar.
+3. Placa do mapa com barra vermelho/azul. Estilo G1 (pintar a sigla ou a placa inteira com a cor de quem lidera na UF) fica como opção a aprovar. O agente do mapa testou a sigla colorida e a leitura de relance ficou bem mais rápida, mas a opção foi retirada porque a regra escrita veta cor escolhida por liderança. Reativar só com aprovação do Romero.
 4. Governador sem comparação com 2022 (mostra a margem); cidade em `final` sem rótulo de posição. Cores dos candidatos a governador: a definir com os candidatos reais. Por enquanto vale `lib/cores.ts`: os números 13 e 22 têm a cor do partido em qualquer cargo, e os demais ficam neutros (`--ink` / `--ink-2`). Nunca pintar um candidato com a cor de outro partido.
 5. Selos ainda sem texto final em `copy.ts`; "virada" nos selos de ranking vem do próprio brief, não é "virada confirmada".
