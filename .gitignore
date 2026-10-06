@@ -17,3 +17,7 @@ site/public/data/
 npm-debug.log*
 .DS_Store
 .idea/
+
+# screenshots de trabalho dos agentes e builds isolados
+.shots/
+.builds/
