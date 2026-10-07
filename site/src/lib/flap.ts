@@ -11,7 +11,8 @@
 const MEIA_VIRADA_MS = 120; // duas metades = 240 ms por caractere
 const ESCALONAMENTO_MS = 60;
 const CIMA = 'inset(0 0 50% 0)';
-const BAIXO = 'inset(50% 0 0 0)';
+// A metade de baixo sobe 1 px sobre a de cima: duas bordas antialiased em exatos 50% deixariam um fio do fundo atravessando o número.
+const BAIXO = 'inset(calc(50% - 1px) 0 0 0)';
 
 /** Índices, no texto novo, das células que mudam, da direita para a esquerda. Alinha pela direita: números crescem à esquerda. */
 export function celulasQueMudam(anterior: string, novo: string): number[] {

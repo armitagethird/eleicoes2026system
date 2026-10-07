@@ -1,0 +1,66 @@
+---
+// Carregador da ilha ao vivo (components/AoVivo.ts). A página sai do build no modo pre e fica assim para quem chega antes do
+// dia 25: aqui o custo é um fetch de status.json (uns 120 bytes) e quase nenhum JS. Só se o modo for live ou final é que o
+// módulo da ilha é baixado. Ainda em pre, volta a conferir o status perto do início (e ao voltar para a aba), sem recarregar:
+// a apuração começa com a página já aberta.
+// A raiz da ilha é o elemento com data-ao-vivo="br" | "uf/{uf}" | "c/{slug}" (o JSON da página em /data).
+---
+
+<script>
+  import { EVENTO_MODO, esperaPre, modoParaAnunciar } from '../lib/ao-vivo-pre.ts';
+  import { parseStatus, type Modo, type Status } from '../lib/status.ts';
+
+  const TIMEOUT_MS = 10_000;
+  let inicio: string | null = null;
+  let anunciado: Modo | null = null;
+  let timer: ReturnType<typeof setTimeout> | undefined;
+  let emCurso = false;
+  let ligada = false;
+
+  /** null quando a rede falha: a página continua como está. */
+  async function lerStatus(): Promise<Status | null> {
+    try {
+      const resposta = await fetch('/data/status.json', { signal: AbortSignal.timeout(TIMEOUT_MS) });
+      return resposta.ok ? parseStatus(await resposta.json()) : null;
+    } catch {
+      return null;
+    }
+  }
+
+  async function conferir(): Promise<void> {
+    if (emCurso || ligada) return;
+    emCurso = true;
+    clearTimeout(timer);
+    const status = await lerStatus();
+    emCurso = false;
+    inicio = status?.inicio ?? inicio;
+    const aAnunciar = status && modoParaAnunciar(anunciado, status.modo);
+    if (aAnunciar) {
+      anunciado = aAnunciar;
+      document.dispatchEvent(new CustomEvent(EVENTO_MODO, { detail: { modo: aAnunciar } }));
+    }
+    if (status && status.modo !== 'pre') {
+      ligada = true;
+      const { iniciar } = await import('./AoVivo.ts');
+      await iniciar(status);
+      return;
+    }
+    const espera = esperaPre(inicio, Date.now());
+    if (espera !== null) timer = setTimeout(() => void conferir(), espera);
+  }
+
+  if (document.querySelector('[data-ao-vivo]')) {
+    void conferir();
+    document.addEventListener('visibilitychange', () => {
+      if (!document.hidden) void conferir();
+    });
+  }
+</script>
+
+<!-- O bloco do modo pre e a casca ao vivo trocam de lugar pelo atributo hidden, mesmo onde o componente define display. -->
+<style is:global>
+  [data-so-pre][hidden],
+  [data-so-vivo][hidden] {
+    display: none !important;
+  }
+</style>
