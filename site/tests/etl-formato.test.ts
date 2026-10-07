@@ -5,12 +5,14 @@ import { join } from 'node:path';
 import { Readable } from 'node:stream';
 import { deflateRawSync } from 'node:zlib';
 import { afterAll, describe, expect, it } from 'vitest';
-import { agregadoVazio, somarDetalhe, somarVotos } from '../scripts/etl/agregar.ts';
+import { type Agregado, agregadoVazio, somarDetalhe, somarVotos } from '../scripts/etl/agregar.ts';
 import { acumular, calcularLinha, comparecimentoPct, montarCamada, montarHist, percentual, serializarCamada } from '../scripts/etl/camada.ts';
 import { dividirLinha, registros } from '../scripts/etl/csv.ts';
-import type { Eleicao } from '../scripts/etl/fontes.ts';
+import { ELEICOES, type Eleicao, type IdHistorico } from '../scripts/etl/fontes.ts';
+import { montarResultados } from '../scripts/etl/gerar.ts';
 import { abrirEntrada, listarZip } from '../scripts/etl/zip.ts';
 import { lerCamada } from '../src/lib/camada-mapa.ts';
+import type { Municipio } from '../src/lib/contratos.ts';
 
 const ler = async (fluxo: Readable): Promise<string> => {
   const partes: Buffer[] = [];
@@ -291,5 +293,45 @@ describe('camada e hist', () => {
 
   it('hist sem votos em 2026 é erro', () => {
     expect(() => montarHist(undefined, { votos: {}, aptos: 10, comparecimento: 5 })).toThrow();
+  });
+});
+
+describe('montarResultados: tudo em memória antes de gravar', () => {
+  const municipios: Municipio[] = [
+    { slug: 'sao-luis-ma', nome: 'São Luís', uf: 'MA', cod_tse: 9210, cod_ibge: 2111300, lat: -2.5, lon: -44.3, eleitores: 200 },
+    { slug: 'sao-paulo-sp', nome: 'São Paulo', uf: 'SP', cod_tse: 71072, cod_ibge: 3550308, lat: -23.5, lon: -46.6, eleitores: 300 },
+  ];
+  const agregadosDe = (codigos: string[]): Record<IdHistorico, Agregado> =>
+    Object.fromEntries(
+      ELEICOES.map((e) => [
+        e.id,
+        {
+          id: e.id,
+          atualizado: '2026-10-05T12:51:05-03:00',
+          municipios: Object.fromEntries(
+            codigos.map((cod) => [cod, { uf: cod === '9210' ? 'MA' : 'SP', nome: cod, votos: { [e.candidatos[0].n]: 60, [e.candidatos[1].n]: 40 }, aptos: 200, comparecimento: 150 }]),
+          ),
+        },
+      ]),
+    ) as Record<IdHistorico, Agregado>;
+
+  it('devolve as 5 camadas, o hist de cada município, o de cada UF e o do Brasil', () => {
+    const r = montarResultados(municipios, agregadosDe(['9210', '71072']));
+    expect(r.camadas.map((c) => c.id)).toEqual(ELEICOES.map((e) => e.id));
+    expect(r.cidades.map((c) => c.slug)).toEqual(['sao-luis-ma', 'sao-paulo-sp']);
+    expect(r.ufs.map((u) => u.uf)).toEqual(['MA', 'SP']);
+    expect(r.brasil.t1_2026.pct).toEqual({ '13': 60, '22': 40, outros: 0 });
+    expect(r.sem2022).toBe(0);
+  });
+
+  it('município sem votos no 1º turno de 2026 derruba a montagem, dizendo qual (nada foi gravado: não há disco aqui)', () => {
+    const agregados = agregadosDe(['9210']);
+    expect(() => montarResultados(municipios, agregados)).toThrow(/sao-paulo-sp.*sem votos no 1º turno de 2026/);
+  });
+
+  it('conta os municípios sem 2022', () => {
+    const agregados = agregadosDe(['9210', '71072']);
+    delete agregados['2022-t2'].municipios['71072'];
+    expect(montarResultados(municipios, agregados).sem2022).toBe(1);
   });
 });
