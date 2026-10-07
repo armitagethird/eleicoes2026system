@@ -1,0 +1,110 @@
+---
+// O card do estado (/uf/{uf}), o mesmo bloco da página de cidade: com seções apuradas, o card ao vivo e o botão COMPARTILHAR
+// (CidadeAoVivo.astro, que leva /uf/{uf} no link); antes disso, o card em espera, sem botão, com a hora de início como promessa.
+// O build sai em pre e a página vira live/final no cliente (AoVivo.ts): com `aoVivoNoCliente` o bloco ao vivo vai oculto, como
+// casca, e o card em espera some quando a ilha o revela.
+import { urlBandeiraPng } from '../lib/bandeiras.ts';
+import { cardDePlacar } from '../lib/card-dados.ts';
+import { cardEmEspera } from '../lib/cidade.ts';
+import { NOME_UF, type Candidato, type Placar, type UF } from '../lib/contratos.ts';
+import { esperaDoCard } from '../lib/copy.ts';
+import { diaMes, hora } from '../lib/format.ts';
+import type { Status } from '../lib/status.ts';
+import { renderCard } from './Card.ts';
+import CidadeAoVivo from './CidadeAoVivo.astro';
+
+interface Props {
+  uf: UF;
+  status: Status;
+  /** O JSON ao vivo do estado (uf/{uf}.json). Ausente em pre. */
+  placar?: Placar;
+  /** Nome e partido de 13 e 22: o card em espera não tem JSON ao vivo de onde tirá-los. */
+  cand: ReadonlyArray<Pick<Candidato, 'n' | 'nome' | 'partido'>>;
+  /** Leva o bloco ao vivo oculto, para a ilha (components/AoVivo.ts) revelar. */
+  aoVivoNoCliente?: boolean;
+  /** Só /design/uf: mostra o aviso de falha de rede, que a ilha ao vivo liga com a mesma frase. */
+  semRede?: boolean;
+  /** Só /design/uf: sufixo dos ids, para o mesmo estado aparecer em mais de um modo na mesma página. */
+  sufixo?: string;
+}
+
+const { uf, status, placar, cand, aoVivoNoCliente = false, semRede = false, sufixo = '' } = Astro.props;
+const lugar = { nome: NOME_UF[uf], uf };
+
+// Com seções apuradas o card é o ao vivo (e compartilhável). Sem elas (pre, ou menos de 1% apurado) é o card em espera.
+const cardAoVivo = placar && cardDePlacar(placar, lugar, status.modo === 'final' ? 'final' : 'parcial');
+const apurando = Boolean(cardAoVivo) && (placar?.secoes_pct ?? 0) >= 1;
+const card = { ...(cardAoVivo ?? cardEmEspera(lugar, cand, status.inicio)), bandeiraHref: urlBandeiraPng(uf) };
+const legendaEspera = status.modo === 'pre' && status.inicio ? esperaDoCard(hora(status.inicio), diaMes(status.inicio), 'o estado') : null;
+---
+
+<div class="cartao">
+  {
+    apurando ? (
+      <div class="vivo">
+        <CidadeAoVivo card={card} uf={uf} atualizado={placar?.atualizado} semRede={semRede} id={`ao-vivo${sufixo}`} />
+      </div>
+    ) : (
+      <section class="espera" data-so-pre aria-labelledby={`espera-titulo${sufixo}`}>
+        <h2 class="espera-titulo" id={`espera-titulo${sufixo}`}>
+          Card do 2º turno
+        </h2>
+        <figure class="card" set:html={renderCard(card)} />
+        {legendaEspera && <p class="legenda">{legendaEspera}</p>}
+      </section>
+    )
+  }
+  {
+    aoVivoNoCliente && (
+      <div class="vivo" data-so-vivo hidden>
+        <CidadeAoVivo card={card} uf={uf} casca />
+      </div>
+    )
+  }
+</div>
+
+<style>
+  .espera {
+    display: grid;
+    align-content: start;
+    gap: var(--sp-2);
+  }
+
+  .espera-titulo {
+    padding-top: var(--sp-1);
+    border-top: var(--stroke-2) solid var(--ink);
+    font-size: var(--fs-3);
+    font-stretch: 87.5%;
+    letter-spacing: var(--track-caps);
+    text-transform: uppercase;
+  }
+
+  /* O card tem o mesmo fundo da página: ganha um filete e, no celular, vai de borda a borda. */
+  .card {
+    margin-inline: calc(var(--sp-2) * -1);
+    border-block: var(--stroke-1) solid var(--surface-2);
+  }
+
+  .card :global(svg) {
+    width: 100%;
+    height: auto;
+  }
+
+  .legenda {
+    max-width: 60ch;
+    font-size: var(--fs-1);
+    color: var(--ink-2);
+  }
+
+  /* Apurando, o card é a peça central e vem antes do resto (em pre, o placar do 1º turno vem antes do card em espera). */
+  .cartao:has(.vivo:not([hidden])) {
+    order: -1;
+  }
+
+  @media (min-width: 768px) {
+    .card {
+      margin-inline: 0;
+      border: var(--stroke-2) solid var(--surface-2);
+    }
+  }
+</style>

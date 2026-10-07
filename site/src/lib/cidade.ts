@@ -33,15 +33,24 @@ export function cardEmEspera(
 /** "18:42" vira "1842" para o ?t= do link; hora desconhecida não vira parâmetro. */
 export const parametroHora = (horaCard: string): string => (/^\d{2}:\d{2}$/.test(horaCard) ? horaCard.replace(':', '') : '');
 
-/** Link da cidade com a hora do card em ?t= (o preview no X reflete aquele momento); a canônica da página continua limpa. */
-export function linkCidade(slug: string, horaCard: string): { completo: string; curto: string } {
-  const t = parametroHora(horaCard);
-  const caminho = `/c/${slug}${t && `?t=${t}`}`;
-  return { completo: new URL(caminho, SITE_URL).href, curto: `${DOMINIO}${caminho}` };
+interface Link {
+  completo: string;
+  curto: string;
 }
 
+/** Link da página com a hora do card em ?t= (o preview no X reflete aquele momento); a canônica da página continua limpa. */
+function linkComHora(caminho: string, horaCard: string): Link {
+  const t = parametroHora(horaCard);
+  const comHora = `${caminho}${t && `?t=${t}`}`;
+  return { completo: new URL(comHora, SITE_URL).href, curto: `${DOMINIO}${comHora}` };
+}
+
+export const linkCidade = (slug: string, horaCard: string): Link => linkComHora(`/c/${slug}`, horaCard);
+
+export const linkUf = (uf: string, horaCard: string): Link => linkComHora(`/uf/${uf.toLowerCase()}`, horaCard);
+
 /** Tudo que o Compartilhar envia. O texto do share não leva o link (vai em `url`); o do fallback, que só copia, leva. */
-export function compartilhamento(card: CardData, slug: string): { texto: string; textoComLink: string; url: string } {
+function envio(card: CardData, { completo, curto }: Link): { texto: string; textoComLink: string; url: string } {
   const texto = textoCompartilhar({
     local: card.local,
     cand: card.cand,
@@ -49,6 +58,9 @@ export function compartilhamento(card: CardData, slug: string): { texto: string;
     modo: card.modo === 'final' ? 'final' : 'parcial',
     secoesPct: card.secoesPct,
   });
-  const { completo, curto } = linkCidade(slug, card.hora);
   return { texto, textoComLink: `${texto} · ${curto}`, url: completo };
 }
+
+export const compartilhamento = (card: CardData, slug: string) => envio(card, linkCidade(slug, card.hora));
+
+export const compartilhamentoUf = (card: CardData, uf: string) => envio(card, linkUf(uf, card.hora));

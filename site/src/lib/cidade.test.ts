@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import type { CardData } from '../components/Card.ts';
 import type { Hist } from './contratos.ts';
 import { PALAVRAS_PROIBIDAS, descricaoCidade, esperaDoCard, notaSoEntreDois, textoCompartilhar, tituloCidade } from './copy.ts';
-import { cardEmEspera, compartilhamento, linkCidade, parametroHora, variacaoEntreDois } from './cidade.ts';
+import { cardEmEspera, compartilhamento, compartilhamentoUf, linkCidade, linkUf, parametroHora, variacaoEntreDois } from './cidade.ts';
 import { diaMes } from './format.ts';
 import { SITE_URL } from './site.ts';
 
@@ -113,6 +113,12 @@ describe('textos da página de cidade', () => {
     );
   });
 
+  it('a espera do card de um estado diz "o estado", sem dizer "cidade"', () => {
+    const espera = esperaDoCard('17:00', '25 de outubro', 'o estado');
+    expect(espera).toContain('este card passa a mostrar o estado ao vivo');
+    expect(espera).not.toContain('cidade');
+  });
+
   it('a nota explica que a variação ignora os outros candidatos', () => {
     expect(notaSoEntreDois(24.33)).toContain('24,3%');
     expect(notaSoEntreDois(24.33)).toContain('13 e 22');
@@ -176,6 +182,37 @@ describe('compartilhamento', () => {
 
   it('card final diz 100% apurado', () => {
     expect(compartilhamento({ ...card, modo: 'final', secoesPct: 100 }, 'sao-luis-ma').texto).toContain('100% apurado');
+  });
+});
+
+describe('compartilhamento de um estado', () => {
+  const dominio = new URL(SITE_URL).host;
+  const card: CardData = {
+    modo: 'parcial',
+    local: 'Maranhão',
+    uf: 'MA',
+    cargo: 'presidente',
+    cand: [
+      { n: 13, nome: 'Lula', partido: 'PT', pct: 66.85 },
+      { n: 22, nome: 'Flávio Bolsonaro', partido: 'PL', pct: 33.15 },
+    ],
+    variacao: -4.29,
+    secoesPct: 69.4,
+    hora: '18:42',
+    dominio: 'x',
+    handle: '@x',
+  };
+
+  it('a URL é /uf/{uf} com a hora em ?t=, em minúsculas; o texto traz o estado e o fallback termina no link curto', () => {
+    const { texto, textoComLink, url } = compartilhamentoUf(card, 'MA');
+    expect(url).toBe(`${SITE_URL}/uf/ma?t=1842`);
+    expect(texto).toBe('Maranhão: Lula 66,9% × Flávio Bolsonaro 33,2%, +4,3 pts para Flávio Bolsonaro vs 2022 · 69% apurado');
+    expect(textoComLink).toBe(`${texto} · ${dominio}/uf/ma?t=1842`);
+  });
+
+  it('sem hora conhecida o link sai limpo; card final diz 100% apurado', () => {
+    expect(linkUf('MA', '--:--')).toEqual({ completo: `${SITE_URL}/uf/ma`, curto: `${dominio}/uf/ma` });
+    expect(compartilhamentoUf({ ...card, modo: 'final', secoesPct: 100 }, 'MA').texto).toContain('100% apurado');
   });
 });
 

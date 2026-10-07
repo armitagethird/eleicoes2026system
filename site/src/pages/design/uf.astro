@@ -1,0 +1,201 @@
+---
+// Playground do card do estado (só em dev; o build apaga /design), para aprovação do Romero: o bloco real da página /uf/{uf}
+// (components/CartaoUf.astro) em pre, parcial, final e parcial sem conexão, com as fixtures de contracts/fixtures/uf. Escolha o
+// estado com /design/uf?uf=ma. Página estática não recebe query string (nem no dev), então cada estado vai pronto num <template>
+// e um script de poucas linhas clona o do estado pedido. Âncoras #modo-pre, #modo-parcial, #modo-final e #modo-sem-conexao.
+//   pre:      o card em espera, com a hora de início como promessa e sem botão
+//   parcial:  o card ao vivo de fixtures/uf/{uf}.json e o botão Compartilhar (gera o PNG de verdade)
+//   final:    o mesmo JSON com 100% das seções e a hora de status.final.json; `eleito` segue false
+// Os números são fictícios; o hist (2022 e 1º turno) é o de src/data/hist-uf. Os casos de borda no fim derivam das fixtures.
+import brFixture from '../../../../contracts/fixtures/br.json';
+import statusFinal from '../../../../contracts/fixtures/status.final.json';
+import statusLive from '../../../../contracts/fixtures/status.live.json';
+import statusPre from '../../../../contracts/fixtures/status.json';
+import CartaoUf from '../../components/CartaoUf.astro';
+import Base from '../../layouts/Base.astro';
+import { NOME_UF, UFS, type Placar, type UF } from '../../lib/contratos.ts';
+import { AVISO_FICTICIO } from '../../lib/copy.ts';
+import { parseStatus } from '../../lib/status.ts';
+
+const PADRAO: UF = 'MA';
+const nomes = brFixture.presidente.cand.map(({ n, nome, partido }) => ({ n, nome, partido }));
+const fixtures = import.meta.glob<Placar>('../../../../contracts/fixtures/uf/*.json', { eager: true, import: 'default' });
+const fixtureDe = (uf: UF): Placar => fixtures[`../../../../contracts/fixtures/uf/${uf.toLowerCase()}.json`];
+
+const pre = parseStatus(statusPre);
+const live = parseStatus(statusLive);
+const final = parseStatus(statusFinal);
+const modosDe = (placar: Placar) => [
+  { chave: 'pre', rotulo: 'pre', props: { status: pre } },
+  { chave: 'parcial', rotulo: 'parcial', props: { status: live, placar } },
+  { chave: 'final', rotulo: 'final', props: { status: final, placar: { ...placar, secoes_pct: 100, atualizado: statusFinal.atualizado } } },
+  { chave: 'sem-conexao', rotulo: 'parcial, sem conexão', props: { status: live, placar, semRede: true } },
+];
+
+// Casos de borda: o que olhar em cada um. Derivam das fixtures, com os números trocados só para forçar o caso.
+const [a, b] = fixtureDe('AP').presidente.cand;
+const BORDAS = [
+  {
+    uf: 'AP' as UF,
+    olhar: 'margem de 0,3 ponto: a frase vira diferença em votos, sem seta',
+    placar: {
+      ...fixtureDe('AP'),
+      presidente: {
+        ...fixtureDe('AP').presidente,
+        cand: [
+          { ...a, pct: 50.12, votos: 205_340 },
+          { ...b, pct: 49.88, votos: 204_110 },
+        ],
+      },
+    },
+  },
+  { uf: 'RR' as UF, olhar: 'menos de 1% das seções: card em espera, sem botão', placar: { ...fixtureDe('RR'), secoes_pct: 0.4 } },
+  { uf: 'RN' as UF, olhar: 'nome longo: o destino quebra em duas linhas', placar: fixtureDe('RN') },
+  { uf: 'DF' as UF, olhar: 'tem governador: o card é só o do presidente', placar: fixtureDe('DF') },
+];
+---
+
+<Base titulo="Estado: playground" descricao="O card da página de estado em pre, parcial, final e sem conexão, com as fixtures." caminho="/design/uf">
+  <nav class="indice" aria-label="Modos">
+    <p class="etiqueta" data-uf-nome>{NOME_UF[PADRAO]}</p>
+    {['pre', 'parcial', 'final', 'sem-conexao', 'bordas'].map((chave) => <a href={`#modo-${chave}`}>{chave}</a>)}
+  </nav>
+
+  <p class="aviso" data-uf-invalida hidden></p>
+  <p class="aviso">{AVISO_FICTICIO}</p>
+
+  <details class="estados">
+    <summary>Trocar de estado</summary>
+    <ul class="lista chips">
+      {UFS.map((uf) => <li><a href={`?uf=${uf.toLowerCase()}`}>{NOME_UF[uf]} {uf}</a></li>)}
+    </ul>
+  </details>
+
+  <div id="palco" data-padrao={PADRAO.toLowerCase()}></div>
+
+  {
+    UFS.map((uf) => (
+      <template data-uf={uf.toLowerCase()} data-nome={`${NOME_UF[uf]} (${uf})`}>
+        {modosDe(fixtureDe(uf)).map(({ chave, rotulo, props }) => (
+          <section class="modo" id={`modo-${chave}`} aria-label={`Modo ${rotulo}`}>
+            <p class="etiqueta">modo {rotulo}</p>
+            <div class="coluna">
+              <CartaoUf uf={uf} cand={nomes} sufixo={`-${chave}`} {...props} />
+            </div>
+          </section>
+        ))}
+      </template>
+    ))
+  }
+
+  <section class="modo" id="modo-bordas" aria-label="Casos de borda">
+    <p class="etiqueta">casos de borda (parcial)</p>
+    {
+      BORDAS.map(({ uf, olhar, placar }) => (
+        <div class="borda">
+          <p class="olhar">
+            {NOME_UF[uf]} ({uf}): {olhar}
+          </p>
+          <div class="coluna">
+            <CartaoUf uf={uf} cand={nomes} status={live} placar={placar} sufixo={`-borda-${uf.toLowerCase()}`} />
+          </div>
+        </div>
+      ))
+    }
+  </section>
+</Base>
+
+<script>
+  const palco = document.querySelector<HTMLElement>('#palco');
+  const padrao = palco?.dataset.padrao ?? '';
+  const pedido = new URLSearchParams(location.search).get('uf');
+  const molde = (uf: string | null) => [...document.querySelectorAll<HTMLTemplateElement>('template[data-uf]')].find((t) => t.dataset.uf === uf);
+  const escolhido = molde(pedido) ?? molde(padrao);
+  if (palco && escolhido) {
+    palco.append(escolhido.content.cloneNode(true));
+    const nome = document.querySelector('[data-uf-nome]');
+    if (nome) nome.textContent = escolhido.dataset.nome ?? '';
+    if (location.hash) document.querySelector(location.hash)?.scrollIntoView();
+  }
+  const invalida = document.querySelector<HTMLElement>('[data-uf-invalida]');
+  if (invalida && pedido && escolhido?.dataset.uf !== pedido) {
+    invalida.textContent = `Não há estado "${pedido}": mostrando ${padrao}.`;
+    invalida.hidden = false;
+  }
+</script>
+
+<style>
+  .indice,
+  .etiqueta,
+  summary {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--sp-1) var(--sp-2);
+    padding: var(--sp-1) var(--sp-2);
+    background: var(--surface-2);
+    font-family: var(--font-display);
+    font-size: var(--fs-1);
+    font-weight: 900;
+    letter-spacing: var(--track-caps);
+    text-transform: uppercase;
+  }
+
+  .indice {
+    position: sticky;
+    top: 0;
+    z-index: 1;
+  }
+
+  .indice .etiqueta {
+    flex: 1 1 100%;
+    padding: 0;
+  }
+
+  .aviso {
+    margin: var(--sp-1) var(--sp-2) 0;
+    padding: var(--sp-1) var(--sp-2);
+    border: var(--stroke-1) solid var(--ink-2);
+    font-size: var(--fs-1);
+  }
+
+  .modo {
+    margin-top: var(--sp-8);
+  }
+
+  .estados {
+    margin: var(--sp-2);
+  }
+
+  summary {
+    cursor: pointer;
+  }
+
+  .lista {
+    display: grid;
+    gap: var(--sp-1);
+    margin: var(--sp-1) 0 0;
+    padding: 0;
+    list-style: none;
+    font-size: var(--fs-1);
+  }
+
+  .chips {
+    grid-template-columns: repeat(auto-fill, minmax(min(100%, 200px), 1fr));
+  }
+
+  /* A largura de uma coluna da página (celular com a margem de 16 px; no desktop, as 5 colunas do placar). */
+  .coluna {
+    max-width: 560px;
+    padding: var(--sp-2);
+  }
+
+  .borda {
+    margin-top: var(--sp-4);
+  }
+
+  .olhar {
+    padding-inline: var(--sp-2);
+    font-size: var(--fs-1);
+    color: var(--ink-2);
+  }
+</style>
