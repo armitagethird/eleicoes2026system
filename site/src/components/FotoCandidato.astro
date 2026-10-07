@@ -1,0 +1,43 @@
+---
+// Foto oficial de candidatura do TSE (src/assets/candidatos, lib/fotos.ts), pequena, ao lado do nome do candidato nos
+// placares do site. Nunca no card compartilhado. Caixa reta (papel cortado, design/DIRECTION.md) com filete de 3 px na
+// cor do candidato (lib/cores.ts); width e height explícitos (zero CLS). Número sem foto, ou foto ausente: não renderiza
+// nada. O crédito "Foto: TSE" não vai aqui: é uma vez por bloco, de quem monta o placar.
+import { corCandidato } from '../lib/cores.ts';
+import { ALTURA_FOTO, fotoCandidato } from '../lib/fotos.ts';
+
+interface Props {
+  /** Número de urna do candidato a presidente (13 ou 22). */
+  n: number;
+  /** Altura da caixa em px CSS (1x; o 2x é o dobro). Padrão: a de lib/fotos.ts. */
+  tamanho?: number;
+  /** eager só para as fotos da primeira dobra; o resto, lazy. */
+  carregamento?: 'lazy' | 'eager';
+}
+
+const { n, tamanho = ALTURA_FOTO, carregamento = 'lazy' } = Astro.props;
+const foto = fotoCandidato(n, tamanho);
+---
+
+{
+  foto && (
+    <span class="foto" style={`--cor:${corCandidato(n, 0).css}`}>
+      <img src={foto.src} srcset={foto.srcset} alt={foto.alt} width={foto.width} height={foto.height} loading={carregamento} decoding="async" />
+    </span>
+  )
+}
+
+<style>
+  /* O fundo reserva a caixa enquanto o WebP chega. O filete é parte da caixa, não da foto: a foto aparece inteira. */
+  .foto {
+    display: block;
+    flex: none;
+    border: 3px solid var(--cor);
+    background: var(--surface-1);
+  }
+
+  .foto img {
+    max-width: none;
+    object-fit: cover;
+  }
+</style>
