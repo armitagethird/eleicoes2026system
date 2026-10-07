@@ -11,6 +11,7 @@
 import brFixture from '../../../../contracts/fixtures/br.json';
 import statusFixture from '../../../../contracts/fixtures/status.json';
 import AoVivoCarga from '../../components/AoVivoCarga.astro';
+import AoVivoPrevisao from '../../components/AoVivoPrevisao.astro';
 import Bandeira from '../../components/Bandeira.astro';
 import Botao from '../../components/Botao.astro';
 import Cabecalho from '../../components/Cabecalho.astro';
@@ -29,6 +30,7 @@ import { NOME_UF, type Cidade, type Municipio } from '../../lib/contratos.ts';
 import { descricaoCidade, esperaDoCard, tituloCidade } from '../../lib/copy.ts';
 import { histCidade, municipios } from '../../lib/dados.ts';
 import { ajustarDestino } from '../../lib/destino.ts';
+import { OG_POR_CIDADE } from '../../lib/flags.ts';
 import { diaMes, hora } from '../../lib/format.ts';
 import { parseStatus, type Status } from '../../lib/status.ts';
 
@@ -64,7 +66,9 @@ const cardAoVivo = aoVivo && cardDeCidade(aoVivo, hist, status.modo === 'final' 
 const apurando = Boolean(cardAoVivo) && (aoVivo?.secoes_pct ?? 0) >= 1;
 const card = { ...(cardAoVivo ?? cardEmEspera(m, nomes, status.inicio)), bandeiraHref: urlBandeiraPng(m.uf) };
 const legendaEspera = status.modo === 'pre' && status.inicio ? esperaDoCard(hora(status.inicio), diaMes(status.inicio)) : null;
-// A página sai do build em pre e vira live/final no cliente (components/AoVivo.ts): leva a casca oculta do card ao vivo.
+// A página sai do build em pre e vira live/final no cliente (components/AoVivo.ts): leva a casca oculta do card ao vivo. Se a hora
+// de início já passou quando ela abre (a noite da apuração), o <head> (AoVivoPrevisao.astro) já a deixa no layout ao vivo, com a
+// caixa do card reservada, e o status.json só confirma: trocar de layout depois da rede custava 0,26 de CLS no celular.
 const aoVivoNoCliente = !embutida && status.modo === 'pre';
 
 // DESTINO: o nome ajustado no build numa largura de referência e escrito em cqi, então encosta nas duas margens em qualquer
@@ -90,9 +94,10 @@ const linhasTitulo = linhas.map((l, i) => {
   titulo={tituloCidade(m.nome, m.uf)}
   descricao={descricaoCidade(m.nome, m.uf)}
   caminho={`/c/${m.slug}`}
-  og={`/og/${m.slug}.png`}
+  og={OG_POR_CIDADE ? `/og/${m.slug}.png` : undefined}
   modificado={aoVivo?.atualizado ?? status.atualizado ?? undefined}
 >
+  {aoVivoNoCliente && status.inicio && <AoVivoPrevisao slot="head" inicio={status.inicio} />}
   <div class="pagina">
     <Cabecalho modo={status.modo} secoesPct={aoVivo?.secoes_pct} atualizado={aoVivo?.atualizado} />
 
@@ -270,6 +275,11 @@ const linhasTitulo = linhas.map((l, i) => {
     order: -1;
   }
 
+  /* Previsão do modo ao vivo (AoVivoPrevisao.astro): a casca já nasce à mostra, com a caixa do card reservada (CidadeAoVivo.astro). */
+  :global(html[data-vivo]) .vivo {
+    display: block !important;
+  }
+
   /* O card tem o mesmo fundo da página: ganha um filete e, no celular, vai de borda a borda. */
   .card {
     margin-inline: calc(var(--sp-2) * -1);
@@ -334,7 +344,8 @@ const linhasTitulo = linhas.map((l, i) => {
       grid-column: 1 / span 7;
     }
 
-    .conteudo:has(> .vivo:not([hidden])) .principal {
+    .conteudo:has(> .vivo:not([hidden])) .principal,
+    :global(html[data-vivo]) .principal {
       grid-column: 8 / span 5;
     }
   }

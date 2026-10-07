@@ -97,8 +97,14 @@ const legendaEspera = status.modo === 'pre' && status.inicio ? esperaDoCard(hora
   }
 
   /* Apurando, o card é a peça central e vem antes do resto (em pre, o placar do 1º turno vem antes do card em espera). */
-  .cartao:has(.vivo:not([hidden])) {
+  .cartao:has(.vivo:not([hidden])),
+  :global(html[data-vivo]) .cartao {
     order: -1;
+  }
+
+  /* Previsão do modo ao vivo (AoVivoPrevisao.astro): a casca já nasce à mostra, com a caixa do card reservada (CidadeAoVivo.astro). */
+  :global(html[data-vivo]) .vivo {
+    display: block !important;
   }
 
   @media (min-width: 768px) {

@@ -1,4 +1,4 @@
-import { readFileSync, readdirSync } from 'node:fs';
+import { existsSync, readFileSync, readdirSync } from 'node:fs';
 import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import Ajv2020 from 'ajv/dist/2020.js';
@@ -8,7 +8,7 @@ import { LUGARES, type Lugar } from './cartograma.ts';
 import { UFS, type Placar } from './contratos.ts';
 import { MAPA_SETA, MAPA_SIGLA, MAPA_TITULO, PALAVRAS_PROIBIDAS, rotuloPlacaMapa } from './copy.ts';
 import { histBr, histUf } from './dados.ts';
-import { mapaApuracao, mapaPre, vista, type Placa, type PlacarMapa } from './mapa-dados.ts';
+import { atributosPlaca, caminhoPlacar, linhaMapa, mapaApuracao, mapaPre, vista, type Placa, type PlacarMapa } from './mapa-dados.ts';
 
 const raiz = fileURLToPath(new URL('../../../', import.meta.url));
 const lerJson = (...partes: string[]) => JSON.parse(readFileSync(join(raiz, ...partes), 'utf8'));
@@ -200,6 +200,40 @@ describe('vista: o que a placa e o painel mostram', () => {
       vista(placa({}), f).variacao,
     ])].join(' ');
     for (const palavra of PALAVRAS_PROIBIDAS) expect(textos).not.toContain(palavra);
+  });
+});
+
+describe('o mapa ao vivo lê os mesmos arquivos que o build', () => {
+  it('caminhoPlacar: br.json para o Brasil e uf/{uf}.json para cada estado, todos publicados nas fixtures', () => {
+    expect(caminhoPlacar('BR')).toBe('/data/br.json');
+    expect(caminhoPlacar('MA')).toBe('/data/uf/ma.json');
+    for (const l of LUGARES) expect(existsSync(join(raiz, 'contracts/fixtures', caminhoPlacar(l).replace('/data/', ''))), l).toBe(true);
+  });
+
+  it('linhaMapa: título do 1º turno, linha de apuração do 2º e nada enquanto o Brasil não tem seções', () => {
+    const ESPACO = '\u00a0';
+    expect(linhaMapa(mapaPre(preHist))).toBe(`1º turno 2026${ESPACO}· 100% das seções${ESPACO}· Fonte: TSE`);
+    const parcial = linhaMapa(mapaApuracao('parcial', placares(), '2026-10-25T18:42:10-03:00'));
+    expect(parcial).toBe(`parcial${ESPACO}· 67% das seções${ESPACO}· Fonte: TSE${ESPACO}· 18:42`);
+    expect(linhaMapa(mapaApuracao('final', placares(), '2026-10-25T21:03:00-03:00'))).toMatch(/^final/);
+    expect(linhaMapa(mapaApuracao('parcial', {}, null))).toBe('');
+  });
+
+  it('atributosPlaca: o que o build e o ao vivo escrevem na placa, sem atributo onde não há dado nem seta', () => {
+    const cheia = placa({});
+    expect(atributosPlaca(cheia, vista(cheia, 'parcial'))).toEqual({
+      'aria-label': vista(cheia, 'parcial').rotulo,
+      'data-meta': 'parcial · 87% das seções',
+      'data-a': '61,1%',
+      'data-o': '',
+      'data-b': '38,9%',
+      'data-var': '+3,4 pontos para 13 em relação a 2022',
+      'data-ganhou': '13',
+      'data-vazio': undefined,
+      'data-seta': '',
+    });
+    const vazia = placa({ pct: null, variacao: null, secoes: null });
+    expect(atributosPlaca(vazia, vista(vazia, 'parcial'))).toMatchObject({ 'data-vazio': '', 'data-seta': undefined, 'data-ganhou': '', 'data-a': '' });
   });
 });
 

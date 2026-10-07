@@ -234,6 +234,8 @@ export async function iniciar(statusInicial: Status): Promise<void> {
       }
     }
     if (mudou) aplicar();
+    // A previsão do <head> (AoVivoPrevisao.astro) contava com dado para desenhar o card; sem ele (rede, JSON incompleto) a página volta ao layout do build.
+    if (!revelado) document.documentElement.removeAttribute('data-vivo');
 
     const { semConexao } = estadoAoVivo({ secoesPct: dados.secoes_pct, falhas, ultimaBoa });
     for (const aviso of todos(raiz, '[data-conexao]')) {

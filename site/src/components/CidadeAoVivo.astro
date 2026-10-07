@@ -57,6 +57,8 @@ const dados = JSON.stringify({ card, slug, uf }).replace(/</g, '\\u003c');
 </section>
 
 <script>
+  import { avisarFalha } from './avisar-falha.ts';
+
   // A ilha entra em dois tempos: só este carregador vai com a página. O Compartilhar (card, destino, copy: uns 10 KB em 3 saltos)
   // sai do caminho do LCP, chega depois do load e já está em cache quando a pessoa toca. Se o toque vier antes, o próprio clique o espera.
   const carregar = () => import('./Compartilhar.ts');
@@ -73,7 +75,7 @@ const dados = JSON.stringify({ card, slug, uf }).replace(/</g, '\\u003c');
       .then(({ aoClicar }) => aoClicar(alvo))
       .catch((erro: unknown) => {
         const estado = alvo.closest('[data-cidade]')?.querySelector('[data-compartilhar-estado]');
-        if (estado) estado.textContent = `Não foi possível gerar o card: ${erro instanceof Error ? erro.message : String(erro)}`;
+        if (estado) avisarFalha(estado, erro);
       });
   });
 </script>
@@ -89,6 +91,19 @@ const dados = JSON.stringify({ card, slug, uf }).replace(/</g, '\\u003c');
   .card {
     margin-inline: calc(var(--sp-2) * -1);
     border-block: var(--stroke-1) solid var(--surface-2);
+    /* A caixa do card (1200 x 675) existe antes do SVG: a casca da ilha ao vivo chega vazia e o desenho entra sem mexer na
+       página. content-box para a proporção valer para o miolo, que é onde o SVG fica (width 100%, height auto). */
+    box-sizing: content-box;
+    aspect-ratio: 1200 / 675;
+  }
+
+  /* A casca ainda sem card: placa vazia no lugar dele, e sem botão para um card que não existe (o espaço do botão fica reservado). */
+  .card:empty {
+    background: var(--surface-1);
+  }
+
+  .card:empty ~ .acoes {
+    visibility: hidden;
   }
 
   .card :global(svg) {

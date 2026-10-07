@@ -1,0 +1,17 @@
+---
+// Previsão do modo ao vivo, no <head>, antes da primeira pintura. O HTML do build é sempre pre; na noite da apuração quase toda
+// visita chega a ele com a hora de início já passada, e esperar o status.json (rede) para trocar pre por live reorganizava a página
+// no meio da leitura (CLS de 0,26 no celular). Aqui só se compara o relógio com o início: se passou, a página nasce com o layout ao
+// vivo (html[data-vivo]; o CSS está em AoVivoCarga.astro e na página), com a caixa do card já reservada.
+// Quem confirma é o AoVivoCarga: se o status.json ainda disser pre, ou não chegar, ele desfaz a previsão.
+interface Props {
+  /** status.inicio (ISO 8601). */
+  inicio: string;
+}
+
+const { inicio } = Astro.props;
+---
+
+<script is:inline define:vars={{ inicio }}>
+  if (Date.now() >= Date.parse(inicio)) document.documentElement.setAttribute('data-vivo', '');
+</script>

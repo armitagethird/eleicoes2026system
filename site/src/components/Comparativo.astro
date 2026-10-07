@@ -390,8 +390,10 @@ const aviso = !t2 ? SEM_2022 : ganhou === null ? SEM_MUDANCA_2022 : null;
     color: var(--ink);
   }
 
-  /* Fora do destaque o bloco é só contexto do card: números menores, sem competir com ele. */
-  .comparativo:not(.destaque) .pct {
+  /* Fora do destaque o bloco é só contexto do card: números menores, sem competir com ele. Com a previsão do modo ao vivo
+     (html[data-vivo], AoVivoPrevisao.astro) já nasce assim: a ilha só tira a classe depois do status.json. */
+  .comparativo:not(.destaque) .pct,
+  :global(html[data-vivo]) .comparativo .pct {
     font-size: clamp(2rem, 9cqi, 3rem);
   }
 

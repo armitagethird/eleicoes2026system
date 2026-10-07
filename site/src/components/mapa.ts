@@ -1,6 +1,10 @@
 // Ilha do mapa (Mapa.astro), JS puro: o painel de detalhe acompanha foco e hover; as setas do teclado andam entre as
 // placas (roving tabindex, vizinhos calculados no build em data-nav) e Enter segue o link; a entrada escalonada espera o
-// muro aparecer na tela. Sem rede: o modo ao vivo é da Fase 3.
+// muro aparecer na tela. Rede só no dia 25: quando a página vira live ou final (evento aovivo:modo, de AoVivoCarga.astro),
+// baixa mapa-ao-vivo.ts, que troca o 1º turno pelo 2º turno ao vivo.
+import { EVENTO_MODO } from '../lib/ao-vivo-pre.ts';
+import type { Modo } from '../lib/status.ts';
+
 const SETAS: Record<string, number> = { ArrowUp: 0, ArrowRight: 1, ArrowDown: 2, ArrowLeft: 3 };
 const ESTADO = ['ganhou', 'vazio'] as const;
 
@@ -9,8 +13,11 @@ function iniciar(mapa: HTMLElement): void {
   const porLugar = new Map(placas.map((p) => [p.dataset.lugar, p]));
   const painel = mapa.querySelector<HTMLElement>('[data-mapa-painel]');
   const placaDe = (alvo: EventTarget | null) => (alvo instanceof Element ? alvo.closest<HTMLAnchorElement>('a[data-lugar]') : null);
+  // A placa que o painel mostra: ele abre no Brasil e, ao vivo, se refaz a cada atualização.
+  let atual = porLugar.get('BR') ?? placas[0];
 
   function mostrar(placa: HTMLAnchorElement): void {
+    atual = placa;
     if (!painel) return;
     painel.style.cssText = placa.style.cssText;
     for (const chave of ESTADO) {
@@ -47,9 +54,19 @@ function iniciar(mapa: HTMLElement): void {
   mapa.addEventListener('keydown', (e) => {
     const placa = placaDe(e.target);
     const direcao = SETAS[e.key];
-    if (!placa || direcao === undefined) return;
+    // Alt+← (voltar do navegador) e Ctrl/Cmd+setas não são do muro.
+    if (!placa || direcao === undefined || e.altKey || e.ctrlKey || e.metaKey || e.shiftKey) return;
     e.preventDefault();
     porLugar.get(placa.dataset.nav?.split(' ')[direcao])?.focus();
+  });
+
+  // Uma promessa só: o módulo desce uma vez e cada evento seguinte (live, depois final) só diz o modo novo.
+  let aoVivo: Promise<(modo: 'live' | 'final') => void> | undefined;
+  document.addEventListener(EVENTO_MODO, (e) => {
+    const { modo } = (e as CustomEvent<{ modo: Modo }>).detail;
+    if (modo === 'pre') return;
+    aoVivo ??= import('./mapa-ao-vivo.ts').then((m) => m.ligar(mapa, () => mostrar(atual)));
+    void aoVivo.then((mudarModo) => mudarModo(modo));
   });
 
   if (matchMedia('(prefers-reduced-motion: reduce)').matches) return;

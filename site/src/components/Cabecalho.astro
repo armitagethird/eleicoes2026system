@@ -26,7 +26,7 @@ const links = [
 <header class="cabecalho">
   <a class="marca" href="/" aria-current={pathname === '/' ? 'page' : undefined}><span>{nome}{ano && <span class="ano">{ano}</span>}</span></a>
   <p class="pilula" data-modo={modo}>
-    {modo === 'live' && <span class="sinal" aria-hidden="true" />}
+    <span class="sinal" aria-hidden="true"></span>
     <span data-pilula>{pilula(modo, secoesPct, atualizado)}</span>
   </p>
   <nav aria-label="Principal">
@@ -140,12 +140,17 @@ const links = [
   }
 
   /* Placa quadrada que pisca em degrau, como lâmpada de painel. Três piscadas e fica acesa: o texto "ao vivo" já diz o
-     estado, e piscar sem parar por mais de 5 s não tem como pausar (WCAG 2.2.2). */
+     estado, e piscar sem parar por mais de 5 s não tem como pausar (WCAG 2.2.2). Está sempre no HTML, porque a página vira
+     ao vivo no cliente (data-modo muda em AoVivo.ts) e a animação começa quando ela aparece. */
   .sinal {
     width: var(--sp-1);
     height: var(--sp-1);
     background: var(--ink);
     animation: pisca 1.2s steps(1, end) 3;
+  }
+
+  .pilula:not([data-modo='live']) .sinal {
+    display: none;
   }
 
   @keyframes pisca {

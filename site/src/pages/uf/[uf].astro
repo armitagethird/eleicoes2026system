@@ -9,6 +9,7 @@
 import brFixture from '../../../../contracts/fixtures/br.json';
 import statusFixture from '../../../../contracts/fixtures/status.json';
 import AoVivoCarga from '../../components/AoVivoCarga.astro';
+import AoVivoPrevisao from '../../components/AoVivoPrevisao.astro';
 import Bandeira from '../../components/Bandeira.astro';
 import Cabecalho from '../../components/Cabecalho.astro';
 import CartaoUf from '../../components/CartaoUf.astro';
@@ -55,6 +56,9 @@ const duo = !aoVivo && temGovernador;
 const alta = Boolean(aoVivo && governador);
 // A página sai do build em pre e vira live/final no cliente (components/AoVivo.ts): leva as cascas ocultas ao vivo (card e governador).
 const aoVivoNoCliente = status.modo === 'pre';
+// Com seções apuradas o card ao vivo já leva o nome (é a peça central e o que se compartilha): o H1 fica só para leitor de tela e
+// buscador, sem repetir o letreiro, como na página de cidade.
+const apurando = (aoVivo?.secoes_pct ?? 0) >= 1;
 
 // O hist só tem percentuais; nome e partido de 13 e 22 vêm do contrato (nomes reais, iguais em todos os arquivos).
 const nomes = brFixture.presidente.cand.map(({ n, nome: quem, partido }) => ({ n, nome: quem, partido }));
@@ -87,6 +91,7 @@ const faseAoVivo = status.modo === 'final' ? 'final' : 'parcial';
   caminho={`/uf/${sigla}`}
   modificado={aoVivo?.atualizado ?? status.atualizado ?? undefined}
 >
+  {aoVivoNoCliente && status.inicio && <AoVivoPrevisao slot="head" inicio={status.inicio} />}
   <div class="pagina">
     <Cabecalho modo={status.modo} secoesPct={aoVivo?.secoes_pct} atualizado={aoVivo?.atualizado} />
 
@@ -99,9 +104,22 @@ const faseAoVivo = status.modo === 'final' ? 'final' : 'parcial';
           </p>
           <a class="volta" href="/#mapa">Voltar ao mapa</a>
         </div>
-        <h1 class="destino">
-          {linhasTitulo.map((l) => <span class="linha" style={l.estilo}>{l.texto}</span>)}
-        </h1>
+        {
+          apurando ? (
+            <h1 class="sr-only">{nome}</h1>
+          ) : (
+            <h1 class="destino" data-so-pre>
+              {linhasTitulo.map((l) => <span class="linha" style={l.estilo}>{l.texto}</span>)}
+            </h1>
+          )
+        }
+        {
+          aoVivoNoCliente && (
+            <h1 class="sr-only" data-so-vivo hidden>
+              {nome}
+            </h1>
+          )
+        }
       </header>
 
       <div class="corpo">
@@ -277,6 +295,14 @@ const faseAoVivo = status.modo === 'final' ? 'final' : 'parcial';
   .placares :global(.placar:not([hidden]) ~ .placar:not([hidden])) {
     padding-top: var(--sp-2);
     border-top: var(--stroke-2) solid var(--ink);
+  }
+
+  /* Previsão do modo ao vivo (AoVivoPrevisao.astro): o placar do governador já nasce à mostra, com a altura que ele terá, e a lista
+     de cidades não desce quando a ilha o preenche. A reserva vale só enquanto a casca está oculta: depois vale a altura do conteúdo. */
+  :global(html[data-vivo]) .placares :global([data-placar-cargo='governador'][hidden]) {
+    display: grid !important;
+    align-content: start;
+    min-height: 17.5rem;
   }
 
   /* Governador no pre: a mesma moldura do placar (cargo e turno), com o aviso do dia no lugar dos números. */

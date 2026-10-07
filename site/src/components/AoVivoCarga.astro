@@ -33,6 +33,8 @@
     clearTimeout(timer);
     const status = await lerStatus();
     emCurso = false;
+    // A previsão do <head> (AoVivoPrevisao.astro) só vale se o status.json a confirmar: sem ele (rede) ou ainda em pre, a página volta ao layout do build.
+    if (!status || status.modo === 'pre') document.documentElement.removeAttribute('data-vivo');
     inicio = status?.inicio ?? inicio;
     const aAnunciar = status && modoParaAnunciar(anunciado, status.modo);
     if (aAnunciar) {
@@ -50,6 +52,12 @@
   }
 
   if (document.querySelector('[data-ao-vivo]')) {
+    // Previsto ao vivo (AoVivoPrevisao.astro): a ilha (e o desenho do card, onde há card) baixa junto com o status.json, não em
+    // fila depois dele. É dela que a página espera o card.
+    if (document.documentElement.hasAttribute('data-vivo')) {
+      void import('./AoVivo.ts');
+      if (document.querySelector('[data-cidade-dados]')) void import('./AoVivoCard.ts');
+    }
     void conferir();
     document.addEventListener('visibilitychange', () => {
       if (!document.hidden) void conferir();
@@ -57,10 +65,12 @@
   }
 </script>
 
-<!-- O bloco do modo pre e a casca ao vivo trocam de lugar pelo atributo hidden, mesmo onde o componente define display. -->
 <style is:global>
+  /* O bloco do modo pre e a casca ao vivo trocam de lugar pelo atributo hidden, mesmo onde o componente define display.
+     Com a previsão do <head> (html[data-vivo], AoVivoPrevisao.astro) o que é do pre já nasce escondido; a casca ao vivo, cada página a mostra. */
   [data-so-pre][hidden],
-  [data-so-vivo][hidden] {
+  [data-so-vivo][hidden],
+  html[data-vivo] [data-so-pre] {
     display: none !important;
   }
 </style>

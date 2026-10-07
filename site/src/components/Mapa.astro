@@ -8,24 +8,18 @@
 // nunca na bandeira (sem opacidade nem movimento).
 // Se adapta ao container (container queries): placas em retrato e título e legenda acima do muro nos estreitos
 // (celular); placas em paisagem, com título, legenda e painel de detalhe nos vazios do oceano, nos largos (>= 520 px).
-// <Mapa /> sem props mostra o 1º turno do hist (o build não conhece a apuração; o ao vivo é da Fase 3). `apuracao` só é
-// passada pelo playground (/design/mapa).
+// <Mapa /> sem props mostra o 1º turno do hist (o build não conhece a apuração); `apuracao` só é passada pelo playground
+// (/design/mapa). No dia 25 a página vira ao vivo no cliente (mapa-ao-vivo.ts troca data-fase e reescreve as placas): por isso
+// o HTML traz as peças das duas fases (barra com "outros", seta, legenda e rodapé do painel) e o CSS mostra as da data-fase.
 import brFixture from '../../../contracts/fixtures/br.json';
 import Bandeira from './Bandeira.astro';
 import { AREAS, CARTOGRAMA, gridArea, ordemEntrada, vizinho, type Direcao, type Lugar } from '../lib/cartograma.ts';
-import {
-  LINHA_PRIMEIRO_TURNO,
-  MAPA_SETA,
-  MAPA_SIGLA,
-  MAPA_TITULO,
-  OUTROS_CANDIDATOS,
-  linhaApuracao,
-} from '../lib/copy.ts';
+import { MAPA_SETA, MAPA_SIGLA, MAPA_TITULO, OUTROS_CANDIDATOS } from '../lib/copy.ts';
 import type { UF } from '../lib/contratos.ts';
 import { corCandidato } from '../lib/cores.ts';
 import { histBr, histUf } from '../lib/dados.ts';
 import { ajustarDestino } from '../lib/destino.ts';
-import { mapaApuracao, mapaPre, vista, type Fase, type PlacarMapa } from '../lib/mapa-dados.ts';
+import { atributosPlaca, linhaMapa, mapaApuracao, mapaPre, vista, type Fase, type PlacarMapa } from '../lib/mapa-dados.ts';
 
 interface Props {
   fase?: Fase;
@@ -63,6 +57,7 @@ const placas = mapa.placas.map((placa) => {
   return {
     ...placa,
     v,
+    atributos: atributosPlaca(placa, v),
     bandeira: placa.lugar.toLowerCase() as Lowercase<UF> | 'br',
     celula: `grid-area: ${r} / ${c}`,
     estilo: `${v.estilo};${destino(placa.nome, 110, 40)};--ordem:${ordem.get(placa.lugar)}`,
@@ -72,10 +67,6 @@ const placas = mapa.placas.map((placa) => {
 
 // O painel abre no Brasil (o agregado), sem marcar a placa do Brasil: nada de destaque para ela.
 const inicial = placas.find((p) => p.lugar === 'BR') ?? placas[0];
-// Espaço inquebrável antes de cada "·": a linha quebra depois do separador, nunca começa com ele.
-const meta = (
-  mapa.fase === 'pre' ? LINHA_PRIMEIRO_TURNO : mapa.secoes === null ? '' : linhaApuracao(mapa.fase, mapa.secoes, mapa.atualizado)
-).replaceAll(' · ', '\u00a0· ');
 const areas = `--area-titulo:${gridArea(AREAS.titulo)};--area-painel:${gridArea(AREAS.painel)};--area-legenda:${gridArea(AREAS.legenda)}`;
 ---
 
@@ -88,7 +79,7 @@ const areas = `--area-titulo:${gridArea(AREAS.titulo)};--area-painel:${gridArea(
   <div class="muro">
     <header class="titulo">
       <h2 class="titulo-nome" style={destino(MAPA_TITULO, 200, 60)}>{MAPA_TITULO}</h2>
-      {meta && <p class="titulo-meta">{meta}</p>}
+      <p class="titulo-meta" data-mapa-linha>{linhaMapa(mapa)}</p>
     </header>
 
     <div class="legenda">
@@ -103,27 +94,22 @@ const areas = `--area-titulo:${gridArea(AREAS.titulo)};--area-painel:${gridArea(
         }
       </ul>
       <ul class="l-itens" role="list">
-        {
-          mapa.fase === 'pre' ? (
-            <li>
-              <i class="l-outros" />
-              {OUTROS_CANDIDATOS}
-            </li>
-          ) : (
-            <li>
-              <span class="l-setas" aria-hidden="true">
-                <svg class="tri" viewBox="0 0 10 12">
-                  <path d="M0 6 10 0v12z" />
-                </svg>
-                <svg class="tri" viewBox="0 0 10 12">
-                  <path d="M10 6 0 0v12z" />
-                </svg>
-              </span>
-              {MAPA_SETA}
-            </li>
-          )
-        }
-        <li>{MAPA_SIGLA[mapa.fase]}</li>
+        <li class="fase-pre">
+          <i class="l-outros" />
+          {OUTROS_CANDIDATOS}
+        </li>
+        <li class="fase-vivo">
+          <span class="l-setas" aria-hidden="true">
+            <svg class="tri" viewBox="0 0 10 12">
+              <path d="M0 6 10 0v12z" />
+            </svg>
+            <svg class="tri" viewBox="0 0 10 12">
+              <path d="M10 6 0 0v12z" />
+            </svg>
+          </span>
+          {MAPA_SETA}
+        </li>
+        <li data-mapa-sigla>{MAPA_SIGLA[mapa.fase]}</li>
       </ul>
     </div>
 
@@ -140,30 +126,21 @@ const areas = `--area-titulo:${gridArea(AREAS.titulo)};--area-painel:${gridArea(
               data-lugar={p.lugar}
               data-nav={p.nav}
               data-nome={p.nome}
-              data-meta={p.v.meta}
-              data-a={p.v.a}
-              data-o={p.v.o}
-              data-b={p.v.b}
-              data-var={p.v.variacao}
-              data-ganhou={p.v.ganhou}
-              data-vazio={p.pct ? undefined : ''}
-              data-seta={p.v.seta ? '' : undefined}
+              {...p.atributos}
             >
               <span class="bandeira" data-mapa-bandeira>
                 <Bandeira uf={p.bandeira} largura={BANDEIRA} decorativa />
               </span>
               <span class="sigla" data-cor={p.v.maisVotado || undefined}>{p.lugar}</span>
-              {p.v.seta && (
-                <span class="seta" aria-hidden="true">
-                  <svg class="tri" viewBox="0 0 10 12">
-                    <path d="M0 6 10 0v12z" />
-                  </svg>
-                  <span class="seta-n">{p.v.setaNumero}</span>
-                </span>
-              )}
+              <span class="seta" aria-hidden="true">
+                <svg class="tri" viewBox="0 0 10 12">
+                  <path d="M0 6 10 0v12z" />
+                </svg>
+                <span class="seta-n">{p.v.setaNumero}</span>
+              </span>
               <span class="barra" aria-hidden="true">
                 <i class="s13" />
-                {mapa.fase === 'pre' && <i class="so" />}
+                <i class="so" />
                 <i class="s22" />
               </span>
             </a>
@@ -195,24 +172,19 @@ const areas = `--area-titulo:${gridArea(AREAS.titulo)};--area-painel:${gridArea(
       </p>
       <span class="barra p-barra" aria-hidden="true">
         <i class="s13" />
-        {mapa.fase === 'pre' && <i class="so" />}
+        <i class="so" />
         <i class="s22" />
       </span>
       <div class="p-pe" aria-hidden="true">
-        {
-          mapa.fase === 'pre' ? (
-            <p class="p-o">
-              {OUTROS_CANDIDATOS} <span data-mapa-p="o">{inicial.v.o}</span>
-            </p>
-          ) : (
-            <p class="p-var">
-              <svg class="tri" viewBox="0 0 10 12">
-                <path d="M0 6 10 0v12z" />
-              </svg>
-              <span data-mapa-p="var">{inicial.v.variacao}</span>
-            </p>
-          )
-        }
+        <p class="p-o fase-pre">
+          {OUTROS_CANDIDATOS} <span data-mapa-p="o">{inicial.v.o}</span>
+        </p>
+        <p class="p-var fase-vivo">
+          <svg class="tri" viewBox="0 0 10 12">
+            <path d="M0 6 10 0v12z" />
+          </svg>
+          <span data-mapa-p="var">{inicial.v.variacao}</span>
+        </p>
         <p class="p-meta" data-mapa-p="meta">{inicial.v.meta}</p>
       </div>
     </div>
@@ -267,6 +239,18 @@ const areas = `--area-titulo:${gridArea(AREAS.titulo)};--area-painel:${gridArea(
   .titulo-meta {
     margin-top: var(--sp-1);
     text-wrap: balance;
+  }
+
+  .titulo-meta:empty {
+    display: none;
+  }
+
+  /* O HTML traz as peças das duas fases e a data-fase do .mapa mostra as da fase (mapa-ao-vivo.ts troca o atributo no dia 25).
+     A seta só existe na placa que tem variação (data-seta). */
+  .mapa[data-fase='pre'] .fase-vivo,
+  .mapa:not([data-fase='pre']) :is(.fase-pre, .so),
+  .placa:not([data-seta]) .seta {
+    display: none;
   }
 
   /* ---------- legenda: quem é quem, antes do muro ---------- */

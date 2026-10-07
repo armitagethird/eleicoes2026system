@@ -4,7 +4,8 @@
 // Desktop (≥ 1024 px): 12 colunas; à esquerda (5) busca, painel e placar; à direita (7) o mapa, sticky.
 // Como página, o modo vem de contracts/fixtures/status.json no build. /design/home importa esta página como componente
 // e passa `status`, `placar` e `ufs` para mostrar os modos live e final com as fixtures. Placar e mapa saem sempre na
-// mesma fase: sem os dados do 2º turno (o build não os conhece; o ao vivo é da Fase 3), os dois dizem "aguardando".
+// mesma fase. O build só conhece o pre; no dia 25 a página vira live e final no cliente (AoVivo.ts para o placar,
+// mapa-ao-vivo.ts para o muro de 28).
 import brFixture from '../../../contracts/fixtures/br.json';
 import statusFixture from '../../../contracts/fixtures/status.json';
 import AoVivoCarga from '../components/AoVivoCarga.astro';
@@ -28,7 +29,7 @@ import { parseStatus, type Status } from '../lib/status.ts';
 interface Props {
   /** Só /design/home: força o modo. */
   status?: Status;
-  /** Só /design/home: o placar BR ao vivo (br.json). Na página, o modo live espera a ilha da Fase 3. */
+  /** Só /design/home: o placar BR ao vivo (br.json). Na página, o modo live chega no cliente (AoVivo.ts). */
   placar?: PlacarJson;
   /** Só /design/home: os placares das 27 UFs (uf/{uf}.json) para o mapa nos modos live e final. */
   ufs?: Partial<Record<Lugar, PlacarMapa>>;

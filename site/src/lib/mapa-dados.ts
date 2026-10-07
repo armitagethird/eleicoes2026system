@@ -1,15 +1,17 @@
 // Modelo do mapa (design/DIRECTION.md, Mapa): 28 placas em qualquer fase, e o texto de cada uma.
 // pre: 1º turno 2026 do hist (13 · outros · 22), sem seta. parcial/final: 2º turno do placar de cada lugar, com a variação
-// vs 2022. Puro e tolerante a campos ausentes: serve o build (Mapa.astro) e, na Fase 3, a ilha ao vivo.
+// vs 2022. Puro e tolerante a campos ausentes: serve o build (Mapa.astro) e a ilha ao vivo (components/mapa-ao-vivo.ts).
 import { LUGARES, type Lugar } from './cartograma.ts';
 import { NOME_UF, type Hist } from './contratos.ts';
-import { AGUARDANDO_SECOES, PRIMEIRO_TURNO_2026, apuracaoCard, rotuloPlacaMapa, variacao2022 } from './copy.ts';
+import { AGUARDANDO_SECOES, LINHA_PRIMEIRO_TURNO, PRIMEIRO_TURNO_2026, apuracaoCard, linhaApuracao, rotuloPlacaMapa, variacao2022 } from './copy.ts';
 import { percentual } from './format.ts';
 
 export type Fase = 'pre' | 'parcial' | 'final';
 
 /** O que o mapa lê de um placar: serve o /data/uf/{uf}.json inteiro e a placa de /data/mapa.json (proposta). */
 export interface PlacarMapa {
+  /** Só o br.json: a hora do título do mapa ao vivo. */
+  atualizado?: string;
   secoes_pct?: number;
   presidente?: { cand?: Array<{ n: number; pct: number }>; variacao_2022?: Record<string, number> };
 }
@@ -120,5 +122,29 @@ export function vista(placa: Placa, fase: Fase): VistaPlaca {
     variacao: texto,
     maisVotado: quemTemMaisVotos(pct),
     estilo: pct ? `--a:${pct['13']};--o:${pct.outros};--b:${pct['22']}` : '--a:0;--o:0;--b:0',
+  };
+}
+
+/** O JSON de /data de cada placa: br.json e uf/{uf}.json. O mapa ao vivo lê os 28; /data/mapa.json (proposta) os juntaria em um. */
+export const caminhoPlacar = (l: Lugar): string => (l === 'BR' ? '/data/br.json' : `/data/uf/${l.toLowerCase()}.json`);
+
+/** Linha sob o título do mapa. Espaço inquebrável antes de cada "·": a linha quebra depois do separador, nunca começa com ele. */
+export function linhaMapa(mapa: Mapa): string {
+  const linha = mapa.fase === 'pre' ? LINHA_PRIMEIRO_TURNO : mapa.secoes === null ? '' : linhaApuracao(mapa.fase, mapa.secoes, mapa.atualizado);
+  return linha.replaceAll(' · ', '\u00a0· ');
+}
+
+/** Nome acessível e data-* da placa que dependem do dado. O build (Mapa.astro) e o ao vivo (mapa-ao-vivo.ts) escrevem os mesmos; undefined = sem o atributo. */
+export function atributosPlaca(placa: Placa, v: VistaPlaca): Record<string, string | undefined> {
+  return {
+    'aria-label': v.rotulo,
+    'data-meta': v.meta,
+    'data-a': v.a,
+    'data-o': v.o,
+    'data-b': v.b,
+    'data-var': v.variacao,
+    'data-ganhou': v.ganhou,
+    'data-vazio': placa.pct ? undefined : '',
+    'data-seta': v.seta ? '' : undefined,
   };
 }
