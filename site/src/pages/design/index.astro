@@ -22,9 +22,9 @@ const corDeTokens = (padrao: RegExp): string => {
   return cor.toUpperCase();
 };
 const ACENTOS = [
-  { valor: 'violeta', nome: 'Violeta', cor: corDeTokens(/--accent:\s*(#[0-9a-f]{6})/i) },
-  { valor: 'teal', nome: 'Teal', cor: corDeTokens(/\[data-acento='teal'\]\s*\{\s*--accent:\s*(#[0-9a-f]{6})/i) },
-  { valor: 'coral', nome: 'Coral', cor: corDeTokens(/\[data-acento='coral'\]\s*\{\s*--accent:\s*(#[0-9a-f]{6})/i) },
+  { valor: 'ouro', nome: 'Ouro', cor: corDeTokens(/--accent:\s*(#[0-9a-f]{6})/i) },
+  { valor: 'verde', nome: 'Verde', cor: corDeTokens(/\[data-acento='verde'\]\s*\{\s*--accent:\s*(#[0-9a-f]{6})/i) },
+  { valor: 'violeta', nome: 'Violeta (antigo)', cor: corDeTokens(/\[data-acento='violeta'\]\s*\{\s*--accent:\s*(#[0-9a-f]{6})/i) },
 ] as const satisfies ReadonlyArray<{ valor: Acento; nome: string; cor: string }>;
 const COR_13 = corDeTokens(/--cand-13:\s*(#[0-9a-f]{6})/i);
 const COR_22 = corDeTokens(/--cand-22:\s*(#[0-9a-f]{6})/i);
@@ -162,11 +162,12 @@ const linhasTitulo = linhas.map((l) => {
 const aceite = [
   'Legível a 350 px de largura: veja a coluna estreita de cada variante.',
   'Ordem 13 antes de 22 em todas as variantes.',
-  '13 sempre vermelho e 22 sempre azul claro, também quando o 22 lidera; o violeta só no selo.',
+  '13 sempre vermelho e 22 sempre azul claro, também quando o 22 lidera.',
+  `Verde e amarelo só na faixa do topo e no selo (ouro ${ACENTOS[0].cor}, por padrão); nenhum dado de candidato leva essas cores.`,
   'Todo número com algarismos tabulares.',
 ];
 const pendencias = [
-  `Fonte Archivo e acento violeta ${ACENTOS[0].cor} no selo. O seletor alterna teal e coral só para esta decisão, e só o selo muda.`,
+  `Fonte Archivo e tema Brasil leve: fundo esverdeado, faixa verde e amarela no topo e selo em ouro ${ACENTOS[0].cor}. O seletor compara o selo em ouro, verde ${ACENTOS[1].cor} e violeta ${ACENTOS[2].cor} (o acento antigo); só o selo muda.`,
   `Tons dos candidatos: vermelho ${COR_13} e azul claro ${COR_22}. O princípio está decidido; o tom exato falta aprovar.`,
   'Governador sem comparação com 2022 (mostra a margem) e cidade em final sem rótulo de posição. Os candidatos a governador ficam em tinta neutra até a cor deles ser definida.',
   'Os textos dos selos ainda não têm versão final em copy.ts.',
@@ -192,7 +193,8 @@ const pendencias = [
       <div class="intro">
         <p>
           Todas as variantes do card em SVG inline, na mesma largura da timeline do X e no PNG que o botão exporta de
-          verdade. A barra abaixo troca o acento do selo; o vermelho do 13 e o azul do 22 não mudam.
+          verdade. A barra abaixo troca o acento do selo (ouro, verde ou o violeta antigo, só para comparar); a faixa verde
+          e amarela do topo, o vermelho do 13 e o azul do 22 não mudam.
         </p>
         <p class="aviso">{AVISO_FICTICIO}</p>
       </div>
@@ -204,14 +206,14 @@ const pendencias = [
         {
           ACENTOS.map(({ valor, nome, cor }) => (
             <label class="acento">
-              <input class="sr-only" type="radio" name="acento" value={valor} checked={valor === 'violeta'} />
+              <input class="sr-only" type="radio" name="acento" value={valor} checked={valor === 'ouro'} />
               <span class="amostra" style={`--cor:${cor}`} aria-hidden="true" />
               {nome}
             </label>
           ))
         }
       </div>
-      <p class="barra-nota">Só o selo muda de cor. Teal e coral existem só para esta aprovação.</p>
+      <p class="barra-nota">Só o selo muda de cor. O violeta é o acento antigo, só para comparar.</p>
     </div>
 
     <main>

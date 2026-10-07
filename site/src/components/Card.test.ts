@@ -1,7 +1,7 @@
 import { readFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
 import { PALAVRAS_PROIBIDAS } from '../lib/copy.ts';
-import { renderCard, type CandidatoCard, type CardData } from './Card.ts';
+import { renderCard, type Acento, type CandidatoCard, type CardData } from './Card.ts';
 
 const lula = (pct: number, extra: Partial<CandidatoCard> = {}): CandidatoCard => ({ n: 13, nome: 'Lula', partido: 'PT', pct, ...extra });
 const flavio = (pct: number, extra: Partial<CandidatoCard> = {}): CandidatoCard => ({ n: 22, nome: 'Flávio Bolsonaro', partido: 'PL', pct, ...extra });
@@ -84,8 +84,19 @@ const BG = token('--bg');
 const INK = token('--ink');
 const INK_2 = token('--ink-2');
 const ACCENT = token('--accent');
+const VERDE = token('--verde');
+const AMARELO = token('--amarelo');
 const COR_13 = token('--cand-13');
 const COR_22 = token('--cand-22');
+/** Acentos alternativos do playground, lidos de tokens.css (o padrão, ouro, é o --accent do :root). */
+const ALTERNATIVAS = Object.fromEntries([...tokens.matchAll(/\[data-acento='(\w+)'\]\s*\{\s*--accent:\s*(#[0-9a-f]{6})/g)].map(([, nome, cor]) => [nome, cor])) as Record<string, string>;
+const PAGINA_CSS = readFileSync(new URL('../styles/base.css', import.meta.url), 'utf8');
+
+/** A faixa da marca, para conferir o que é dela: o resto do card não pode ser verde nem amarelo. */
+const FAIXA_RE = /<rect x="([\d.]+)" y="([\d.]+)" width="([\d.]+)" height="([\d.]+)" fill="(#[0-9a-f]{6})" class="faixa"\/>/g;
+const faixa = (svg: string): Array<{ x: number; y: number; w: number; h: number; cor: string }> =>
+  [...svg.matchAll(FAIXA_RE)].map(([, x, y, w, h, cor]) => ({ x: Number(x), y: Number(y), w: Number(w), h: Number(h), cor }));
+const semFaixa = (svg: string): string => svg.replace(FAIXA_RE, '');
 
 interface Forma {
   tag: string;
@@ -236,7 +247,7 @@ describe('renderCard: zona de variação e margem', () => {
     expect(linha).toEqual(expect.arrayContaining(['DIFERENÇA DE', '312', 'VOTOS']));
     expect(frase(svg).map((t) => t.fill)).toEqual([INK, INK, INK]);
     expect(svg).not.toContain('<polygon');
-    expect(svg).not.toContain(ACCENT);
+    expect(semFaixa(svg)).not.toContain(ACCENT);
   });
 
   it('1 voto de diferença usa o singular', () => {
@@ -277,7 +288,7 @@ describe('renderCard: zona de variação e margem', () => {
       expect(textos(svg).map((t) => t.conteudo), nome).toEqual(expect.arrayContaining(['DIFERENÇA DE']));
       expect(frase(svg).map((t) => t.fill), nome).toEqual([INK, INK, INK]);
       expect(svg, nome).not.toContain('<polygon');
-      expect(svg, nome).not.toContain(ACCENT);
+      expect(semFaixa(svg), nome).not.toContain(ACCENT);
     }
   });
 
@@ -289,13 +300,18 @@ describe('renderCard: zona de variação e margem', () => {
     expect(renderCard(com({ variacao: 0.02 }))).not.toContain('<polygon');
   });
 
-  it('o acento do playground troca só a cor do selo: nada mais no card é acento', () => {
+  it('o acento do playground troca só a cor do selo: nada mais no card é acento, nem a faixa', () => {
+    expect(Object.keys(ALTERNATIVAS)).toEqual(['verde', 'violeta']);
     for (const [nome, d] of Object.entries({ ...VARIANTES, 'com selo e variação': com({ selo: 'virou vs 2022' }) })) {
-      expect(renderCard({ ...d, acento: 'teal' }).replaceAll('#24ccc1', ACCENT), nome).toBe(renderCard(d));
-      const comAcento = formas(renderCard(d)).filter((f) => f.cor === ACCENT);
-      expect(comAcento.map((f) => f.tag), nome).toEqual(d.selo || d.modo === 'palpite' ? ['rect'] : []);
+      const padrao = renderCard(d);
+      for (const [acento, cor] of Object.entries(ALTERNATIVAS)) {
+        const outro = renderCard({ ...d, acento: acento as Acento });
+        expect(semFaixa(outro).replaceAll(cor, ACCENT), `${nome}: ${acento}`).toBe(semFaixa(padrao));
+        expect(faixa(outro), `${nome}: faixa com ${acento}`).toEqual(faixa(padrao));
+      }
+      const selos = formas(padrao).filter((f) => f.classe === 'selo' || (f.cor === ACCENT && f.classe !== 'faixa'));
+      expect(selos.map((f) => `${f.tag}.${f.classe}`), nome).toEqual(d.selo || d.modo === 'palpite' ? ['rect.selo'] : []);
     }
-    expect(renderCard(com({ selo: 'x', acento: 'teal' }))).toContain('#24ccc1');
   });
 });
 
@@ -344,11 +360,19 @@ describe('renderCard: modos', () => {
     expect(cheios(renderCard(BASE)).map(([, , cor]) => cor)).toEqual([COR_13, COR_22, COR_13, COR_22]);
   });
 
-  it('o selo aparece em placa --accent com texto --bg', () => {
+  it('o selo aparece em placa --accent (ouro, por padrão) com texto --bg', () => {
     const svg = renderCard(VARIANTES['com selo']);
-    expect(svg).toMatch(/<rect [^>]*height="44" rx="8" fill="#b57bff"\/>/);
+    expect(svg).toMatch(new RegExp(`<rect [^>]*height="44" rx="8" fill="${ACCENT}" class="selo"/>`));
+    expect(porForma(svg, 'selo').map((f) => f.cor)).toEqual([ACCENT]);
     expect(textos(svg).find((t) => t.conteudo === 'MAIS DIVIDIDA DO MA')?.fill).toBe(BG);
     expect(renderCard(BASE)).not.toContain('rx="8"');
+  });
+
+  it('cada acento do playground pinta a placa do selo: ouro, verde e violeta', () => {
+    const cores = { ouro: ACCENT, ...ALTERNATIVAS } as Record<Acento, string>;
+    for (const [acento, cor] of Object.entries(cores)) {
+      expect(porForma(renderCard(com({ selo: 'x', acento: acento as Acento })), 'selo').map((f) => f.cor), acento).toEqual([cor]);
+    }
   });
 });
 
@@ -407,8 +431,9 @@ describe('renderCard: escala e área segura', () => {
     for (const t of porClasse(svg, 'pct')) expect(t.size, t.conteudo).toBeGreaterThan(100);
   });
 
+  // A faixa da marca é sangrada de propósito (0..1200, y 0..8) e não é conteúdo: o recorte 2:1 do X a corta sem perda.
   it.each(variantes)('%s: nada crítico acima de y=44 nem abaixo de y=631, nem fora das margens de 48 px', (_, d) => {
-    const svg = renderCard(d);
+    const svg = semFaixa(renderCard(d));
     for (const t of textos(svg)) {
       expect(t.y, t.conteudo).toBeGreaterThan(44);
       expect(t.y, t.conteudo).toBeLessThanOrEqual(631);
@@ -423,22 +448,45 @@ describe('renderCard: escala e área segura', () => {
   });
 });
 
+describe('renderCard: faixa da marca', () => {
+  const variantes = Object.entries(VARIANTES);
+
+  it.each(variantes)('%s: faixa no topo, verde de 0 a 62% e amarela de 62 a 100%, de 8 px, em cortes retos', (_, d) => {
+    const svg = renderCard(d);
+    expect(faixa(svg)).toEqual([
+      { x: 0, y: 0, w: 744, h: 8, cor: VERDE },
+      { x: 744, y: 0, w: 456, h: 8, cor: AMARELO },
+    ]);
+    expect(svg).not.toMatch(/gradient/i);
+  });
+
+  it('o corte é o da faixa da página (base.css)', () => {
+    const corteDaPagina = Number(PAGINA_CSS.match(/var\(--verde\)\s+0\s+(\d+)%,\s*var\(--amarelo\)\s+\1%/)?.[1]);
+    expect(faixa(renderCard(BASE))[0].w / 12).toBe(corteDaPagina);
+  });
+
+  it.each(variantes)('%s: verde e amarelo só na faixa e no selo, com qualquer acento', (_, d) => {
+    const comSelo = Boolean(d.selo) || d.modo === 'palpite';
+    for (const acento of ['ouro', 'verde', 'violeta'] as const) {
+      const foraDaFaixa = [...semFaixa(renderCard({ ...d, acento })).matchAll(new RegExp(`${VERDE}|${AMARELO}`, 'gi'))];
+      expect(foraDaFaixa, acento).toHaveLength(comSelo && acento !== 'violeta' ? 1 : 0);
+    }
+  });
+});
+
 describe('renderCard: vocabulário e tokens', () => {
   it.each(Object.entries(VARIANTES))('%s: nenhuma palavra proibida', (_, d) => {
     const svg = renderCard(d).toLowerCase();
     for (const palavra of PALAVRAS_PROIBIDAS) expect(svg).not.toContain(palavra);
   });
 
-  it('as cores do SVG são as de styles/tokens.css, e o acento alternativo as do playground', () => {
+  it('as cores do SVG são as de styles/tokens.css', () => {
     const svg = renderCard(com({ selo: 'x' }));
-    for (const nome of ['--bg', '--ink', '--ink-2', '--cand-13', '--cand-22', '--accent']) expect(svg, nome).toContain(token(nome));
-    const alternativas = [...tokens.matchAll(/\[data-acento='(\w+)'\]\s*\{\s*--accent:\s*(#[0-9a-f]{6})/g)];
-    expect(alternativas.map((m) => m[1])).toEqual(['teal', 'coral']);
-    for (const [, nome, cor] of alternativas) expect(renderCard(com({ selo: 'x', acento: nome as 'teal' | 'coral' })), nome).toContain(cor);
+    for (const nome of ['--bg', '--ink', '--ink-2', '--cand-13', '--cand-22', '--accent', '--verde', '--amarelo']) expect(svg, nome).toContain(token(nome));
   });
 
-  it('só as cores dos tokens: tinta, cinza, os dois candidatos e o acento escolhido', () => {
-    const permitidas = new Set([BG, INK, INK_2, COR_13, COR_22, ACCENT]);
+  it('só as cores dos tokens: tinta, cinza, os dois candidatos, o acento e o verde e o amarelo da faixa', () => {
+    const permitidas = new Set([BG, INK, INK_2, COR_13, COR_22, ACCENT, VERDE, AMARELO]);
     for (const [nome, d] of Object.entries(VARIANTES)) {
       for (const cor of renderCard(d).match(/#[0-9a-f]{6}/gi) ?? []) expect(permitidas.has(cor.toLowerCase()), `${nome}: ${cor}`).toBe(true);
     }

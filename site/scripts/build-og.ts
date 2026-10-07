@@ -1,6 +1,7 @@
 // Gera public/og/fallback.png, a imagem OG das páginas sem card próprio (home, UFs, rankings, 404): 1200x675, só tipografia.
 // Nome, domínio e @ vêm de src/lib/site.ts e as cores de src/styles/tokens.css, então trocar um deles é rodar o script de novo.
-// Sem vermelho nem azul (são cores dos candidatos, nunca da marca). Rodar: npm run og (precisa do Chrome, como card:previews).
+// Tema Brasil: fundo de --bg, a faixa verde e amarela do topo (a de base.css e do card) e a marca do favicon. Sem vermelho nem azul
+// (são cores dos candidatos, nunca da marca). Rodar: npm run og (precisa do Chrome, como card:previews).
 import { mkdir, readFile } from 'node:fs/promises';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -26,7 +27,9 @@ const cor = (nome: string): string => {
   if (!hex) throw new Error(`--${nome} não encontrado em src/styles/tokens.css`);
   return hex;
 };
-const [bg, ink, ink2] = ['bg', 'ink', 'ink-2'].map(cor);
+const [bg, ink, ink2, verde, amarelo] = ['bg', 'ink', 'ink-2', 'verde', 'amarelo'].map(cor);
+// Faixa de 8 px, verde de 0 a 62% e amarela de 62 a 100%, em cortes retos: a mesma do card (components/Card.ts).
+const FAIXA = `<rect width="744" height="8" fill="${verde}"/><rect x="744" width="456" height="8" fill="${amarelo}"/>`;
 
 const maiusculas = (s: string): string => s.toLocaleUpperCase('pt-BR');
 const escapar = (s: string): string => s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
@@ -47,7 +50,7 @@ function destino(conteudo: string, topo: number, tamMax: number, tamMin: number,
 
 const nome = destino(SITE_NAME, 128, 230, 120, ink);
 const frase = destino(FRASE, nome.fim + 56, 96, 84, ink);
-// A marca é a do favicon (três barras divididas, em tons neutros), sem o fundo.
+// A marca é a do favicon (três barras divididas, verde e amarela), sem o fundo.
 const marca = (await readFile(join(root, 'public/favicon.svg'), 'utf8')).match(/<path[^>]*\/>/g)?.join('') ?? '';
 const meta = maiusculas(TURNO_CARD);
 const dominio = maiusculas(`${new URL(SITE_URL).host} · ${X_HANDLE}`);
@@ -55,6 +58,7 @@ const dominio = maiusculas(`${new URL(SITE_URL).host} · ${X_HANDLE}`);
 const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="675" viewBox="0 0 1200 675">
 <style>@font-face{font-family:Archivo;font-weight:900;font-stretch:62% 125%;src:url(data:font/woff2;base64,${(await readFile(join(root, 'public/fonts/archivo/archivo-caps.woff2'))).toString('base64')}) format('woff2')}text{font-family:Archivo;font-weight:900;font-variant-numeric:tabular-nums}</style>
 <rect width="1200" height="675" fill="${bg}"/>
+${FAIXA}
 ${texto(X0, 70 + (30 * ALTURAS.cap) / 2, 30, 100, ink2, meta)}
 <svg x="${X1 - 56}" y="44" width="56" height="56" viewBox="0 0 32 32">${marca}</svg>
 <rect x="${X0}" y="${Math.round(nome.fim + 8)}" width="${X1 - X0}" height="4" fill="${ink}"/>
@@ -69,7 +73,7 @@ try {
   await pagina.evaluate(() => document.fonts.load('900 100px Archivo'));
   const bruto = await pagina.screenshot({ clip: { x: 0, y: 0, width: 1200, height: 675 } });
   await mkdir(dirname(SAIDA), { recursive: true });
-  // Paleta de 32 cores: só há três tintas e o serrilhado do texto; a diferença para o RGB cheio é de 2/255 por canal e o arquivo cai de 54 para 33 KB.
+  // Paleta de 32 cores: só há cinco tintas e o serrilhado do texto; a diferença para o RGB cheio é de 2/255 por canal e o arquivo cai de 67 para 34 KB.
   const { size } = await sharp(bruto).png({ palette: true, colors: 32, dither: 0, effort: 10 }).toFile(SAIDA);
   console.log(`${SAIDA}  ${(size / 1024).toFixed(1)} KB`);
 } finally {

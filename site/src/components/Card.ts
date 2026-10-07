@@ -20,7 +20,7 @@ import { ALTURAS, ajustarDestino, larguraTexto } from '../lib/destino.ts';
 import { percentual } from '../lib/format.ts';
 
 export type ModoCard = 'parcial' | 'final' | 'palpite';
-export type Acento = 'violeta' | 'teal' | 'coral';
+export type Acento = 'ouro' | 'verde' | 'violeta';
 
 export interface CandidatoCard {
   /** Número de urna: define a ordem das colunas (menor à esquerda, 13 antes de 22), nunca quem lidera. */
@@ -56,14 +56,17 @@ export interface CardData {
   bandeiraHref?: string;
   /** Subset da fonte (data URI). Presente só ao exportar PNG; inline na página o SVG usa a fonte já carregada. */
   fonteDataUri?: string;
-  /** Só para o playground de aprovação (/design). Troca a cor do selo e de mais nada. */
+  /** Só para o playground de aprovação (/design). Troca a cor do selo e de mais nada; padrão: ouro. */
   acento?: Acento;
 }
 
 // Cores alinhadas a styles/tokens.css (Card.test.ts confere). O SVG não pode depender de custom properties: vira PNG isolado.
 // As dos candidatos vêm de lib/cores.ts: a cor é do número de urna, nunca da posição nem de quem lidera.
-const COR = { bg: '#121110', ink: '#f2eee3', ink2: '#8b867a' } as const;
-const ACENTOS: Record<Acento, string> = { violeta: '#b57bff', teal: '#24ccc1', coral: '#ff7a66' };
+const COR = { bg: '#0e1411', ink: '#f4f1e6', ink2: '#95a097' } as const;
+const ACENTOS: Record<Acento, string> = { ouro: '#f5c518', verde: '#2bb673', violeta: '#b57bff' };
+
+// A faixa da marca é a de base.css (verde 0-62%, amarelo 62-100%, cortes retos). Fora dela e do selo, nada no card é verde nem amarelo.
+const FAIXA = { altura: 8, corte: 744, verde: '#2bb673', amarelo: '#f5c518' } as const;
 
 const X0 = 48;
 const X1 = 1152;
@@ -132,7 +135,7 @@ function zonaA(d: CardData, modo: ModoCard, selo: string | undefined, acento: st
   saida.push(texto(xMeta, base, { size, wdth, fill: COR.ink2 }, runs));
   if (rotuloSelo) {
     const larguraPlaca = larguraTexto(rotuloSelo, wdth, size) + 32;
-    saida.push(`<rect x="${num(X1 - larguraPlaca)}" y="48" width="${num(larguraPlaca)}" height="44" rx="8" fill="${acento}"/>`);
+    saida.push(`<rect x="${num(X1 - larguraPlaca)}" y="48" width="${num(larguraPlaca)}" height="44" rx="8" fill="${acento}" class="selo"/>`);
     saida.push(texto(X1 - 16, base, { size, wdth, fill: COR.bg }, escapar(rotuloSelo), ' text-anchor="end"'));
   }
   return saida.join('');
@@ -391,8 +394,10 @@ export function renderCard(d: CardData): string {
     `<title>${tituloSvg}</title><desc>${descr}</desc>`,
     fonte,
     `<rect width="1200" height="675" fill="${COR.bg}"/>`,
+    `<rect x="0" y="0" width="${FAIXA.corte}" height="${FAIXA.altura}" fill="${FAIXA.verde}" class="faixa"/>`,
+    `<rect x="${FAIXA.corte}" y="0" width="${1200 - FAIXA.corte}" height="${FAIXA.altura}" fill="${FAIXA.amarelo}" class="faixa"/>`,
     `<g style="font-family:Archivo,'Arial Narrow',Arial,sans-serif;font-weight:900;font-variant-numeric:tabular-nums">`,
-    zonaA(d, modo, modo === 'palpite' ? SELO_PALPITE : d.selo, ACENTOS[d.acento ?? 'violeta']),
+    zonaA(d, modo, modo === 'palpite' ? SELO_PALPITE : d.selo, ACENTOS[d.acento ?? 'ouro']),
     titulo.svg,
     destaque ? zonaC(destaque.frase, { cor: destaque.cor, seta: destaque.seta, y: Y.variacao + titulo.desce }) : zonaAguardando(Y.variacao + titulo.desce),
     zonaD({ modo, y: Y.barra + titulo.desce, pctEsq: e.pct, esq: segmentos[0], dir: segmentos[1], aguardando }),

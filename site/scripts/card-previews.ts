@@ -115,7 +115,7 @@ const bandeira = (uf: string): Promise<string> => dataUri(`src/assets/flags/${uf
 
 const PAGINA = `<!doctype html><meta charset="utf-8"><style>
 @font-face { font-family: Archivo; font-weight: 900; font-stretch: 62% 125%; src: url(/fonts/archivo/archivo-display.woff2) format('woff2'); }
-html, body { margin: 0; background: #121110; } svg { display: block; }
+html, body { margin: 0; background: #0e1411; } svg { display: block; }
 </style><body><script type="module">import * as png from '/src/lib/card-png.ts'; window.png = png;</script>`;
 
 const TIPOS: Record<string, string> = { '.woff2': 'font/woff2', '.ts': 'text/javascript' };

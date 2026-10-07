@@ -9,8 +9,8 @@ const POR_NUMERO: Readonly<Record<number, { hex: string; css: string }>> = {
 
 // Governador: números sem cor definida ficam neutros até o Romero decidir (pendência no DIRECTION).
 const NEUTRAS = [
-  { hex: '#f2eee3', css: 'var(--ink)' },
-  { hex: '#8b867a', css: 'var(--ink-2)' },
+  { hex: '#f4f1e6', css: 'var(--ink)' },
+  { hex: '#95a097', css: 'var(--ink-2)' },
 ] as const;
 
 /** Cor do candidato pelo número de urna; `coluna` (0 = esquerda) só decide o tom neutro de quem não tem cor. */

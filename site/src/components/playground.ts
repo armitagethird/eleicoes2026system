@@ -1,6 +1,6 @@
-// Ilha do playground (/design): troca o acento do selo (renderCard aceita `acento`; é só a cor do selo, o vermelho e o azul
-// dos candidatos não mudam) e baixa o PNG de cada variante pelo mesmo caminho do botão Compartilhar (card-png.ts, com a
-// fonte e a bandeira embutidas), para conferir a paridade com o inline.
+// Ilha do playground (/design): troca o acento do selo (renderCard aceita `acento`; é só a cor do selo: a faixa verde e amarela,
+// o vermelho e o azul dos candidatos não mudam) e baixa o PNG de cada variante pelo mesmo caminho do botão Compartilhar
+// (card-png.ts, com a fonte e a bandeira embutidas), para conferir a paridade com o inline.
 import { carregarFonteCard, paraDataUri, svgParaPng } from '../lib/card-png.ts';
 import { renderCard, type Acento, type CardData } from './Card.ts';
 
@@ -14,7 +14,7 @@ const dados = document.getElementById('playground-dados');
 if (!dados?.textContent) throw new Error('Playground sem dados: faltou o <script id="playground-dados"> da página.');
 const variantes = new Map((JSON.parse(dados.textContent) as Variante[]).map((v) => [v.id, v]));
 
-let acento: Acento = 'violeta';
+let acento: Acento = 'ouro';
 
 /** O acento vira data-acento no <html> (tokens.css) e o card é redesenhado (só o selo muda): o SVG leva a cor escrita, não var(). */
 function aplicarAcento(valor: Acento): void {
@@ -49,7 +49,7 @@ async function baixar(botao: HTMLButtonElement): Promise<void> {
       card.bandeiraHref ? paraDataUri(card.bandeiraHref) : undefined,
     ]);
     const png = await svgParaPng(renderCard({ ...card, acento, fonteDataUri, bandeiraHref }));
-    salvar(png, `card-${variante.id}${acento === 'violeta' ? '' : `-${acento}`}.png`);
+    salvar(png, `card-${variante.id}${acento === 'ouro' ? '' : `-${acento}`}.png`);
     estado.textContent = `PNG 1200×675 · ${Math.round(png.size / 1024)} KB`;
   } catch (erro) {
     estado.textContent = `Não foi possível gerar o PNG de "${variante.rotulo}": ${erro instanceof Error ? erro.message : String(erro)}`;
