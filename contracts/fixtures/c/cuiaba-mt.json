@@ -3,9 +3,9 @@
   "slug": "cuiaba-mt",
   "nome": "Cuiabá",
   "uf": "MT",
-  "cod_tse": 90011,
+  "cod_tse": 90670,
   "cod_ibge": 5103403,
-  "eleitores": 494670,
+  "eleitores": 456517,
   "atualizado": "2026-10-25T18:42:10-03:00",
   "secoes_pct": 55.2,
   "presidente": {
@@ -14,30 +14,30 @@
         "n": 13,
         "nome": "Lula",
         "partido": "PT",
-        "votos": 86295,
-        "pct": 39.16,
+        "votos": 70751,
+        "pct": 36.92,
         "eleito": false
       },
       {
         "n": 22,
         "nome": "Flávio Bolsonaro",
         "partido": "PL",
-        "votos": 134070,
-        "pct": 60.84,
+        "votos": 120883,
+        "pct": 63.08,
         "eleito": false
       }
     ],
     "variacao_2022": {
-      "13": -3.39,
-      "22": 3.39
+      "13": -1.58,
+      "22": 1.58
     },
-    "diferenca_votos": 47775
+    "diferenca_votos": 50132
   },
   "governador": null,
   "selos": [],
   "rank": {
-    "dividida_br": 35,
-    "dividida_uf": 3,
+    "dividida_br": 31,
+    "dividida_uf": 2,
     "virada_uf": null
   },
   "virou": false

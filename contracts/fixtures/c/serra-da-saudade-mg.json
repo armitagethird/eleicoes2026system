@@ -3,9 +3,9 @@
   "slug": "serra-da-saudade-mg",
   "nome": "Serra da Saudade",
   "uf": "MG",
-  "cod_tse": 90032,
+  "cod_tse": 53317,
   "cod_ibge": 3166600,
-  "eleitores": 630,
+  "eleitores": 1281,
   "atualizado": "2026-10-25T18:42:10-03:00",
   "secoes_pct": 100,
   "presidente": {
@@ -22,16 +22,16 @@
         "n": 22,
         "nome": "Flávio Bolsonaro",
         "partido": "PL",
-        "votos": 492,
+        "votos": 919,
         "pct": 100,
         "eleito": false
       }
     ],
     "variacao_2022": {
-      "13": -48.59,
-      "22": 48.59
+      "13": -46.15,
+      "22": 46.15
     },
-    "diferenca_votos": 492
+    "diferenca_votos": 919
   },
   "governador": null,
   "selos": [

@@ -3,9 +3,9 @@
   "slug": "santarem-pa",
   "nome": "Santarém",
   "uf": "PA",
-  "cod_tse": 90044,
+  "cod_tse": 5355,
   "cod_ibge": 1506807,
-  "eleitores": 252280,
+  "eleitores": 253605,
   "atualizado": "2026-10-25T18:42:10-03:00",
   "secoes_pct": 61.4,
   "presidente": {
@@ -14,33 +14,31 @@
         "n": 13,
         "nome": "Lula",
         "partido": "PT",
-        "votos": 54403,
-        "pct": 50.63,
+        "votos": 50262,
+        "pct": 42.75,
         "eleito": false
       },
       {
         "n": 22,
         "nome": "Flávio Bolsonaro",
         "partido": "PL",
-        "votos": 53050,
-        "pct": 49.37,
+        "votos": 67311,
+        "pct": 57.25,
         "eleito": false
       }
     ],
     "variacao_2022": {
-      "13": 4.23,
-      "22": -4.23
+      "13": -1.68,
+      "22": 1.68
     },
-    "diferenca_votos": 1353
+    "diferenca_votos": 17049
   },
   "governador": null,
-  "selos": [
-    "mais_dividida_uf"
-  ],
+  "selos": [],
   "rank": {
-    "dividida_br": 5,
-    "dividida_uf": 1,
-    "virada_uf": 1
+    "dividida_br": 20,
+    "dividida_uf": 2,
+    "virada_uf": null
   },
-  "virou": true
+  "virou": false
 }

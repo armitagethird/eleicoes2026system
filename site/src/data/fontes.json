@@ -1,0 +1,122 @@
+[
+  {
+    "arquivo": "ibge-municipios.json",
+    "url": "https://servicodados.ibge.gov.br/api/v1/localidades/municipios",
+    "uso": "nome, UF e código IBGE dos municípios",
+    "bytes": 2470036,
+    "sha256": "86ecdccdf97d72e7e5e46f0854cfcea8bacc28154cc1bc4ed0e6110e3a6c9c02",
+    "municipios": 5571,
+    "etag": null,
+    "last_modified": null
+  },
+  {
+    "arquivo": "ibge-centroides.json",
+    "url": "https://servicodados.ibge.gov.br/api/v4/malhas/paises/BR/metadados?intrarregiao=municipio",
+    "uso": "centroide de cada município (lat/lon)",
+    "bytes": 1763977,
+    "sha256": "8cf8995a5d8a87cbf8daf7a259a332b2113ffa70a7bef234152299a185ff5394",
+    "municipios": 5571,
+    "etag": null,
+    "last_modified": null
+  },
+  {
+    "arquivo": "tse-municipios-2026.json",
+    "url": "https://resultados.tse.jus.br/oficial/ele2026/6257/config/mun-e006257-cm.json",
+    "uso": "de-para código TSE (cd) e IBGE (cdi)",
+    "bytes": 534025,
+    "sha256": "dd8dcad73361a481b5110098ec812c1bda3f7acc12774fe6b0cf0be10ed2132b",
+    "municipios": 5571,
+    "etag": "\"9dbebd62b27910ab27d6004872f9c8d0\"",
+    "last_modified": "Fri, 02 Oct 2026 21:31:57 GMT"
+  },
+  {
+    "arquivo": "votacao_candidato_munzona_2018.zip",
+    "url": "https://cdn.tse.jus.br/estatistica/sead/odsele/votacao_candidato_munzona/votacao_candidato_munzona_2018.zip",
+    "uso": "votos por candidato, município e zona, 2018",
+    "bytes": 395389280,
+    "sha256": "f880848ef4ba340b15cb91ff0754aa370d34ca7b7e605d6607c0f2a75009adc8",
+    "municipios": null,
+    "etag": "\"17912960-626cdc9223858\"",
+    "last_modified": "Wed, 13 Nov 2024 16:25:44 GMT"
+  },
+  {
+    "arquivo": "votacao_candidato_munzona_2022.zip",
+    "url": "https://cdn.tse.jus.br/estatistica/sead/odsele/votacao_candidato_munzona/votacao_candidato_munzona_2022.zip",
+    "uso": "votos por candidato, município e zona, 2022",
+    "bytes": 641972446,
+    "sha256": "b5bd20d7e2aee66c142ff38cebaaf7f31b84bc6aaaee1ae09ae4b66778c96b7d",
+    "municipios": null,
+    "etag": "\"2643b8de-65cfea7205ec6\"",
+    "last_modified": "Sun, 04 Oct 2026 07:24:15 GMT"
+  },
+  {
+    "arquivo": "detalhe_votacao_munzona_2018.zip",
+    "url": "https://cdn.tse.jus.br/estatistica/sead/odsele/detalhe_votacao_munzona/detalhe_votacao_munzona_2018.zip",
+    "uso": "eleitorado e comparecimento por município e zona, 2018",
+    "bytes": 4269741,
+    "sha256": "df68c258a2261dff37b379f65ea5f2e8de7b3d824bb2340d8f4830274a3fabb5",
+    "municipios": null,
+    "etag": "\"4126ad-63b13e8577a7f\"",
+    "last_modified": "Tue, 29 Jul 2025 16:29:08 GMT"
+  },
+  {
+    "arquivo": "detalhe_votacao_munzona_2022.zip",
+    "url": "https://cdn.tse.jus.br/estatistica/sead/odsele/detalhe_votacao_munzona/detalhe_votacao_munzona_2022.zip",
+    "uso": "eleitorado e comparecimento por município e zona, 2022",
+    "bytes": 4409185,
+    "sha256": "1530bcd1933f240b26639a30b461673c55704442f13ed057e6d9686a76628a0b",
+    "municipios": null,
+    "etag": "\"434761-65d2836eaeab9\"",
+    "last_modified": "Tue, 06 Oct 2026 08:59:21 GMT"
+  },
+  {
+    "arquivo": "votacao_secao_2026_BR.zip",
+    "url": "https://cdn.tse.jus.br/estatistica/sead/odsele/votacao_secao/votacao_secao_2026_BR.zip",
+    "uso": "votos para presidente por seção, 1º turno 2026",
+    "bytes": 143403125,
+    "sha256": "223c555acef3096e83628ce63726d4b4a91c7a78d31560825971c26222ce9aa4",
+    "municipios": null,
+    "etag": "\"88c2875-65d24d8fc478d\"",
+    "last_modified": "Tue, 06 Oct 2026 04:58:20 GMT"
+  },
+  {
+    "arquivo": "detalhe_votacao_secao_2026.zip",
+    "url": "https://cdn.tse.jus.br/estatistica/sead/odsele/detalhe_votacao_secao/detalhe_votacao_secao_2026.zip",
+    "uso": "eleitorado e comparecimento por seção, 1º turno 2026",
+    "bytes": 176923590,
+    "sha256": "0b1297dc7ae4a46b6ee0428d0f60b9ab9da6b53419ef7580d9ca20662a192cb1",
+    "municipios": null,
+    "etag": "\"a8ba3c6-65d2f30d0bc37\"",
+    "last_modified": "Tue, 06 Oct 2026 17:18:44 GMT"
+  },
+  {
+    "arquivo": "relatorio_totalizacao_2018_BR.zip",
+    "url": "https://cdn.tse.jus.br/estatistica/sead/odsele/relatorio_resultado_totalizacao/Relatorio_Resultado_Totalizacao_2018_BR.zip",
+    "uso": "totais nacionais oficiais (conferência), 2018",
+    "bytes": 990267,
+    "sha256": "13637dc43aa55a7fecb3db28b9f4736cd01edd1e73e8245726afae5771224cbd",
+    "municipios": null,
+    "etag": "\"f1c3b-626cdb2694be3\"",
+    "last_modified": "Wed, 13 Nov 2024 16:19:23 GMT"
+  },
+  {
+    "arquivo": "relatorio_totalizacao_2022_BR.zip",
+    "url": "https://cdn.tse.jus.br/estatistica/sead/odsele/relatorio_resultado_totalizacao/Relatorio_Resultado_Totalizacao_2022_BR.zip",
+    "uso": "totais nacionais oficiais (conferência), 2022",
+    "bytes": 4040010,
+    "sha256": "9ba1ef979868445e295c689098b063106d612cfacafd19754213a5f2317a572e",
+    "municipios": null,
+    "etag": "\"3da54a-65d25efdf0e00\"",
+    "last_modified": "Tue, 06 Oct 2026 06:16:19 GMT"
+  },
+  {
+    "arquivo": "relatorio_totalizacao_2026_BR.zip",
+    "url": "https://cdn.tse.jus.br/estatistica/sead/odsele/relatorio_resultado_totalizacao/Relatorio_Resultado_Totalizacao_2026_BR.zip",
+    "uso": "totais nacionais oficiais (conferência), 2026",
+    "bytes": 287025,
+    "sha256": "0bcfa20cb85f917a6067b21d4bacf698555a026aa40d2481f6d6f9d6e1aad45f",
+    "municipios": null,
+    "etag": "\"46131-65d2eb0ee31d9\"",
+    "last_modified": "Tue, 06 Oct 2026 16:42:58 GMT"
+  }
+]

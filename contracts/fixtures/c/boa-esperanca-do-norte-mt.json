@@ -3,9 +3,9 @@
   "slug": "boa-esperanca-do-norte-mt",
   "nome": "Boa Esperança do Norte",
   "uf": "MT",
-  "cod_tse": 90031,
+  "cod_tse": 73709,
   "cod_ibge": 5101837,
-  "eleitores": 4200,
+  "eleitores": 4326,
   "atualizado": "2026-10-25T18:42:10-03:00",
   "secoes_pct": 100,
   "presidente": {
@@ -14,26 +14,26 @@
         "n": 13,
         "nome": "Lula",
         "partido": "PT",
-        "votos": 1202,
-        "pct": 36.27,
+        "votos": 777,
+        "pct": 25.75,
         "eleito": false
       },
       {
         "n": 22,
         "nome": "Flávio Bolsonaro",
         "partido": "PL",
-        "votos": 2112,
-        "pct": 63.73,
+        "votos": 2241,
+        "pct": 74.25,
         "eleito": false
       }
     ],
     "variacao_2022": {},
-    "diferenca_votos": 910
+    "diferenca_votos": 1464
   },
   "governador": null,
   "selos": [],
   "rank": {
-    "dividida_br": 43,
+    "dividida_br": 45,
     "dividida_uf": 4,
     "virada_uf": null
   },

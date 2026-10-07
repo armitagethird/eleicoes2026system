@@ -3,9 +3,9 @@
   "slug": "campo-grande-ms",
   "nome": "Campo Grande",
   "uf": "MS",
-  "cod_tse": 90012,
+  "cod_tse": 90514,
   "cod_ibge": 5002704,
-  "eleitores": 682560,
+  "eleitores": 641185,
   "atualizado": "2026-10-25T18:42:10-03:00",
   "secoes_pct": 52.3,
   "presidente": {
@@ -14,29 +14,29 @@
         "n": 13,
         "nome": "Lula",
         "partido": "PT",
-        "votos": 99178,
-        "pct": 38.46,
+        "votos": 91911,
+        "pct": 36.89,
         "eleito": false
       },
       {
         "n": 22,
         "nome": "Flávio Bolsonaro",
         "partido": "PL",
-        "votos": 158696,
-        "pct": 61.54,
+        "votos": 157239,
+        "pct": 63.11,
         "eleito": false
       }
     ],
     "variacao_2022": {
-      "13": -2.25,
-      "22": 2.25
+      "13": -0.46,
+      "22": 0.46
     },
-    "diferenca_votos": 59518
+    "diferenca_votos": 65328
   },
   "governador": null,
   "selos": [],
   "rank": {
-    "dividida_br": 39,
+    "dividida_br": 32,
     "dividida_uf": 1,
     "virada_uf": null
   },

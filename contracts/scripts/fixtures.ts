@@ -2,9 +2,13 @@
 // Determinístico (pseudo-aleatório semeado pelo slug/UF, sem relógio). Roda com Node puro: npm run fixtures (em /site).
 //   npm run fixtures -- --modo=live   -> public/data/status.json = status.live.json (padrão: pre)
 //
-// REAL: slug, nomes, UF, códigos IBGE, lat/lon (municipios.json). hist/, hist-uf/ e hist-br.json são stubs fictícios
-// (viram reais na Fase 0.5) e as variações vs 2022 são calculadas contra eles.
+// REAL (ETL, Fase 0.5): municípios (nome, UF, códigos, lat/lon, eleitorado de 2026), hist/, hist-uf/ e hist-br.json
+// (2º turno de 2022 e 1º de 2026, do TSE). As variações vs 2022 são calculadas contra esses dados reais.
 // FICTÍCIO: todos os números do 2º turno de 2026 (votos, percentuais, seções, selos, ranks).
+// Os números nascem por município (todos os 5.571) e sobem por soma: UF = soma dos seus municípios, Brasil = soma das UFs.
+// Por isso o mapa ao vivo (apuracao.json), os placares (br, uf/*) e as cidades (c/*) contam a mesma história.
+// c/*.json existe só para a amostra de 50 cidades (não se versionam 5.571 arquivos); ranks, selos e rankings.json
+// são calculados entre elas.
 import { cpSync, mkdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -32,14 +36,19 @@ const GOVERNADOR: [Quem, Quem] = [
   { n: 45, nome: 'Fictícia B', partido: 'FIC' },
 ];
 const UFS_COM_GOVERNADOR = ['AC', 'AM', 'DF', 'ES', 'RJ', 'RN', 'TO'];
+const SIGLAS_UF = ['AC', 'AL', 'AM', 'AP', 'BA', 'CE', 'DF', 'ES', 'GO', 'MA', 'MG', 'MS', 'MT', 'PA', 'PB', 'PE', 'PI', 'PR', 'RJ', 'RN', 'RO', 'RR', 'RS', 'SC', 'SE', 'SP', 'TO'];
 
-// Eleitorado por UF: aproximação grosseira, fictícia, só para dar escala aos placares.
-const ELEITORES_UF: Record<string, number> = {
-  AC: 600_000, AL: 2_300_000, AM: 2_600_000, AP: 520_000, BA: 11_100_000, CE: 6_600_000, DF: 2_200_000, ES: 2_800_000,
-  GO: 4_900_000, MA: 5_100_000, MG: 16_300_000, MS: 2_000_000, MT: 2_600_000, PA: 6_100_000, PB: 3_100_000, PE: 6_900_000,
-  PI: 2_400_000, PR: 8_500_000, RJ: 12_700_000, RN: 2_500_000, RO: 1_200_000, RR: 400_000, RS: 8_500_000, SC: 5_500_000,
-  SE: 1_700_000, SP: 34_600_000, TO: 1_100_000,
-};
+// As 50 cidades com c/{slug}.json: 27 capitais, nomes longos, apóstrofo, hífen, o menor eleitorado do país (Borá) e a cidade criada depois de 2022.
+const AMOSTRA = new Set([
+  'anapolis-go', 'aracaju-se', 'belem-pa', 'belo-horizonte-mg', 'boa-esperanca-do-norte-mt', 'boa-vista-rr', 'bora-sp',
+  'brasilia-df', 'campina-grande-pb', 'campinas-sp', 'campo-grande-ms', 'caxias-do-sul-rs', 'cuiaba-mt', 'curitiba-pr',
+  'feira-de-santana-ba', 'florianopolis-sc', 'fortaleza-ce', 'goiania-go', 'imperatriz-ma', 'ji-parana-ro',
+  'joao-pessoa-pb', 'joinville-sc', 'juazeiro-do-norte-ce', 'londrina-pr', 'macapa-ap', 'maceio-al', 'manaus-am',
+  'mossoro-rn', 'natal-rn', 'niteroi-rj', 'palmas-to', 'parnaiba-pi', 'petrolina-pe', 'porto-alegre-rs', 'porto-velho-ro',
+  'recife-pe', 'rio-branco-ac', 'rio-de-janeiro-rj', 'rondonopolis-mt', 'salvador-ba', 'santa-barbara-doeste-sp',
+  'santarem-pa', 'sao-joao-da-boa-vista-sp', 'sao-luis-ma', 'sao-paulo-sp', 'serra-da-saudade-mg', 'teresina-pi',
+  'uberlandia-mg', 'vila-bela-da-santissima-trindade-mt', 'vitoria-es',
+]);
 
 const CAPITAIS = [
   'rio-branco-ac', 'maceio-al', 'macapa-ap', 'manaus-am', 'salvador-ba', 'fortaleza-ce', 'brasilia-df', 'vitoria-es',
@@ -48,7 +57,7 @@ const CAPITAIS = [
   'boa-vista-rr', 'florianopolis-sc', 'sao-paulo-sp', 'aracaju-se', 'palmas-to',
 ];
 
-// Casos de borda forçados (o resto é sorteado pelo slug).
+// Casos de borda forçados (o resto é sorteado pelo slug). Só valem para quem está na amostra.
 const CENARIOS: Record<string, Cenario> = {
   'sao-luis-ma': { secoes: 87.3 }, // exemplo do brief
   'santa-barbara-doeste-sp': { secoes: 96.4, p13: 50.1 }, // margem de 0,2 ponto
@@ -98,36 +107,68 @@ const dividir = (validos: number, p13: number): [number, number] => {
   return [v13, validos - v13];
 };
 
-// ---------- cidades ----------
+// ---------- municípios ----------
 const municipios = le<Municipio[]>(join(RAIZ, 'site/src/data/municipios.json'));
+const faltando = [...AMOSTRA].filter((slug) => !municipios.some((m) => m.slug === slug));
+if (faltando.length > 0) throw new Error(`amostra com slug fora de municipios.json: ${faltando.join(', ')}`);
 
-interface CidadeCalc { m: Municipio; hist: Hist; secoes: number; p13: number; p22: number; margem: number; lider: 13 | 22 | null; virou: boolean; swing: number }
+interface CidadeCalc {
+  m: Municipio;
+  hist: Hist;
+  secoes: number;
+  p13: number;
+  p22: number;
+  margem: number;
+  lider: 13 | 22 | null;
+  virou: boolean;
+  swing: number;
+  /** Eleitorado apto das seções já apuradas, comparecidos, brancos e nulos. */
+  apto: number;
+  comparecidos: number;
+  brancos: number;
+  nulos: number;
+  votos13: number;
+  votos22: number;
+  gov: [number, number] | null;
+}
 
 const calcs: CidadeCalc[] = municipios.map((m) => {
   const hist = le<Hist>(join(RAIZ, `site/src/data/hist/${m.slug}.json`));
   const rnd = semente(m.slug);
-  const cenario = CENARIOS[m.slug] ?? {};
+  const cenario = AMOSTRA.has(m.slug) ? (CENARIOS[m.slug] ?? {}) : {};
   const secoes = cenario.secoes ?? r1(35 + rnd() * 64.5);
   const t1 = hist.t1_2026.pct;
   const p13Sorteado = t1['13'] + t1.outros * (0.25 + rnd() * 0.5);
   const p13Base = cenario.p13 === 'espelho' ? 100 - (hist.t2_2022?.pct['13'] ?? 50) + 0.3 : (cenario.p13 ?? p13Sorteado);
-  const p13 = secoes < 1 ? 0 : r2(Math.min(100, Math.max(0, p13Base)));
-  const p22 = secoes < 1 ? 0 : r2(100 - p13);
-  const margem = secoes < 1 ? Infinity : Math.abs(p13 - p22);
-  const lider = secoes < 1 || p13 === p22 ? null : p13 > p22 ? 13 : 22;
+  const aguardando = secoes < 1;
+  const p13 = aguardando ? 0 : r2(Math.min(100, Math.max(0, p13Base)));
+  const p22 = aguardando ? 0 : r2(100 - p13);
+  const margem = aguardando ? Infinity : Math.abs(p13 - p22);
+  const lider = aguardando || p13 === p22 ? null : p13 > p22 ? 13 : 22;
   const m2022 = hist.t2_2022 ? hist.t2_2022.pct['13'] - hist.t2_2022.pct['22'] : null;
   const virou = lider !== null && m2022 !== null && m2022 !== 0 && (m2022 > 0 ? 13 : 22) !== lider;
   const swing = virou && m2022 !== null ? Math.abs(p13 - p22 - m2022) : 0;
-  return { m, hist, secoes, p13, p22, margem, lider, virou, swing };
+
+  const apto = Math.round(m.eleitores * (secoes / 100));
+  const comparecidos = Math.round(apto * (hist.t1_2026.comparecimento_pct / 100));
+  const brancos = Math.round(comparecidos * 0.03);
+  const nulos = Math.round(comparecidos * 0.04);
+  // Antes de 1% das seções ainda não há voto apurado: o placar fica zerado ("aguardando primeiras seções").
+  const validos = aguardando ? 0 : comparecidos - brancos - nulos;
+  const [votos13, votos22] = dividir(validos, p13);
+  const gov = UFS_COM_GOVERNADOR.includes(m.uf) ? dividir(validos, r2(35 + semente(`${m.slug}-gov`)() * 30)) : null;
+  return { m, hist, secoes, p13, p22, margem, lider, virou, swing, apto, comparecidos, brancos, nulos, votos13, votos22, gov };
 });
 
-const comVoto = calcs.filter((c) => c.secoes >= 1);
+// Ranks, selos e rankings.json: só entre as cidades da amostra, que são as que têm c/{slug}.json.
+const amostra = calcs.filter((c) => AMOSTRA.has(c.m.slug));
+const comVoto = amostra.filter((c) => c.secoes >= 1);
 const posicao = (lista: CidadeCalc[], ordem: (c: CidadeCalc) => number): Map<string, number> =>
   new Map([...lista].sort((a, b) => ordem(a) - ordem(b) || a.m.slug.localeCompare(b.m.slug)).map((c, i) => [c.m.slug, i + 1]));
 
 const dividida = posicao(comVoto, (c) => c.margem);
 const unanime = posicao(comVoto, (c) => -Math.max(c.p13, c.p22));
-const viradas = calcs.filter((c) => c.virou);
+const viradas = amostra.filter((c) => c.virou);
 const virada = posicao(viradas, (c) => -c.swing);
 const noGrupo = (lista: CidadeCalc[], uf: string) => lista.filter((c) => c.m.uf === uf);
 const posicaoNaUf = (lista: CidadeCalc[], global: Map<string, number>, uf: string, slug: string): number | null => {
@@ -136,20 +177,13 @@ const posicaoNaUf = (lista: CidadeCalc[], global: Map<string, number>, uf: strin
   return i < 0 ? null : i + 1;
 };
 
-function cidade({ m, hist, secoes, p13, virou }: CidadeCalc) {
-  const validos = Math.round(m.eleitores * (hist.t1_2026.comparecimento_pct / 100) * (secoes / 100) * 0.95);
-  const [v13, v22] = dividir(validos, p13);
-  const presidente = candidatos(PRESIDENTE, v13, v22);
+function cidade({ m, hist, secoes, votos13, votos22, gov, virou }: CidadeCalc) {
+  const presidente = candidatos(PRESIDENTE, votos13, votos22);
   const variacao = hist.t2_2022 && secoes >= 1
     ? { '13': r2(presidente[0].pct - hist.t2_2022.pct['13']), '22': r2(presidente[1].pct - hist.t2_2022.pct['22']) }
     : {};
-  const diferenca = Math.abs(v13 - v22);
-
-  let governador = null;
-  if (UFS_COM_GOVERNADOR.includes(m.uf)) {
-    const [g12, g45] = dividir(validos, r2(35 + semente(`${m.slug}-gov`)() * 30));
-    governador = { cand: candidatos(GOVERNADOR, g12, g45), variacao_2022: {}, diferenca_votos: Math.abs(g12 - g45) };
-  }
+  const diferenca = Math.abs(votos13 - votos22);
+  const governador = gov ? { cand: candidatos(GOVERNADOR, gov[0], gov[1]), variacao_2022: {}, diferenca_votos: Math.abs(gov[0] - gov[1]) } : null;
 
   const dividida_br = dividida.get(m.slug) ?? null;
   const dividida_uf = posicaoNaUf(comVoto, dividida, m.uf, m.slug);
@@ -173,36 +207,45 @@ function cidade({ m, hist, secoes, p13, virou }: CidadeCalc) {
   };
 }
 
-// ---------- UFs e Brasil ----------
-// O 2º turno de cada UF parte do 1º turno do hist-uf (13 + uma fatia sorteada dos "outros"), e a variação vs 2022 é
-// contra o t2_2022 do mesmo hist: o mapa, o placar e o hist contam a mesma história.
-interface UfCalc { votos: [number, number]; pct2022: Hist['t2_2022']; brancos: number; nulos: number; comparecidos: number; apto: number; secoes: number; gov: [number, number] | null }
+// ---------- UFs e Brasil: soma dos municípios ----------
+interface Soma {
+  votos: [number, number];
+  pct2022: Hist['t2_2022'];
+  brancos: number;
+  nulos: number;
+  comparecidos: number;
+  apto: number;
+  eleitores: number;
+  gov: [number, number] | null;
+}
 
 const histUf = (uf: string) => le<Hist>(join(RAIZ, `site/src/data/hist-uf/${uf.toLowerCase()}.json`));
 
-const ufs: Record<string, UfCalc> = {};
-for (const [uf, eleitores] of Object.entries(ELEITORES_UF)) {
-  const rnd = semente(`uf-${uf}`);
-  const hist = histUf(uf);
-  const secoes = r1(60 + rnd() * 38);
-  const comp = 74 + rnd() * 10;
-  const apto = Math.round(eleitores * (secoes / 100));
-  const comparecidos = Math.round(apto * (comp / 100));
-  const brancos = Math.round(comparecidos * 0.03);
-  const nulos = Math.round(comparecidos * 0.04);
-  const validos = comparecidos - brancos - nulos;
-  const p13 = hist.t1_2026.pct['13'] + hist.t1_2026.pct.outros * (0.25 + rnd() * 0.5);
-  const votos = dividir(validos, p13);
-  const gov = UFS_COM_GOVERNADOR.includes(uf) ? dividir(validos, 35 + rnd() * 30) : null;
-  ufs[uf] = { votos, pct2022: hist.t2_2022, brancos, nulos, comparecidos, apto, secoes, gov };
-}
+const somar = (cidades: CidadeCalc[], pct2022: Hist['t2_2022']): Soma => {
+  const total = (campo: (c: CidadeCalc) => number) => cidades.reduce((acc, c) => acc + campo(c), 0);
+  return {
+    votos: [total((c) => c.votos13), total((c) => c.votos22)],
+    pct2022,
+    brancos: total((c) => c.brancos),
+    nulos: total((c) => c.nulos),
+    comparecidos: total((c) => c.comparecidos),
+    apto: total((c) => c.apto),
+    eleitores: total((c) => c.m.eleitores),
+    gov: cidades[0]?.gov ? [total((c) => c.gov?.[0] ?? 0), total((c) => c.gov?.[1] ?? 0)] : null,
+  };
+};
 
-function placar(u: UfCalc, secoes: number) {
+const ufs = Object.fromEntries(SIGLAS_UF.map((uf) => [uf, somar(calcs.filter((c) => c.m.uf === uf), histUf(uf).t2_2022)]));
+const brasil = somar(calcs, le<Hist>(join(RAIZ, 'site/src/data/hist-br.json')).t2_2022);
+
+const secoesDe = (s: Soma) => r1((s.apto / s.eleitores) * 100);
+
+function placar(u: Soma) {
   const pres = candidatos(PRESIDENTE, u.votos[0], u.votos[1]);
   const comparecimento = r1((u.comparecidos / u.apto) * 100);
   return {
     v: 1, turno: 2, atualizado: ATUALIZADO,
-    secoes_pct: secoes, comparecimento_pct: comparecimento, abstencao_pct: r1(100 - comparecimento),
+    secoes_pct: secoesDe(u), comparecimento_pct: comparecimento, abstencao_pct: r1(100 - comparecimento),
     presidente: {
       cand: pres,
       variacao_2022: u.pct2022 ? { '13': r2(pres[0].pct - u.pct2022.pct['13']), '22': r2(pres[1].pct - u.pct2022.pct['22']) } : {},
@@ -214,16 +257,6 @@ function placar(u: UfCalc, secoes: number) {
   };
 }
 
-const soma = (campo: (u: UfCalc) => number) => Object.values(ufs).reduce((acc, u) => acc + campo(u), 0);
-const brasil: UfCalc = {
-  votos: [soma((u) => u.votos[0]), soma((u) => u.votos[1])],
-  pct2022: le<Hist>(join(RAIZ, 'site/src/data/hist-br.json')).t2_2022,
-  brancos: soma((u) => u.brancos), nulos: soma((u) => u.nulos),
-  comparecidos: soma((u) => u.comparecidos), apto: soma((u) => u.apto), secoes: 0, gov: null,
-};
-const eleitoresBrasil = Object.values(ELEITORES_UF).reduce((a, b) => a + b, 0);
-const secoesBrasil = r1((brasil.apto / eleitoresBrasil) * 100);
-
 // ---------- escrita ----------
 // Só as pastas que este script gera: pesquisas.exemplo.json é escrito à mão e mora em fixtures/ também.
 for (const gerada of ['c', 'uf']) rmSync(join(FIXTURES, gerada), { recursive: true, force: true });
@@ -232,8 +265,8 @@ grava(join(FIXTURES, 'status.json'), { v: 1, modo: 'pre', inicio: '2026-10-25T17
 grava(join(FIXTURES, 'status.live.json'), { v: 1, modo: 'live', inicio: '2026-10-25T17:00:00-03:00', atualizado: ATUALIZADO });
 grava(join(FIXTURES, 'status.final.json'), { v: 1, modo: 'final', inicio: '2026-10-25T17:00:00-03:00', atualizado: '2026-10-25T21:03:00-03:00' });
 
-const placarBr = { ...placar(brasil, secoesBrasil), governador: null };
-const placaresUf = Object.entries(ufs).map(([uf, u]) => [uf, placar(u, u.secoes)] as const);
+const placarBr = { ...placar(brasil), governador: null };
+const placaresUf = Object.entries(ufs).map(([uf, u]) => [uf, placar(u)] as const);
 grava(join(FIXTURES, 'br.json'), placarBr);
 for (const [uf, p] of placaresUf) grava(join(FIXTURES, `uf/${uf.toLowerCase()}.json`), p);
 
@@ -247,7 +280,39 @@ grava(join(FIXTURES, 'mapa.json'), {
   atualizado: ATUALIZADO,
   placas: Object.fromEntries([['BR', doMapa(placarBr)], ...placaresUf.map(([uf, p]) => [uf, doMapa(p)])]),
 });
-for (const c of calcs) grava(join(FIXTURES, `c/${c.m.slug}.json`), cidade(c));
+
+// /data/apuracao.json: a camada "ao-vivo" do mapa da /apuracao (contracts/schemas/camada-mapa.schema.json), 2º turno FICTÍCIO.
+// Linha = [pct 13, pct 22, outros, quem lidera fora os dois (sempre 0 no 2º turno), % das seções]. Sem voto apurado, pct 0 e 0.
+const linhaDe = (pct13: number, pct22: number, secoes: number) => [pct13, pct22, 0, 0, secoes];
+const linhaDoPlacar = (p: ReturnType<typeof placar>) => linhaDe(p.presidente.cand[0].pct, p.presidente.cand[1].pct, p.secoes_pct);
+const camadaAoVivo = {
+  v: 1,
+  id: 'ao-vivo',
+  rotulo: '2º turno 2026',
+  atualizado: ATUALIZADO,
+  candidatos: [
+    { n: 13, nome: 'Lula', partido: 'PT', cor: '13' },
+    { n: 22, nome: 'Flávio Bolsonaro', partido: 'PL', cor: '22' },
+  ],
+  br: linhaDoPlacar(placarBr),
+  ufs: Object.fromEntries(placaresUf.map(([uf, p]) => [uf, linhaDoPlacar(p)])),
+  // O percentual sai dos votos inteiros, como em c/{slug}.json e como o worker fará: em município pequeno difere do p13 sorteado.
+  municipios: [...calcs]
+    .sort((a, b) => a.m.cod_ibge - b.m.cod_ibge)
+    .map((c) => {
+      const [a, b] = candidatos(PRESIDENTE, c.votos13, c.votos22);
+      return [c.m.cod_ibge, ...linhaDe(a!.pct, b!.pct, c.secoes)];
+    }),
+};
+// Um município por linha: o diff do git fica legível.
+const { municipios: linhasAoVivo, ...cabecalhoAoVivo } = camadaAoVivo;
+mkdirSync(FIXTURES, { recursive: true });
+writeFileSync(
+  join(FIXTURES, 'apuracao.json'),
+  `${JSON.stringify(cabecalhoAoVivo).slice(0, -1)},"municipios":[\n${linhasAoVivo.map((l) => JSON.stringify(l)).join(',\n')}\n]}\n`,
+);
+
+for (const c of amostra) grava(join(FIXTURES, `c/${c.m.slug}.json`), cidade(c));
 
 const lista = (itens: CidadeCalc[], n = 10) => itens.slice(0, n).map((c) => c.m.slug);
 grava(join(FIXTURES, 'rankings.json'), {
@@ -262,4 +327,4 @@ cpSync(FIXTURES, PUBLIC_DATA, { recursive: true });
 const modo = process.argv.find((a) => a.startsWith('--modo='))?.slice(7) ?? 'pre';
 if (modo !== 'pre') cpSync(join(FIXTURES, `status.${modo}.json`), join(PUBLIC_DATA, 'status.json'));
 
-console.log(`fixtures: ${calcs.length} cidades, ${Object.keys(ufs).length} UFs, status.json = ${modo} -> site/public/data`);
+console.log(`fixtures: ${calcs.length} municípios na camada ao-vivo, ${amostra.length} cidades em c/, ${SIGLAS_UF.length} UFs, status.json = ${modo} -> site/public/data`);

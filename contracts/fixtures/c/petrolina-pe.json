@@ -3,9 +3,9 @@
   "slug": "petrolina-pe",
   "nome": "Petrolina",
   "uf": "PE",
-  "cod_tse": 90041,
+  "cod_tse": 25216,
   "cod_ibge": 2611101,
-  "eleitores": 293960,
+  "eleitores": 249120,
   "atualizado": "2026-10-25T18:42:10-03:00",
   "secoes_pct": 83.5,
   "presidente": {
@@ -14,29 +14,29 @@
         "n": 13,
         "nome": "Lula",
         "partido": "PT",
-        "votos": 101812,
-        "pct": 59.68,
+        "votos": 51740,
+        "pct": 32.68,
         "eleito": false
       },
       {
         "n": 22,
         "nome": "Flávio Bolsonaro",
         "partido": "PL",
-        "votos": 68785,
-        "pct": 40.32,
+        "votos": 106582,
+        "pct": 67.32,
         "eleito": false
       }
     ],
     "variacao_2022": {
-      "13": 19.06,
-      "22": -19.06
+      "13": -34.94,
+      "22": 34.94
     },
-    "diferenca_votos": 33027
+    "diferenca_votos": 54842
   },
   "governador": null,
   "selos": [],
   "rank": {
-    "dividida_br": 29,
+    "dividida_br": 38,
     "dividida_uf": 2,
     "virada_uf": 1
   },

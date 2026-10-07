@@ -3,9 +3,9 @@
   "slug": "boa-vista-rr",
   "nome": "Boa Vista",
   "uf": "RR",
-  "cod_tse": 90023,
+  "cod_tse": 3018,
   "cod_ibge": 1400100,
-  "eleitores": 314250,
+  "eleitores": 241509,
   "atualizado": "2026-10-25T18:42:10-03:00",
   "secoes_pct": 66.7,
   "presidente": {
@@ -14,31 +14,33 @@
         "n": 13,
         "nome": "Lula",
         "partido": "PT",
-        "votos": 81268,
-        "pct": 52.23,
+        "votos": 26246,
+        "pct": 21.2,
         "eleito": false
       },
       {
         "n": 22,
         "nome": "Flávio Bolsonaro",
         "partido": "PL",
-        "votos": 74328,
-        "pct": 47.77,
+        "votos": 97557,
+        "pct": 78.8,
         "eleito": false
       }
     ],
     "variacao_2022": {
-      "13": 2.57,
-      "22": -2.57
+      "13": 0.67,
+      "22": -0.67
     },
-    "diferenca_votos": 6940
+    "diferenca_votos": 71311
   },
   "governador": null,
-  "selos": [],
+  "selos": [
+    "mais_unanime_br"
+  ],
   "rank": {
-    "dividida_br": 8,
+    "dividida_br": 48,
     "dividida_uf": 1,
-    "virada_uf": 1
+    "virada_uf": null
   },
-  "virou": true
+  "virou": false
 }

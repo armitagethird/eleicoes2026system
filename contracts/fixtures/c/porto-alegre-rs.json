@@ -3,9 +3,9 @@
   "slug": "porto-alegre-rs",
   "nome": "Porto Alegre",
   "uf": "RS",
-  "cod_tse": 90021,
+  "cod_tse": 88013,
   "cod_ibge": 4314902,
-  "eleitores": 1012960,
+  "eleitores": 1064200,
   "atualizado": "2026-10-25T18:42:10-03:00",
   "secoes_pct": 53.9,
   "presidente": {
@@ -14,31 +14,31 @@
         "n": 13,
         "nome": "Lula",
         "partido": "PT",
-        "votos": 169187,
-        "pct": 46.3,
+        "votos": 218876,
+        "pct": 53.98,
         "eleito": false
       },
       {
         "n": 22,
         "nome": "Flávio Bolsonaro",
         "partido": "PL",
-        "votos": 196227,
-        "pct": 53.7,
+        "votos": 186600,
+        "pct": 46.02,
         "eleito": false
       }
     ],
     "variacao_2022": {
-      "13": 4.59,
-      "22": -4.59
+      "13": 0.48,
+      "22": -0.48
     },
-    "diferenca_votos": 27040
+    "diferenca_votos": 32276
   },
   "governador": null,
   "selos": [
     "mais_dividida_uf"
   ],
   "rank": {
-    "dividida_br": 13,
+    "dividida_br": 14,
     "dividida_uf": 1,
     "virada_uf": null
   },

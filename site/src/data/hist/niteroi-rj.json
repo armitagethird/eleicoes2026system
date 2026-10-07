@@ -1,17 +1,17 @@
 {
   "t2_2022": {
     "pct": {
-      "13": 32.26,
-      "22": 67.74
+      "13": 51.21,
+      "22": 48.79
     },
-    "comparecimento_pct": 74.68
+    "comparecimento_pct": 81.54
   },
   "t1_2026": {
     "pct": {
-      "13": 29.2,
-      "22": 57.45,
-      "outros": 13.35
+      "13": 48.35,
+      "22": 43.71,
+      "outros": 7.94
     },
-    "comparecimento_pct": 82
+    "comparecimento_pct": 80.4
   }
 }

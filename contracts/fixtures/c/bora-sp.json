@@ -3,9 +3,9 @@
   "slug": "bora-sp",
   "nome": "Borá",
   "uf": "SP",
-  "cod_tse": 90033,
+  "cod_tse": 62430,
   "cod_ibge": 3507209,
-  "eleitores": 690,
+  "eleitores": 1094,
   "atualizado": "2026-10-25T18:42:10-03:00",
   "secoes_pct": 0.4,
   "presidente": {
@@ -22,13 +22,13 @@
         "n": 22,
         "nome": "Flávio Bolsonaro",
         "partido": "PL",
-        "votos": 2,
-        "pct": 100,
+        "votos": 0,
+        "pct": 0,
         "eleito": false
       }
     ],
     "variacao_2022": {},
-    "diferenca_votos": 2
+    "diferenca_votos": 0
   },
   "governador": null,
   "selos": [],

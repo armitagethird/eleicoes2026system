@@ -3,9 +3,9 @@
   "slug": "florianopolis-sc",
   "nome": "Florianópolis",
   "uf": "SC",
-  "cod_tse": 90024,
+  "cod_tse": 81051,
   "cod_ibge": 4205407,
-  "eleitores": 408280,
+  "eleitores": 423969,
   "atualizado": "2026-10-25T18:42:10-03:00",
   "secoes_pct": 89.7,
   "presidente": {
@@ -14,30 +14,32 @@
         "n": 13,
         "nome": "Lula",
         "partido": "PT",
-        "votos": 157466,
-        "pct": 60.67,
+        "votos": 133106,
+        "pct": 47.28,
         "eleito": false
       },
       {
         "n": 22,
         "nome": "Flávio Bolsonaro",
         "partido": "PL",
-        "votos": 102079,
-        "pct": 39.33,
+        "votos": 148422,
+        "pct": 52.72,
         "eleito": false
       }
     ],
     "variacao_2022": {
-      "13": -3.28,
-      "22": 3.28
+      "13": 0.61,
+      "22": -0.61
     },
-    "diferenca_votos": 55387
+    "diferenca_votos": 15316
   },
   "governador": null,
-  "selos": [],
+  "selos": [
+    "mais_dividida_uf"
+  ],
   "rank": {
-    "dividida_br": 34,
-    "dividida_uf": 2,
+    "dividida_br": 10,
+    "dividida_uf": 1,
     "virada_uf": null
   },
   "virou": false

@@ -3,9 +3,9 @@
   "slug": "vitoria-es",
   "nome": "Vitória",
   "uf": "ES",
-  "cod_tse": 90008,
+  "cod_tse": 57053,
   "cod_ibge": 3205309,
-  "eleitores": 245380,
+  "eleitores": 267102,
   "atualizado": "2026-10-25T18:42:10-03:00",
   "secoes_pct": 38.3,
   "presidente": {
@@ -14,24 +14,24 @@
         "n": 13,
         "nome": "Lula",
         "partido": "PT",
-        "votos": 21316,
-        "pct": 31.66,
+        "votos": 35572,
+        "pct": 46.08,
         "eleito": false
       },
       {
         "n": 22,
         "nome": "Flávio Bolsonaro",
         "partido": "PL",
-        "votos": 46011,
-        "pct": 68.34,
+        "votos": 41624,
+        "pct": 53.92,
         "eleito": false
       }
     ],
     "variacao_2022": {
-      "13": -0.42,
-      "22": 0.42
+      "13": 0.78,
+      "22": -0.78
     },
-    "diferenca_votos": 24695
+    "diferenca_votos": 6052
   },
   "governador": {
     "cand": [
@@ -39,7 +39,7 @@
         "n": 12,
         "nome": "Fictício A",
         "partido": "FIC",
-        "votos": 27301,
+        "votos": 31303,
         "pct": 40.55,
         "eleito": false
       },
@@ -47,19 +47,17 @@
         "n": 45,
         "nome": "Fictícia B",
         "partido": "FIC",
-        "votos": 40026,
+        "votos": 45893,
         "pct": 59.45,
         "eleito": false
       }
     ],
     "variacao_2022": {},
-    "diferenca_votos": 12725
+    "diferenca_votos": 14590
   },
-  "selos": [
-    "mais_unanime_br"
-  ],
+  "selos": [],
   "rank": {
-    "dividida_br": 47,
+    "dividida_br": 13,
     "dividida_uf": 1,
     "virada_uf": null
   },

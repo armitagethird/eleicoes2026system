@@ -3,9 +3,9 @@
   "slug": "teresina-pi",
   "nome": "Teresina",
   "uf": "PI",
-  "cod_tse": 90018,
+  "cod_tse": 12190,
   "cod_ibge": 2211001,
-  "eleitores": 658390,
+  "eleitores": 592974,
   "atualizado": "2026-10-25T18:42:10-03:00",
   "secoes_pct": 75.7,
   "presidente": {
@@ -14,32 +14,30 @@
         "n": 13,
         "nome": "Lula",
         "partido": "PT",
-        "votos": 200292,
-        "pct": 52.27,
+        "votos": 232593,
+        "pct": 65.51,
         "eleito": false
       },
       {
         "n": 22,
         "nome": "Flávio Bolsonaro",
         "partido": "PL",
-        "votos": 182896,
-        "pct": 47.73,
+        "votos": 122456,
+        "pct": 34.49,
         "eleito": false
       }
     ],
     "variacao_2022": {
-      "13": -2.98,
-      "22": 2.98
+      "13": -0.93,
+      "22": 0.93
     },
-    "diferenca_votos": 17396
+    "diferenca_votos": 110137
   },
   "governador": null,
-  "selos": [
-    "mais_dividida_uf"
-  ],
+  "selos": [],
   "rank": {
-    "dividida_br": 9,
-    "dividida_uf": 1,
+    "dividida_br": 35,
+    "dividida_uf": 2,
     "virada_uf": null
   },
   "virou": false

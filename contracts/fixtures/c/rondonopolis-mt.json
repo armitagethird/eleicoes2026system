@@ -3,9 +3,9 @@
   "slug": "rondonopolis-mt",
   "nome": "Rondonópolis",
   "uf": "MT",
-  "cod_tse": 90048,
+  "cod_tse": 91510,
   "cod_ibge": 5107602,
-  "eleitores": 186130,
+  "eleitores": 177622,
   "atualizado": "2026-10-25T18:42:10-03:00",
   "secoes_pct": 77.3,
   "presidente": {
@@ -14,33 +14,31 @@
         "n": 13,
         "nome": "Lula",
         "partido": "PT",
-        "votos": 52502,
-        "pct": 49.39,
+        "votos": 31077,
+        "pct": 31.57,
         "eleito": false
       },
       {
         "n": 22,
         "nome": "Flávio Bolsonaro",
         "partido": "PL",
-        "votos": 53798,
-        "pct": 50.61,
+        "votos": 67360,
+        "pct": 68.43,
         "eleito": false
       }
     ],
     "variacao_2022": {
-      "13": -6.82,
-      "22": 6.82
+      "13": -3.56,
+      "22": 3.56
     },
-    "diferenca_votos": 1296
+    "diferenca_votos": 36283
   },
   "governador": null,
-  "selos": [
-    "mais_dividida_uf"
-  ],
+  "selos": [],
   "rank": {
-    "dividida_br": 4,
-    "dividida_uf": 1,
-    "virada_uf": 2
+    "dividida_br": 40,
+    "dividida_uf": 3,
+    "virada_uf": null
   },
-  "virou": true
+  "virou": false
 }

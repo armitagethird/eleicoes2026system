@@ -3,9 +3,9 @@
   "slug": "niteroi-rj",
   "nome": "Niterói",
   "uf": "RJ",
-  "cod_tse": 90050,
+  "cod_tse": 58653,
   "cod_ibge": 3303302,
-  "eleitores": 366130,
+  "eleitores": 412252,
   "atualizado": "2026-10-25T18:42:10-03:00",
   "secoes_pct": 38.6,
   "presidente": {
@@ -14,24 +14,24 @@
         "n": 13,
         "nome": "Lula",
         "partido": "PT",
-        "votos": 37784,
-        "pct": 34.32,
+        "votos": 61158,
+        "pct": 51.4,
         "eleito": false
       },
       {
         "n": 22,
         "nome": "Flávio Bolsonaro",
         "partido": "PL",
-        "votos": 72309,
-        "pct": 65.68,
+        "votos": 57826,
+        "pct": 48.6,
         "eleito": false
       }
     ],
     "variacao_2022": {
-      "13": 2.06,
-      "22": -2.06
+      "13": 0.19,
+      "22": -0.19
     },
-    "diferenca_votos": 34525
+    "diferenca_votos": 3332
   },
   "governador": {
     "cand": [
@@ -39,7 +39,7 @@
         "n": 12,
         "nome": "Fictício A",
         "partido": "FIC",
-        "votos": 59560,
+        "votos": 64370,
         "pct": 54.1,
         "eleito": false
       },
@@ -47,17 +47,17 @@
         "n": 45,
         "nome": "Fictícia B",
         "partido": "FIC",
-        "votos": 50533,
+        "votos": 54614,
         "pct": 45.9,
         "eleito": false
       }
     ],
     "variacao_2022": {},
-    "diferenca_votos": 9027
+    "diferenca_votos": 9756
   },
   "selos": [],
   "rank": {
-    "dividida_br": 45,
+    "dividida_br": 6,
     "dividida_uf": 2,
     "virada_uf": null
   },

@@ -88,9 +88,13 @@ describe('fixtures: cidades', () => {
   const cidades = jsons('contracts/fixtures/c');
   const municipios = lerJson('site/src/data/municipios.json') as Array<{ slug: string; uf: string }>;
 
-  it('há uma fixture por município do stub, nomeada pelo slug', () => {
-    expect(cidades.map((c) => c.slug).sort()).toEqual(municipios.map((m) => m.slug).sort());
-    for (const { slug, dados } of cidades) expect(dados.slug).toBe(slug);
+  it('c/ tem só a amostra de 50 cidades, cada uma um município real, nomeada pelo slug', () => {
+    const slugs = new Set(municipios.map((m) => m.slug));
+    expect(cidades).toHaveLength(50);
+    for (const { slug, dados } of cidades) {
+      expect(slugs.has(slug), slug).toBe(true);
+      expect(dados.slug).toBe(slug);
+    }
   });
 
   it('todas validam contra o schema', () => {

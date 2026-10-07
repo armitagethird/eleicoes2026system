@@ -3,9 +3,9 @@
   "slug": "londrina-pr",
   "nome": "Londrina",
   "uf": "PR",
-  "cod_tse": 90037,
+  "cod_tse": 76678,
   "cod_ibge": 4113700,
-  "eleitores": 422530,
+  "eleitores": 394978,
   "atualizado": "2026-10-25T18:42:10-03:00",
   "secoes_pct": 63.2,
   "presidente": {
@@ -14,32 +14,30 @@
         "n": 13,
         "nome": "Lula",
         "partido": "PT",
-        "votos": 101101,
-        "pct": 46.88,
+        "votos": 53841,
+        "pct": 29.32,
         "eleito": false
       },
       {
         "n": 22,
         "nome": "Flávio Bolsonaro",
         "partido": "PL",
-        "votos": 114558,
-        "pct": 53.12,
+        "votos": 129791,
+        "pct": 70.68,
         "eleito": false
       }
     ],
     "variacao_2022": {
-      "13": -0.61,
-      "22": 0.61
+      "13": 2.18,
+      "22": -2.18
     },
-    "diferenca_votos": 13457
+    "diferenca_votos": 75950
   },
   "governador": null,
-  "selos": [
-    "mais_dividida_uf"
-  ],
+  "selos": [],
   "rank": {
-    "dividida_br": 11,
-    "dividida_uf": 1,
+    "dividida_br": 42,
+    "dividida_uf": 2,
     "virada_uf": null
   },
   "virou": false

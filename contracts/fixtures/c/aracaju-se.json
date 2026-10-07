@@ -3,9 +3,9 @@
   "slug": "aracaju-se",
   "nome": "Aracaju",
   "uf": "SE",
-  "cod_tse": 90026,
+  "cod_tse": 31054,
   "cod_ibge": 2800308,
-  "eleitores": 458100,
+  "eleitores": 422179,
   "atualizado": "2026-10-25T18:42:10-03:00",
   "secoes_pct": 83.9,
   "presidente": {
@@ -14,29 +14,29 @@
         "n": 13,
         "nome": "Lula",
         "partido": "PT",
-        "votos": 156323,
-        "pct": 59.62,
+        "votos": 162597,
+        "pct": 59.17,
         "eleito": false
       },
       {
         "n": 22,
         "nome": "Flávio Bolsonaro",
         "partido": "PL",
-        "votos": 105876,
-        "pct": 40.38,
+        "votos": 112200,
+        "pct": 40.83,
         "eleito": false
       }
     ],
     "variacao_2022": {
-      "13": -0.69,
-      "22": 0.69
+      "13": 1.91,
+      "22": -1.91
     },
-    "diferenca_votos": 50447
+    "diferenca_votos": 50397
   },
   "governador": null,
   "selos": [],
   "rank": {
-    "dividida_br": 28,
+    "dividida_br": 25,
     "dividida_uf": 1,
     "virada_uf": null
   },

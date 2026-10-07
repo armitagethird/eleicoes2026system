@@ -3,9 +3,9 @@
   "slug": "sao-joao-da-boa-vista-sp",
   "nome": "São João da Boa Vista",
   "uf": "SP",
-  "cod_tse": 90029,
+  "cod_tse": 70831,
   "cod_ibge": 3549102,
-  "eleitores": 70340,
+  "eleitores": 67128,
   "atualizado": "2026-10-25T18:42:10-03:00",
   "secoes_pct": 91.8,
   "presidente": {
@@ -14,7 +14,7 @@
         "n": 13,
         "nome": "Lula",
         "partido": "PT",
-        "votos": 23860,
+        "votos": 22514,
         "pct": 49.95,
         "eleito": false
       },
@@ -22,16 +22,16 @@
         "n": 22,
         "nome": "Flávio Bolsonaro",
         "partido": "PL",
-        "votos": 23908,
+        "votos": 22560,
         "pct": 50.05,
         "eleito": false
       }
     ],
     "variacao_2022": {
-      "13": -9.86,
-      "22": 9.86
+      "13": 15.22,
+      "22": -15.22
     },
-    "diferenca_votos": 48
+    "diferenca_votos": 46
   },
   "governador": null,
   "selos": [
@@ -41,7 +41,7 @@
   "rank": {
     "dividida_br": 1,
     "dividida_uf": 1,
-    "virada_uf": 2
+    "virada_uf": null
   },
-  "virou": true
+  "virou": false
 }

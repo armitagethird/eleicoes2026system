@@ -2,34 +2,34 @@
   "v": 1,
   "turno": 2,
   "atualizado": "2026-10-25T18:42:10-03:00",
-  "secoes_pct": 74.3,
-  "comparecimento_pct": 78.1,
-  "abstencao_pct": 21.9,
+  "secoes_pct": 70.4,
+  "comparecimento_pct": 81.5,
+  "abstencao_pct": 18.5,
   "presidente": {
     "cand": [
       {
         "n": 13,
         "nome": "Lula",
         "partido": "PT",
-        "votos": 858136,
-        "pct": 63.61,
+        "votos": 883637,
+        "pct": 62.21,
         "eleito": false
       },
       {
         "n": 22,
         "nome": "Flávio Bolsonaro",
         "partido": "PL",
-        "votos": 490946,
-        "pct": 36.39,
+        "votos": 536749,
+        "pct": 37.79,
         "eleito": false
       }
     ],
     "variacao_2022": {
-      "13": -1.62,
-      "22": 1.62
+      "13": -2.89,
+      "22": 2.89
     },
-    "brancos": 43519,
-    "nulos": 58025
+    "brancos": 45826,
+    "nulos": 61090
   },
   "governador": {
     "cand": [
@@ -37,21 +37,21 @@
         "n": 12,
         "nome": "Fictício A",
         "partido": "FIC",
-        "votos": 539475,
-        "pct": 39.99,
+        "votos": 761005,
+        "pct": 53.58,
         "eleito": false
       },
       {
         "n": 45,
         "nome": "Fictícia B",
         "partido": "FIC",
-        "votos": 809607,
-        "pct": 60.01,
+        "votos": 659381,
+        "pct": 46.42,
         "eleito": false
       }
     ],
     "variacao_2022": {},
-    "brancos": 39167,
-    "nulos": 52223
+    "brancos": 41243,
+    "nulos": 54981
   }
 }

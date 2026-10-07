@@ -3,9 +3,9 @@
   "slug": "rio-branco-ac",
   "nome": "Rio Branco",
   "uf": "AC",
-  "cod_tse": 90001,
+  "cod_tse": 1392,
   "cod_ibge": 1200401,
-  "eleitores": 277210,
+  "eleitores": 270174,
   "atualizado": "2026-10-25T18:42:10-03:00",
   "secoes_pct": 62.2,
   "presidente": {
@@ -14,24 +14,24 @@
         "n": 13,
         "nome": "Lula",
         "partido": "PT",
-        "votos": 66294,
-        "pct": 51.84,
+        "votos": 41088,
+        "pct": 32.95,
         "eleito": false
       },
       {
         "n": 22,
         "nome": "Flávio Bolsonaro",
         "partido": "PL",
-        "votos": 61587,
-        "pct": 48.16,
+        "votos": 83611,
+        "pct": 67.05,
         "eleito": false
       }
     ],
     "variacao_2022": {
-      "13": 4.96,
-      "22": -4.96
+      "13": 5.46,
+      "22": -5.46
     },
-    "diferenca_votos": 4707
+    "diferenca_votos": 42523
   },
   "governador": {
     "cand": [
@@ -39,7 +39,7 @@
         "n": 12,
         "nome": "Fictício A",
         "partido": "FIC",
-        "votos": 58608,
+        "votos": 57150,
         "pct": 45.83,
         "eleito": false
       },
@@ -47,19 +47,19 @@
         "n": 45,
         "nome": "Fictícia B",
         "partido": "FIC",
-        "votos": 69273,
+        "votos": 67549,
         "pct": 54.17,
         "eleito": false
       }
     ],
     "variacao_2022": {},
-    "diferenca_votos": 10665
+    "diferenca_votos": 10399
   },
   "selos": [],
   "rank": {
-    "dividida_br": 7,
+    "dividida_br": 37,
     "dividida_uf": 1,
-    "virada_uf": 1
+    "virada_uf": null
   },
-  "virou": true
+  "virou": false
 }

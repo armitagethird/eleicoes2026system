@@ -3,9 +3,9 @@
   "slug": "natal-rn",
   "nome": "Natal",
   "uf": "RN",
-  "cod_tse": 90020,
+  "cod_tse": 17612,
   "cod_ibge": 2408102,
-  "eleitores": 570990,
+  "eleitores": 573148,
   "atualizado": "2026-10-25T18:42:10-03:00",
   "secoes_pct": 83.4,
   "presidente": {
@@ -14,24 +14,24 @@
         "n": 13,
         "nome": "Lula",
         "partido": "PT",
-        "votos": 199132,
-        "pct": 56.03,
+        "votos": 183504,
+        "pct": 51.93,
         "eleito": false
       },
       {
         "n": 22,
         "nome": "Flávio Bolsonaro",
         "partido": "PL",
-        "votos": 156270,
-        "pct": 43.97,
+        "votos": 169864,
+        "pct": 48.07,
         "eleito": false
       }
     ],
     "variacao_2022": {
-      "13": -3.95,
-      "22": 3.95
+      "13": -1.03,
+      "22": 1.03
     },
-    "diferenca_votos": 42862
+    "diferenca_votos": 13640
   },
   "governador": {
     "cand": [
@@ -39,7 +39,7 @@
         "n": 12,
         "nome": "Fictício A",
         "partido": "FIC",
-        "votos": 216475,
+        "votos": 215236,
         "pct": 60.91,
         "eleito": false
       },
@@ -47,19 +47,19 @@
         "n": 45,
         "nome": "Fictícia B",
         "partido": "FIC",
-        "votos": 138927,
+        "votos": 138132,
         "pct": 39.09,
         "eleito": false
       }
     ],
     "variacao_2022": {},
-    "diferenca_votos": 77548
+    "diferenca_votos": 77104
   },
   "selos": [
     "mais_dividida_uf"
   ],
   "rank": {
-    "dividida_br": 18,
+    "dividida_br": 8,
     "dividida_uf": 1,
     "virada_uf": null
   },

@@ -3,9 +3,9 @@
   "slug": "ji-parana-ro",
   "nome": "Ji-Paraná",
   "uf": "RO",
-  "cod_tse": 90047,
+  "cod_tse": 51,
   "cod_ibge": 1100122,
-  "eleitores": 94490,
+  "eleitores": 97939,
   "atualizado": "2026-10-25T18:42:10-03:00",
   "secoes_pct": 64,
   "presidente": {
@@ -14,32 +14,29 @@
         "n": 13,
         "nome": "Lula",
         "partido": "PT",
-        "votos": 30388,
-        "pct": 69.81,
+        "votos": 34098,
+        "pct": 75.77,
         "eleito": false
       },
       {
         "n": 22,
         "nome": "Flávio Bolsonaro",
         "partido": "PL",
-        "votos": 13142,
-        "pct": 30.19,
+        "votos": 10904,
+        "pct": 24.23,
         "eleito": false
       }
     ],
     "variacao_2022": {
-      "13": 39.32,
-      "22": -39.32
+      "13": 51.24,
+      "22": -51.24
     },
-    "diferenca_votos": 17246
+    "diferenca_votos": 23194
   },
   "governador": null,
-  "selos": [
-    "mais_unanime_br",
-    "maior_virada_br"
-  ],
+  "selos": [],
   "rank": {
-    "dividida_br": 48,
+    "dividida_br": 46,
     "dividida_uf": 2,
     "virada_uf": 1
   },

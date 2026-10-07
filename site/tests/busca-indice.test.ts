@@ -19,7 +19,7 @@ describe('/busca.json (índice de busca)', () => {
       expect(lat).toBeGreaterThanOrEqual(-34);
       expect(lat).toBeLessThanOrEqual(6);
       expect(lon).toBeGreaterThanOrEqual(-74);
-      expect(lon).toBeLessThanOrEqual(-34);
+      expect(lon).toBeLessThanOrEqual(-28);
       expect(Number.isInteger(eleitores)).toBe(true);
     }
   });

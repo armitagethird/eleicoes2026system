@@ -3,9 +3,9 @@
   "slug": "sao-paulo-sp",
   "nome": "São Paulo",
   "uf": "SP",
-  "cod_tse": 90025,
+  "cod_tse": 71072,
   "cod_ibge": 3550308,
-  "eleitores": 8703520,
+  "eleitores": 9145124,
   "atualizado": "2026-10-25T18:42:10-03:00",
   "secoes_pct": 52.9,
   "presidente": {
@@ -14,29 +14,29 @@
         "n": 13,
         "nome": "Lula",
         "partido": "PT",
-        "votos": 1293098,
-        "pct": 39.72,
+        "votos": 1825760,
+        "pct": 52.97,
         "eleito": false
       },
       {
         "n": 22,
         "nome": "Flávio Bolsonaro",
         "partido": "PL",
-        "votos": 1962436,
-        "pct": 60.28,
+        "votos": 1621021,
+        "pct": 47.03,
         "eleito": false
       }
     ],
     "variacao_2022": {
-      "13": -1.38,
-      "22": 1.38
+      "13": -0.57,
+      "22": 0.57
     },
-    "diferenca_votos": 669338
+    "diferenca_votos": 204739
   },
   "governador": null,
   "selos": [],
   "rank": {
-    "dividida_br": 31,
+    "dividida_br": 11,
     "dividida_uf": 3,
     "virada_uf": null
   },

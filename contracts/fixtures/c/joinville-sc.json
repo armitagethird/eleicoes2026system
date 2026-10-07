@@ -3,9 +3,9 @@
   "slug": "joinville-sc",
   "nome": "Joinville",
   "uf": "SC",
-  "cod_tse": 90036,
+  "cod_tse": 81795,
   "cod_ibge": 4209102,
-  "eleitores": 468400,
+  "eleitores": 443225,
   "atualizado": "2026-10-25T18:42:10-03:00",
   "secoes_pct": 59.1,
   "presidente": {
@@ -14,32 +14,30 @@
         "n": 13,
         "nome": "Lula",
         "partido": "PT",
-        "votos": 88501,
-        "pct": 43.87,
+        "votos": 52933,
+        "pct": 26.45,
         "eleito": false
       },
       {
         "n": 22,
         "nome": "Flávio Bolsonaro",
         "partido": "PL",
-        "votos": 113233,
-        "pct": 56.13,
+        "votos": 147192,
+        "pct": 73.55,
         "eleito": false
       }
     ],
     "variacao_2022": {
-      "13": -1.08,
-      "22": 1.08
+      "13": 3.05,
+      "22": -3.05
     },
-    "diferenca_votos": 24732
+    "diferenca_votos": 94259
   },
   "governador": null,
-  "selos": [
-    "mais_dividida_uf"
-  ],
+  "selos": [],
   "rank": {
-    "dividida_br": 19,
-    "dividida_uf": 1,
+    "dividida_br": 44,
+    "dividida_uf": 2,
     "virada_uf": null
   },
   "virou": false

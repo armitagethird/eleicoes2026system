@@ -3,9 +3,9 @@
   "slug": "curitiba-pr",
   "nome": "Curitiba",
   "uf": "PR",
-  "cod_tse": 90016,
+  "cod_tse": 75353,
   "cod_ibge": 4106902,
-  "eleitores": 1348030,
+  "eleitores": 1415148,
   "atualizado": "2026-10-25T18:42:10-03:00",
   "secoes_pct": 71.5,
   "presidente": {
@@ -14,30 +14,32 @@
         "n": 13,
         "nome": "Lula",
         "partido": "PT",
-        "votos": 414139,
-        "pct": 54.29,
+        "votos": 290466,
+        "pct": 38.45,
         "eleito": false
       },
       {
         "n": 22,
         "nome": "Flávio Bolsonaro",
         "partido": "PL",
-        "votos": 348688,
-        "pct": 45.71,
+        "votos": 464971,
+        "pct": 61.55,
         "eleito": false
       }
     ],
     "variacao_2022": {
-      "13": 1.64,
-      "22": -1.64
+      "13": 3.23,
+      "22": -3.23
     },
-    "diferenca_votos": 65451
+    "diferenca_votos": 174505
   },
   "governador": null,
-  "selos": [],
+  "selos": [
+    "mais_dividida_uf"
+  ],
   "rank": {
-    "dividida_br": 15,
-    "dividida_uf": 2,
+    "dividida_br": 28,
+    "dividida_uf": 1,
     "virada_uf": null
   },
   "virou": false

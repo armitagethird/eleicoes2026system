@@ -3,9 +3,9 @@
   "slug": "anapolis-go",
   "nome": "Anápolis",
   "uf": "GO",
-  "cod_tse": 90049,
+  "cod_tse": 92215,
   "cod_ibge": 5201108,
-  "eleitores": 303140,
+  "eleitores": 288292,
   "atualizado": "2026-10-25T18:42:10-03:00",
   "secoes_pct": 50.9,
   "presidente": {
@@ -14,29 +14,29 @@
         "n": 13,
         "nome": "Lula",
         "partido": "PT",
-        "votos": 39842,
-        "pct": 34.7,
+        "votos": 29210,
+        "pct": 27.54,
         "eleito": false
       },
       {
         "n": 22,
         "nome": "Flávio Bolsonaro",
         "partido": "PL",
-        "votos": 74977,
-        "pct": 65.3,
+        "votos": 76854,
+        "pct": 72.46,
         "eleito": false
       }
     ],
     "variacao_2022": {
-      "13": -5.15,
-      "22": 5.15
+      "13": -1.87,
+      "22": 1.87
     },
-    "diferenca_votos": 35135
+    "diferenca_votos": 47644
   },
   "governador": null,
   "selos": [],
   "rank": {
-    "dividida_br": 44,
+    "dividida_br": 43,
     "dividida_uf": 2,
     "virada_uf": null
   },

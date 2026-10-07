@@ -3,9 +3,9 @@
   "slug": "rio-de-janeiro-rj",
   "nome": "Rio de Janeiro",
   "uf": "RJ",
-  "cod_tse": 90019,
+  "cod_tse": 60011,
   "cod_ibge": 3304557,
-  "eleitores": 4720530,
+  "eleitores": 4952612,
   "atualizado": "2026-10-25T18:42:10-03:00",
   "secoes_pct": 68.4,
   "presidente": {
@@ -14,24 +14,24 @@
         "n": 13,
         "nome": "Lula",
         "partido": "PT",
-        "votos": 1237592,
-        "pct": 51.02,
+        "votos": 1152141,
+        "pct": 49.5,
         "eleito": false
       },
       {
         "n": 22,
         "nome": "Flávio Bolsonaro",
         "partido": "PL",
-        "votos": 1188108,
-        "pct": 48.98,
+        "votos": 1175416,
+        "pct": 50.5,
         "eleito": false
       }
     ],
     "variacao_2022": {
-      "13": 0.33,
-      "22": -0.33
+      "13": 2.16,
+      "22": -2.16
     },
-    "diferenca_votos": 49484
+    "diferenca_votos": 23275
   },
   "governador": {
     "cand": [
@@ -39,7 +39,7 @@
         "n": 12,
         "nome": "Fictício A",
         "partido": "FIC",
-        "votos": 1217944,
+        "votos": 1168666,
         "pct": 50.21,
         "eleito": false
       },
@@ -47,19 +47,19 @@
         "n": 45,
         "nome": "Fictícia B",
         "partido": "FIC",
-        "votos": 1207756,
+        "votos": 1158891,
         "pct": 49.79,
         "eleito": false
       }
     ],
     "variacao_2022": {},
-    "diferenca_votos": 10188
+    "diferenca_votos": 9775
   },
   "selos": [
     "mais_dividida_uf"
   ],
   "rank": {
-    "dividida_br": 6,
+    "dividida_br": 5,
     "dividida_uf": 1,
     "virada_uf": null
   },

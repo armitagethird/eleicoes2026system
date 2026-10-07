@@ -3,9 +3,9 @@
   "slug": "sao-luis-ma",
   "nome": "São Luís",
   "uf": "MA",
-  "cod_tse": 90010,
+  "cod_tse": 9210,
   "cod_ibge": 2111300,
-  "eleitores": 788710,
+  "eleitores": 761443,
   "atualizado": "2026-10-25T18:42:10-03:00",
   "secoes_pct": 87.3,
   "presidente": {
@@ -14,29 +14,29 @@
         "n": 13,
         "nome": "Lula",
         "partido": "PT",
-        "votos": 338642,
-        "pct": 61.13,
+        "votos": 313769,
+        "pct": 60.2,
         "eleito": false
       },
       {
         "n": 22,
         "nome": "Flávio Bolsonaro",
         "partido": "PL",
-        "votos": 215329,
-        "pct": 38.87,
+        "votos": 207442,
+        "pct": 39.8,
         "eleito": false
       }
     ],
     "variacao_2022": {
-      "13": -2.61,
-      "22": 2.61
+      "13": -0.18,
+      "22": 0.18
     },
-    "diferenca_votos": 123313
+    "diferenca_votos": 106327
   },
   "governador": null,
   "selos": [],
   "rank": {
-    "dividida_br": 37,
+    "dividida_br": 27,
     "dividida_uf": 2,
     "virada_uf": null
   },

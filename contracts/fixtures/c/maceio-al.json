@@ -3,9 +3,9 @@
   "slug": "maceio-al",
   "nome": "Maceió",
   "uf": "AL",
-  "cod_tse": 90002,
+  "cod_tse": 27855,
   "cod_ibge": 2704302,
-  "eleitores": 728020,
+  "eleitores": 646463,
   "atualizado": "2026-10-25T18:42:10-03:00",
   "secoes_pct": 66.7,
   "presidente": {
@@ -14,31 +14,31 @@
         "n": 13,
         "nome": "Lula",
         "partido": "PT",
-        "votos": 210779,
-        "pct": 55.03,
+        "votos": 146546,
+        "pct": 44.95,
         "eleito": false
       },
       {
         "n": 22,
         "nome": "Flávio Bolsonaro",
         "partido": "PL",
-        "votos": 172247,
-        "pct": 44.97,
+        "votos": 179473,
+        "pct": 55.05,
         "eleito": false
       }
     ],
     "variacao_2022": {
-      "13": 5.37,
-      "22": -5.37
+      "13": 2.13,
+      "22": -2.13
     },
-    "diferenca_votos": 38532
+    "diferenca_votos": 32927
   },
   "governador": null,
   "selos": [],
   "rank": {
     "dividida_br": 16,
     "dividida_uf": 1,
-    "virada_uf": 1
+    "virada_uf": null
   },
-  "virou": true
+  "virou": false
 }
