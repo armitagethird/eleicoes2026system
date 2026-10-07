@@ -24,5 +24,7 @@ export default defineConfig({
   // /c/sao-luis-ma (sem barra final): é a URL canônica do brief e a que o Cloudflare Pages serve para sao-luis-ma.html.
   trailingSlash: 'never',
   build: { format: 'file' },
+  // Builds isolados e prints de trabalho têm milhares de arquivos: vigiá-los derruba o dev server (EMFILE).
+  vite: { server: { watch: { ignored: ['**/.builds/**', '**/.shots/**'] } } },
   integrations: [preact(), sitemap({ filter: (pagina) => !new URL(pagina).pathname.startsWith('/design') }), soNoDev],
 });
