@@ -21,7 +21,7 @@ import {
   rotuloPosicao,
   semVirada,
   turnoDaCamada,
-  variacaoDesde,
+  variacaoDesdeCamada,
   verCidade,
   verEstado,
 } from '../../lib/copy.ts';
@@ -47,7 +47,10 @@ export const esc = (texto: string): string => texto.replace(/[&<>"']/g, (c) => E
 
 export const corDe = (c: CandidatoCamada, coluna: 0 | 1): string => corCandidato(c.cor === null ? 0 : Number(c.cor), coluna).css;
 
-const semSinal = (pct: number): string => percentual(pct).replace('%', '');
+const semSinal = (pct: number, casas = 1): string => percentual(pct, casas).replace('%', '');
+
+/** Espaço inquebrável antes de cada "·" (o mesmo de Mapa.astro): a linha quebra depois do separador, nunca começa com ele. */
+export const semQuebraNoSeparador = (texto: string): string => texto.replaceAll(' · ', ' · ');
 
 /** Bandeira intacta numa caixa 10:7, igual à de Bandeira.astro (o raster inteiro dentro da caixa, sem recorte). */
 export function bandeiraHtml(sigla: Sigla, largura: number): string {
@@ -92,7 +95,7 @@ function setaHtml(ctx: Contexto, delta: number | null): string {
   if (delta === null || !ctx.idReferencia || Math.abs(delta) < 0.05) return '';
   const coluna = delta > 0 ? 0 : 1;
   const cand = ctx.camada.candidatos[coluna];
-  const [numero, ...resto] = variacaoDesde(cand.nome, Math.abs(delta), anoDe(ctx.idReferencia)).split(' ');
+  const [numero, ...resto] = variacaoDesdeCamada(cand.nome, Math.abs(delta), ctx.idReferencia).split(' ');
   const lado = coluna === 0 ? 'esq' : 'dir';
   return `<p class="seta ${lado}" style="--cor:${corDe(cand, coluna)}">${triangulo(lado)}<strong class="pts">${numero}</strong><span class="resto">${esc(resto.join(' '))}</span></p>`;
 }
@@ -131,6 +134,8 @@ export interface Lugar {
   slug?: string;
   /** UF: a sigla (minúscula) cuja página, /uf/{uf}, tem o card do estado. */
   ufCard?: Sigla;
+  /** Bloco de contexto ao lado de um detalhe que já mostra as fotos: sem foto e sem crédito, para não repetir os dois rostos. */
+  semFoto?: boolean;
 }
 
 /**
@@ -141,7 +146,7 @@ export function placarHtml(ctx: Contexto, lugar: Lugar, v: Valor | null, delta: 
   const { candidatos } = ctx.camada;
   const ok = comDados(v);
   const meta = [lugar.uf, 'presidente', turnoDaCamada(ctx.id)].filter(Boolean).join(' · ');
-  const fotos = candidatos.map((c, i) => fotoHtml(ctx, c, i === 0 ? 0 : 1));
+  const fotos = candidatos.map((c, i) => (lugar.semFoto ? '' : fotoHtml(ctx, c, i === 0 ? 0 : 1)));
   const comFoto = fotos.some(Boolean);
   const colunas = candidatos
     .map((c, i) => {
@@ -169,26 +174,33 @@ export function placarHtml(ctx: Contexto, lugar: Lugar, v: Valor | null, delta: 
     : lugar.ufCard
       ? { href: `/uf/${lugar.ufCard}`, rotulo: verEstado(lugar.nome) }
       : null;
+  // O rodapé próprio é o que a gaveta do celular prende embaixo quando o resto do detalhe rola (Apuracao.astro).
   const link = card
-    ? `<a class="ir" href="${esc(card.href)}" aria-label="${esc(card.rotulo)}">${VER_CARD}<svg class="tri" viewBox="0 0 10 12" aria-hidden="true"><path d="${TRIANGULO.dir}"/></svg></a>`
+    ? `<div class="ir-fixo"><a class="ir" href="${esc(card.href)}" aria-label="${esc(card.rotulo)}">${VER_CARD}<svg class="tri" viewBox="0 0 10 12" aria-hidden="true"><path d="${TRIANGULO.dir}"/></svg></a></div>`
     : '';
   return `<div class="folha-lugar${compacto ? ' compacto' : ''}${ok ? '' : ' sem-dado'}">
 <header class="topo${lugar.sigla ? ' com-bandeira' : ''}">${lugar.sigla ? bandeiraHtml(lugar.sigla, 40) : ''}<h2 class="lugar">${nomeDestino(lugar.nome, 340, compacto ? 40 : 56, 22)}</h2><p class="meta">${esc(meta)}</p></header>
 ${ok ? setaHtml(ctx, delta) : ''}${barraHtml(ctx, v)}<div class="cols${comFoto ? ' com-foto' : ''}" aria-hidden="${ok}">${colunas}</div>${falado}
-${ok ? outros : `<p class="aguardando">${semNumero(ctx)}</p>`}<p class="linha">${esc(linhaDaCamada(ctx, v))}</p>${comFoto ? `<p class="credito">${CREDITO_FOTO}</p>` : ''}${link}</div>`;
+${ok ? outros : `<p class="aguardando">${semNumero(ctx)}</p>`}<p class="linha">${esc(semQuebraNoSeparador(linhaDaCamada(ctx, v)))}</p>${comFoto ?`<p class="credito">${CREDITO_FOTO}</p>` : ''}${link}</div>`;
 }
 
-/** Linha de leitura do mapa (hover no desktop): nome, UF e os dois percentuais, num painel fixo, nunca em tooltip. */
-export function leituraHtml(ctx: Contexto, nome: string, uf: string | null, v: Valor | null): string {
+/**
+ * Linha de leitura do mapa (hover no desktop): nome e os dois percentuais, num painel fixo, nunca em tooltip. Sem a UF: um
+ * município só aparece com a UF em foco, que a migalha ao lado já diz, e a linha divide a largura com ela.
+ */
+export function leituraHtml(ctx: Contexto, nome: string, v: Valor | null): string {
   const numeros = comDados(v)
     ? ctx.camada.candidatos
         .map((c, i) => `<span class="l-c" style="--cor:${corDe(c, i === 0 ? 0 : 1)}"><span class="placa-n">${c.n}</span>${percentual(i === 0 ? v.a : v.b)}</span>`)
         .join('')
     : `<span class="l-aguardando">${semNumero(ctx)}</span>`;
-  return `<span class="l-nome">${esc(nome)}</span>${uf ? `<span class="l-uf">${uf}</span>` : ''}${numeros}`;
+  return `<span class="l-nome">${esc(nome)}</span>${numeros}`;
 }
 
 const pontosCurtos = (delta: number): string => pontos(Math.abs(delta)).split(' ')[0];
+
+/** Casas dos percentuais de um destaque: a "mais dividida" é ordenada pela margem, e a 1ª casa já a esconde (50,0 e 50,0). */
+const casasDoDestaque = (chave: keyof Destaques): number => (chave === 'dividida' ? 2 : 1);
 
 function numerosDestaque(ctx: Contexto, d: Destaque, chave: keyof Destaques): string {
   const v = d.valor;
@@ -199,18 +211,18 @@ function numerosDestaque(ctx: Contexto, d: Destaque, chave: keyof Destaques): st
     return `<span class="dq-seta ${lado}" style="--cor:${corDe(ctx.camada.candidatos[coluna], coluna)}">${triangulo(lado)}${pontosCurtos(d.variacao)}</span>`;
   }
   return ctx.camada.candidatos
-    .map((c, i) => `<span class="dq-pct" style="--cor:${corDe(c, i === 0 ? 0 : 1)}">${semSinal(i === 0 ? v.a : v.b)}</span>`)
+    .map((c, i) => `<span class="dq-pct" style="--cor:${corDe(c, i === 0 ? 0 : 1)}">${semSinal(i === 0 ? v.a : v.b, casasDoDestaque(chave))}</span>`)
     .join('');
 }
 
-function rotuloDestaque(ctx: Contexto, d: Destaque, posicao: number | null): string {
+function rotuloDestaque(ctx: Contexto, d: Destaque, posicao: number | null, chave: keyof Destaques): string {
   const partes = [`${posicao ? `${posicao}º, ` : ''}${d.lugar.nome} (${d.lugar.uf})`];
   if (comDados(d.valor)) {
     const v = d.valor;
-    partes.push(ctx.camada.candidatos.map((c, i) => `${c.n}, ${percentual(i === 0 ? v.a : v.b)}`).join('; '));
+    partes.push(ctx.camada.candidatos.map((c, i) => `${c.n}, ${percentual(i === 0 ? v.a : v.b, casasDoDestaque(chave))}`).join('; '));
     if (d.variacao !== null && ctx.idReferencia && Math.abs(d.variacao) >= 0.05) {
       const coluna = d.variacao > 0 ? 0 : 1;
-      partes.push(variacaoDesde(String(ctx.camada.candidatos[coluna].n), Math.abs(d.variacao), anoDe(ctx.idReferencia)));
+      partes.push(variacaoDesdeCamada(String(ctx.camada.candidatos[coluna].n), Math.abs(d.variacao), ctx.idReferencia));
     }
   } else partes.push(semNumero(ctx));
   return partes.join('; ');
@@ -232,7 +244,7 @@ function itemDestaque(ctx: Contexto, item: Destaque, chave: keyof Destaques, pos
       ? `<span class="dq-linha">${nome}</span><span class="dq-linha">${barra}${numeros}</span>`
       : `<span class="dq-linha"><span class="dq-pos">${posicao}</span>${nome}${numeros}</span>${barra}`;
   // O nome acessível sai do texto para leitor de tela; o desenho fica escondido dele (sem aria-label que divirja do visível).
-  return `<li><button type="button" class="dq-item" data-ibge="${item.ibge}" data-uf="${item.lugar.uf}"><span class="sr-only">${esc(rotuloDestaque(ctx, item, posicao))}</span><span class="dq-desenho" aria-hidden="true">${visivel}</span></button></li>`;
+  return `<li><button type="button" class="dq-item" data-ibge="${item.ibge}" data-uf="${item.lugar.uf}"><span class="sr-only">${esc(rotuloDestaque(ctx, item, posicao, chave))}</span><span class="dq-desenho" aria-hidden="true">${visivel}</span></button></li>`;
 }
 
 /**

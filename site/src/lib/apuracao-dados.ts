@@ -23,9 +23,12 @@ export const REFERENCIA: Readonly<Record<IdCamada, IdCamada | null>> = {
 /** Ano da eleição de uma camada (o ao vivo é 2026). */
 export const anoDe = (id: IdCamada): string => (id === 'ao-vivo' ? '2026' : id.slice(0, 4));
 
-/** Abas de eleição: antes do dia 25 só as apuradas (2º turno 2022 primeiro); a partir dele, o ao vivo na frente. */
+/**
+ * Abas de eleição, da mais nova à mais antiga (o 1º turno de 2026 fica junto do 2º): antes do dia 25 só as apuradas, com o
+ * 2º turno de 2022 aberto; a partir dele, o ao vivo na frente e aberto.
+ */
 export function abas(modo: Modo): { ids: readonly IdCamada[]; padrao: IdCamada } {
-  const historicas: IdCamada[] = ['2022-t2', '2022-t1', '2026-t1'];
+  const historicas: IdCamada[] = ['2026-t1', '2022-t2', '2022-t1'];
   return modo === 'pre' ? { ids: historicas, padrao: '2022-t2' } : { ids: ['ao-vivo', ...historicas], padrao: 'ao-vivo' };
 }
 

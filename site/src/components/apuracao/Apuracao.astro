@@ -21,7 +21,7 @@ import {
 import { ajustarDestino } from '../../lib/destino.ts';
 import type { Status } from '../../lib/status.ts';
 import municipiosJson from '../../data/municipios.json';
-import { destaquesHtml, legendaHtml, placarHtml, tabelaHtml, type Contexto } from './painel.ts';
+import { destaquesHtml, legendaHtml, placarHtml, semQuebraNoSeparador, tabelaHtml, type Contexto } from './painel.ts';
 
 interface Props {
   status: Status;
@@ -61,7 +61,7 @@ const estiloTitulo = `--t:${(faixa.tamanho / REFERENCIA_TITULO) * 100}cqi;--w:${
     <h1 class="ap-titulo"><span style={estiloTitulo}>Apuração</span></h1>
     <div class="ap-estado">
       <p class="ap-turno" data-ao-vivo={aoVivo ? '' : undefined} data-ap-turno>{rotuloAba(padrao, aoVivo)}</p>
-      <p class="ap-linha" data-ap-linha>{camada ? LINHA_APURADA : ''}</p>
+      <p class="ap-linha" data-ap-linha>{camada ? semQuebraNoSeparador(LINHA_APURADA) : ''}</p>
       <p class="ap-quando" hidden={status.modo !== 'pre'} data-ap-quando>{aoVivoAPartir(status.inicio)}</p>
       <p class="ap-aviso" role="status" hidden data-ap-aviso></p>
     </div>
@@ -167,8 +167,6 @@ const estiloTitulo = `--t:${(faixa.tamanho / REFERENCIA_TITULO) * 100}cqi;--w:${
   /* Toda grade daqui tem coluna explícita (minmax(0, 1fr)), nunca a implícita "auto": trilho medido pelo conteúdo mede de
      novo cada container de tamanho (as listas de destaques) e a carga gastava ~1 s de layout no celular (medido com CPU 4x). */
   .apuracao {
-    /* Altura da barra fixa do celular (filete de 4 + 8 + 48 + 8): a gaveta para em cima dela. */
-    --barra-h: 68px;
     display: grid;
     grid-template-columns: minmax(0, 1fr);
     gap: var(--sp-3);
@@ -479,10 +477,11 @@ const estiloTitulo = `--t:${(faixa.tamanho / REFERENCIA_TITULO) * 100}cqi;--w:${
     background: var(--ink);
   }
 
+  /* overflow-x: clip e não hidden: o hidden também cortaria na vertical, e o til e o agudo das capitais (ÍÃÁ) saem da linha. */
   .ap-sugestoes :global(.op-caixa) {
     flex: 1 1 0;
     min-width: 0;
-    overflow: hidden;
+    overflow-x: clip;
   }
 
   .ap-sugestoes :global(.op-uf) {
@@ -514,9 +513,14 @@ const estiloTitulo = `--t:${(faixa.tamanho / REFERENCIA_TITULO) * 100}cqi;--w:${
     gap: var(--sp-1);
   }
 
+  /* Uma linha só, sempre: se a migalha quebrasse em duas (Brasil › UF › município de nome longo), o mapa desceria 44 px depois
+     de pagina.ts rolá-lo para o topo, e o pé dele ficaria atrás da gaveta. O que não cabe é o nome do município, com reticências. */
+  .ap-migalha {
+    min-width: 0;
+  }
+
   .ap-migalha ol {
     display: flex;
-    flex-wrap: wrap;
     align-items: center;
     gap: 0 var(--sp-1);
     margin: 0;
@@ -526,19 +530,40 @@ const estiloTitulo = `--t:${(faixa.tamanho / REFERENCIA_TITULO) * 100}cqi;--w:${
 
   .ap-migalha :global(li) {
     display: flex;
+    flex: none;
     align-items: center;
     gap: var(--sp-1);
     min-height: 44px;
     font-family: var(--font-display);
     font-size: var(--fs-2);
     font-weight: 900;
+    font-stretch: 87.5%;
     letter-spacing: var(--track-caps);
     text-transform: uppercase;
   }
 
+  .ap-migalha :global(li:last-child) {
+    flex: 0 1 auto;
+    min-width: 0;
+  }
+
+  .ap-migalha :global(.atual) {
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  /* Chevron desenhado: o glifo "›" está fora do subset de caixa-alta da fonte e puxava o archivo-display.woff2 inteiro (30 KB)
+     no primeiro toque numa UF, com troca de fonte no meio da interação. */
   .ap-migalha :global(li + li)::before {
-    content: '›';
-    color: var(--ink-2);
+    content: '';
+    flex: none;
+    width: 8px;
+    height: 8px;
+    border: solid var(--ink-2);
+    border-width: 3px 3px 0 0;
+    transform: translateX(-2px) rotate(45deg);
   }
 
   .ap-migalha :global(button) {
@@ -575,7 +600,7 @@ const estiloTitulo = `--t:${(faixa.tamanho / REFERENCIA_TITULO) * 100}cqi;--w:${
     align-items: center;
     overflow: hidden;
     white-space: nowrap;
-    gap: var(--sp-1) var(--sp-2);
+    gap: var(--sp-1);
     min-height: 32px;
     font-family: var(--font-display);
     font-size: var(--fs-1);
@@ -590,27 +615,26 @@ const estiloTitulo = `--t:${(faixa.tamanho / REFERENCIA_TITULO) * 100}cqi;--w:${
     }
   }
 
+  /* Condensados (wdth 87,5): a linha divide a largura com a migalha, e o nome é o que cede. */
   .ap-leitura :global(.l-nome) {
     min-width: 0;
     overflow: hidden;
     text-overflow: ellipsis;
     font-size: var(--fs-2);
+    font-stretch: 87.5%;
   }
 
-  .ap-leitura :global(:is(.l-uf, .l-c)) {
-    flex: none;
-  }
-
-  .ap-leitura :global(.l-uf),
   .ap-leitura :global(.l-aguardando) {
     color: var(--ink-2);
   }
 
   .ap-leitura :global(.l-c) {
     display: inline-flex;
+    flex: none;
     align-items: center;
     gap: 6px;
     font-size: var(--fs-2);
+    font-stretch: 87.5%;
     color: var(--cor);
   }
 
@@ -1038,6 +1062,11 @@ const estiloTitulo = `--t:${(faixa.tamanho / REFERENCIA_TITULO) * 100}cqi;--w:${
     text-wrap: balance;
   }
 
+  /* O rodapé do card (a gaveta do celular o prende embaixo) é uma grade só para o botão esticar na largura toda, como sempre. */
+  .ap-lateral :global(.ir-fixo) {
+    display: grid;
+  }
+
   /* O card da cidade a um toque: o botão primário do sistema (fundo --ink, texto --bg). */
   .ap-lateral :global(.ir) {
     display: inline-flex;
@@ -1110,6 +1139,11 @@ const estiloTitulo = `--t:${(faixa.tamanho / REFERENCIA_TITULO) * 100}cqi;--w:${
     list-style: none;
   }
 
+  /* A "mais dividida" mostra duas casas (50,00 50,00): os números ocupam 13 px a mais e a caixa do nome encolhe junto. */
+  .ap-destaques :global(.dq.dividida .dq-lista) {
+    --caixa: calc(100cqi - 213px);
+  }
+
   .ap-destaques :global(.dq-item) {
     display: block;
     width: 100%;
@@ -1177,7 +1211,7 @@ const estiloTitulo = `--t:${(faixa.tamanho / REFERENCIA_TITULO) * 100}cqi;--w:${
   .ap-destaques :global(.dq-caixa) {
     flex: 1 1 0;
     min-width: 0;
-    overflow: hidden;
+    overflow-x: clip;
   }
 
   .ap-destaques :global(.dq-caixa .nd),
@@ -1324,17 +1358,20 @@ const estiloTitulo = `--t:${(faixa.tamanho / REFERENCIA_TITULO) * 100}cqi;--w:${
     border-collapse: collapse;
   }
 
+  /* Quebra o nome do lugar e o cabeçalho (o do 22 tem 20 caracteres) e deixa os números inteiros: assim os dois candidatos
+     cabem lado a lado na largura do celular, e só o que sobrar (variação, seções) rola de lado. */
   .ap-tabela :global(:is(.tb th, .tb td)) {
-    padding: var(--sp-1) var(--sp-2) var(--sp-1) 0;
+    padding: var(--sp-1) var(--sp-1) var(--sp-1) 0;
     border-bottom: var(--stroke-1) solid var(--surface-2);
     text-align: left;
-    white-space: nowrap;
   }
 
   .ap-tabela :global(.tb thead th) {
     font-family: var(--font-display);
     font-size: var(--fs-1);
     font-weight: 900;
+    font-stretch: 75%;
+    line-height: 1.2;
     letter-spacing: var(--track-caps);
     text-transform: uppercase;
     color: var(--cor, var(--ink-2));
@@ -1347,6 +1384,11 @@ const estiloTitulo = `--t:${(faixa.tamanho / REFERENCIA_TITULO) * 100}cqi;--w:${
     color: var(--cor, var(--ink));
   }
 
+  .ap-tabela :global(.tb td.num) {
+    font-stretch: 87.5%;
+    white-space: nowrap;
+  }
+
   .ap-tabela :global(.tb tbody th) {
     font-weight: 500;
   }
@@ -1357,6 +1399,7 @@ const estiloTitulo = `--t:${(faixa.tamanho / REFERENCIA_TITULO) * 100}cqi;--w:${
     border: 0;
     background: none;
     font: inherit;
+    text-align: inherit;
     color: inherit;
     text-decoration: underline;
     text-decoration-thickness: var(--stroke-1);
@@ -1364,9 +1407,35 @@ const estiloTitulo = `--t:${(faixa.tamanho / REFERENCIA_TITULO) * 100}cqi;--w:${
     cursor: pointer;
   }
 
-  /* ---------- celular e tablet: barra fixa, busca por cima e gaveta ---------- */
+  /* Celular: números condensados, cantos justos e a margem direita da tela como folga (337 px de tabela, 344 de caixa a 360):
+     as cinco colunas cabem sem rolar de lado; em tela mais estreita só a última rola. */
+  @media (max-width: 767px) {
+    .ap-tabela-rolagem {
+      margin-right: calc(-1 * var(--sp-2));
+    }
+
+    .ap-tabela :global(:is(.tb th, .tb td)) {
+      padding-right: 4px;
+    }
+
+    .ap-tabela :global(.tb td.num) {
+      font-stretch: 75%;
+    }
+
+    .ap-tabela :global(.tb .placa-n) {
+      padding-inline: 0.2em;
+    }
+  }
+
+  /* ---------- celular e tablet: barra fixa e busca por cima ---------- */
 
   @media (max-width: 1023px) {
+    /* Altura da barra fixa (filete de 4 + 8 + 48 + 8). Quem navega pelo teclado: o que ganha foco não fica por baixo dela. */
+    :global(html) {
+      --barra-h: 68px;
+      scroll-padding-bottom: calc(var(--barra-h) + var(--sp-1) + env(safe-area-inset-bottom));
+    }
+
     .ap-acoes {
       position: fixed;
       inset: auto 0 0;
@@ -1403,15 +1472,34 @@ const estiloTitulo = `--t:${(faixa.tamanho / REFERENCIA_TITULO) * 100}cqi;--w:${
     .apuracao[data-busca-aberta] .ap-sugestoes {
       max-height: 60dvh;
     }
+  }
 
+  /* ---------- celular: o detalhe sobe como gaveta e o mapa encolhe para a área que ela deixa livre ---------- */
+
+  @media (max-width: 767px) {
+    .apuracao {
+      /* O mapa nunca fica com menos que isto acima da gaveta: é ela que encolhe (e rola por dentro) antes. */
+      --mapa-min: 144px;
+      --gaveta-max: calc(100dvh - var(--barra-h) - env(safe-area-inset-bottom) - var(--sp-6) - var(--mapa-min));
+    }
+
+    :global(html) {
+      scroll-padding-bottom: calc(var(--barra-h) + var(--sp-1) + env(safe-area-inset-bottom) + var(--detalhe-h, 0px));
+    }
+
+    /* A gaveta é fixa e só o corpo rola: o X fica no canto e o card a um toque, preso embaixo. Fechada, fica no lugar com
+       transform (e visibility depois da saída) para a entrada animar. */
     .ap-detalhe {
       position: fixed;
       inset: auto 0 calc(var(--barra-h) + env(safe-area-inset-bottom));
       z-index: 4;
-      max-height: min(72dvh, 560px);
-      padding: var(--sp-2);
-      overflow-y: auto;
-      overscroll-behavior: contain;
+      display: flex;
+      flex-direction: column;
+      /* A altura já vista com o detalhe aberto vira o mínimo: de UF para município o mapa não respira a cada troca. */
+      min-height: min(var(--detalhe-h, 0px), var(--gaveta-max));
+      max-height: var(--gaveta-max);
+      padding: var(--sp-2) var(--sp-2) 0;
+      overflow: hidden;
       background: var(--bg);
       transform: translateY(100%);
       visibility: hidden;
@@ -1421,7 +1509,7 @@ const estiloTitulo = `--t:${(faixa.tamanho / REFERENCIA_TITULO) * 100}cqi;--w:${
     }
 
     .ap-detalhe:not([data-aberto]) {
-      display: block;
+      display: flex;
     }
 
     .ap-detalhe[data-aberto] {
@@ -1430,15 +1518,36 @@ const estiloTitulo = `--t:${(faixa.tamanho / REFERENCIA_TITULO) * 100}cqi;--w:${
       transition: transform var(--dur-3) var(--ease);
     }
 
-    /* O foco entra na gaveta ao abrir: o contorno fica por dentro (no padding), que a rolagem da gaveta corta o que passa da borda. */
+    /* O foco entra na gaveta ao abrir: o contorno fica por dentro (no padding), que a gaveta corta o que passa da borda. */
     .ap-detalhe:focus-visible {
       outline-offset: -3px;
     }
 
-    /* A gaveta é fixa e não empurra a página: sem esta folga, o fim da página (a tabela, alternativa ao mapa) ficaria
-       sempre debaixo dela com uma UF ou um município em foco. A folga é a altura máxima da gaveta. */
+    .ap-detalhe > div {
+      flex: 1 1 auto;
+      min-height: 0;
+      overflow-y: auto;
+      overscroll-behavior: contain;
+    }
+
+    .ap-detalhe :global(.ir-fixo) {
+      position: sticky;
+      bottom: 0;
+      padding-block: var(--sp-1);
+      background: var(--bg);
+    }
+
+    /* A gaveta não empurra a página: sem esta folga o fim dela (a tabela, alternativa ao mapa) ficaria sempre por baixo. */
     .apuracao:has([data-ap-detalhe][data-aberto]) {
-      padding-bottom: min(72dvh, 560px);
+      padding-bottom: var(--detalhe-h, 0px);
+    }
+
+    /* Com o detalhe aberto o mapa tem só a altura entre o topo da tela (onde pagina.ts o rola) e a gaveta, e o motor
+       enquadra a UF ou o município nessa área: nada do que se escolheu fica atrás da gaveta. A largura segue a da coluna:
+       sem ela, o aspect-ratio encolheria o mapa também na largura. */
+    .apuracao:has([data-ap-detalhe][data-aberto]) .ap-mapa {
+      width: 100%;
+      max-height: calc(100dvh - var(--barra-h) - env(safe-area-inset-bottom) - var(--sp-6) - var(--detalhe-h, 0px));
     }
 
     .ap-fechar-detalhe {
@@ -1446,13 +1555,22 @@ const estiloTitulo = `--t:${(faixa.tamanho / REFERENCIA_TITULO) * 100}cqi;--w:${
       right: var(--sp-2);
     }
 
-    /* A gaveta cobre o mínimo do mapa: folha mais baixa, números menores, o card a um toque na largura toda. */
+    /* A gaveta cobre o mínimo do mapa: folha mais baixa, a meta numa linha só embaixo do nome, números menores, o card a um
+       toque na largura toda. */
     .ap-detalhe :global(.folha-lugar) {
       gap: var(--sp-1);
     }
 
+    .ap-detalhe :global(.topo .bandeira) {
+      grid-row: auto;
+    }
+
+    .ap-detalhe :global(.topo .meta) {
+      grid-column: 1 / -1;
+    }
+
     .ap-detalhe :global(.barra) {
-      height: var(--sp-4);
+      height: var(--sp-3);
     }
 
     .ap-detalhe :global(.pct) {
@@ -1461,15 +1579,47 @@ const estiloTitulo = `--t:${(faixa.tamanho / REFERENCIA_TITULO) * 100}cqi;--w:${
 
     .ap-detalhe :global(.ir) {
       width: 100%;
+      min-height: 44px;
       font-stretch: 87.5%;
     }
   }
 
-  @media (min-width: 768px) and (max-width: 1023px) {
-    .ap-detalhe {
-      inset-inline: auto var(--sp-4);
-      width: min(480px, calc(100% - var(--sp-8)));
-      border-inline: var(--stroke-1) solid var(--surface-2);
+  /* ---------- tablet em diante: o mapa fixo à esquerda; detalhe, placar e destaques rolam ao lado ---------- */
+
+  @media (min-width: 768px) {
+    /* A lateral nunca é menor que a tela de um celular (320 px): no tablet o mapa fica com o que sobra. */
+    .ap-grade {
+      grid-template-columns: minmax(0, 7fr) minmax(320px, 5fr);
+      align-items: start;
+      column-gap: var(--sp-4);
+    }
+
+    /* A coluna do mapa gruda enquanto a lateral rola. A leitura do hover, quando o aparelho tem hover, fica embaixo da migalha. */
+    .ap-mapa-col {
+      position: sticky;
+      top: var(--sp-2);
+      grid-template-areas:
+        'migalha'
+        'leitura'
+        'mapa'
+        'legenda';
+    }
+
+    .ap-migalha {
+      grid-area: migalha;
+    }
+
+    .ap-leitura {
+      grid-area: leitura;
+    }
+
+    .ap-mapa {
+      grid-area: mapa;
+      max-height: max(320px, calc(100dvh - 320px));
+    }
+
+    .ap-legenda {
+      grid-area: legenda;
     }
   }
 
@@ -1529,40 +1679,18 @@ const estiloTitulo = `--t:${(faixa.tamanho / REFERENCIA_TITULO) * 100}cqi;--w:${
 
     .ap-grade {
       grid-template-columns: minmax(0, 7fr) minmax(0, 5fr);
-      align-items: start;
       column-gap: var(--sp-5);
     }
 
-    /* Migalha e leitura do hover dividem a primeira linha. O mapa tem a altura que sobra na primeira dobra embaixo do topo
-       (~296 px de cabeçalho, título, controles e migalha): o Brasil inteiro aparece sem rolar. Ao rolar, a coluna gruda. */
-    .ap-mapa-col {
-      position: sticky;
-      top: var(--sp-2);
-      grid-template-columns: auto minmax(0, 1fr);
-      grid-template-areas:
-        'migalha leitura'
-        'mapa mapa'
-        'legenda legenda';
-      column-gap: var(--sp-3);
-    }
-
-    .ap-migalha {
-      grid-area: migalha;
-    }
-
-    .ap-leitura {
-      grid-area: leitura;
-      justify-content: flex-end;
-    }
-
+    /* Até 1279 px a leitura do hover tem a linha dela embaixo da migalha, e o mapa tem a altura que sobra na primeira dobra
+       (~392 px de cabeçalho, título, controles em duas linhas, migalha e leitura): o Brasil inteiro aparece sem rolar. */
     .ap-mapa {
-      grid-area: mapa;
-      height: max(480px, calc(100dvh - 360px));
+      height: max(480px, calc(100dvh - 392px));
+      max-height: none;
     }
 
     /* Legenda baixa: o texto à esquerda, a régua à direita, para o mapa ganhar a altura. */
     .ap-legenda {
-      grid-area: legenda;
       grid-template-columns: minmax(0, 1fr) auto;
       align-items: start;
       column-gap: var(--sp-3);
@@ -1590,12 +1718,29 @@ const estiloTitulo = `--t:${(faixa.tamanho / REFERENCIA_TITULO) * 100}cqi;--w:${
   }
 
   @media (min-width: 1280px) {
+    /* A coluna das abas nunca é menor que elas: na noite do dia 25 são quatro (649 px), e com minmax(0, 1fr) a quarta ficava
+       por baixo do seletor RESULTADO | COMPARAR a 1280 e 1366 px. */
     .ap-controles {
-      grid-template-columns: minmax(0, 1fr) auto minmax(240px, 320px);
+      grid-template-columns: minmax(max-content, 1fr) auto minmax(240px, 320px);
     }
 
     .ap-abas {
       grid-column: auto;
+    }
+
+    /* Daqui para cima a coluna do mapa tem largura para a migalha e a leitura do hover dividirem a primeira linha, e o topo
+       fica em ~296 px. Ao rolar, a coluna gruda. */
+    .ap-mapa-col {
+      grid-template-columns: auto minmax(0, 1fr);
+      grid-template-areas:
+        'migalha leitura'
+        'mapa mapa'
+        'legenda legenda';
+      column-gap: var(--sp-3);
+    }
+
+    .ap-leitura {
+      justify-content: flex-end;
     }
 
     .ap-mapa {

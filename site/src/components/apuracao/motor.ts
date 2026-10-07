@@ -40,7 +40,8 @@ export interface OpcoesMapa {
 }
 
 export interface MotorMapa {
-  definirCamada(camada: Camada, referencia?: Camada | null): void;
+  /** Sem camada (null) o mapa fica todo em "sem dado": é o que a página quer quando a camada da aba não carregou. */
+  definirCamada(camada: Camada | null, referencia?: Camada | null): void;
   definirModo(modo: ModoCor): void;
   /** Vai para a UF (ou o Brasil) e a enquadra inteira. */
   focarUf(uf: UF | null): Promise<void>;
@@ -417,6 +418,9 @@ export function montarMapa(el: HTMLElement, o: OpcoesMapa = {}): MotorMapa {
   }
 
   function focar(uf: UF | null): Promise<void> {
+    // A página pode ter mudado o tamanho do mapa no mesmo instante (a gaveta do celular): lê já, sem esperar o observador,
+    // para o voo sair para o enquadramento do tamanho novo e não ser refeito no meio.
+    if (tamanhoMudou()) medir();
     foco = uf;
     if (uf) {
       destaque = uf;
@@ -824,8 +828,10 @@ export function montarMapa(el: HTMLElement, o: OpcoesMapa = {}): MotorMapa {
   }
 
   function tecla(e: KeyboardEvent): void {
+    // Atalhos do navegador (zoom com Ctrl e Cmd, voltar com Alt e seta) passam: o zoom do navegador é recurso de baixa visão.
+    if (e.altKey || e.ctrlKey || e.metaKey) return;
     const setas: Record<string, [number, number]> = { ArrowUp: [0, -1], ArrowDown: [0, 1], ArrowLeft: [-1, 0], ArrowRight: [1, 0] };
-    if (setas[e.key]) moverPonteiro(...setas[e.key]);
+    if (setas[e.key] && !e.shiftKey) moverPonteiro(...setas[e.key]);
     else if ((e.key === 'Enter' || e.key === ' ') && ponteiro) acionar(ponteiro);
     else if (e.key === 'Escape' && foco) {
       void focar(null);
@@ -869,7 +875,11 @@ export function montarMapa(el: HTMLElement, o: OpcoesMapa = {}): MotorMapa {
     // Redimensionar apaga o canvas: desenha já, no mesmo quadro, sem piscar.
     desenhar();
   }
-  const observador = new ResizeObserver(medir);
+  const tamanhoMudou = (): boolean => {
+    const caixa = canvas.getBoundingClientRect();
+    return caixa.width !== largura || caixa.height !== altura;
+  };
+  const observador = new ResizeObserver(() => tamanhoMudou() && medir());
   observador.observe(canvas);
 
   function sujar(): void {

@@ -1,6 +1,7 @@
-// Rede da /apuracao. Histórico: /mapa/{id}.json, baixado uma vez por aba aberta (o arquivo não muda depois do build, então
-// o cache do navegador serve as próximas visitas). Ao vivo: /data/apuracao.json a cada 20 s com If-None-Match, pausando
-// com a aba oculta. Quem decide o que fazer com cada leitura é lib/apuracao-dados.ts.
+// Rede da /apuracao. Histórico: /mapa/{id}.json, baixado uma vez por aba aberta, com o cache padrão do navegador (revalida
+// por ETag): o ETL regera o 1º turno de 2026 enquanto a apuração dele é conferida, então quem já abriu a página não pode
+// ficar com a cópia velha. Ao vivo: /data/apuracao.json a cada 20 s com If-None-Match, pausando com a aba oculta. Quem
+// decide o que fazer com cada leitura é lib/apuracao-dados.ts.
 import { lerIndice, mesclarAoVivo, urlCamada, type IdCamada, type Lugar } from '../../lib/apuracao-dados.ts';
 import { lerCamada, type Camada } from '../../lib/camada-mapa.ts';
 import { parseStatus, type Status } from '../../lib/status.ts';
@@ -19,7 +20,7 @@ const camadas = new Map<IdCamada, Promise<Camada>>();
 export function carregarHistorica(id: Exclude<IdCamada, 'ao-vivo'>): Promise<Camada> {
   let pedido = camadas.get(id);
   if (!pedido) {
-    pedido = pedirJson(urlCamada(id), { cache: 'force-cache' }).then((bruto) => {
+    pedido = pedirJson(urlCamada(id)).then((bruto) => {
       const camada = lerCamada(bruto);
       if (!camada) throw new Error(`${urlCamada(id)} não tem o formato de camada`);
       return camada;

@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { destaques, type Lugar } from '../../lib/apuracao-dados.ts';
 import { lerCamada, type Camada } from '../../lib/camada-mapa.ts';
 import { PALAVRAS_PROIBIDAS } from '../../lib/copy.ts';
-import { destaquesHtml, esc, legendaHtml, placarHtml, tabelaHtml, type Contexto } from './painel.ts';
+import { destaquesHtml, esc, legendaHtml, placarHtml, semQuebraNoSeparador, tabelaHtml, type Contexto } from './painel.ts';
 
 function camada(candidatos: unknown[], br: number[], municipios: number[][] = []): Camada {
   const c = lerCamada({ v: 1, id: 'x', rotulo: 'x', atualizado: '2026-10-25T18:42:10-03:00', candidatos, br, ufs: {}, municipios });
@@ -139,5 +139,66 @@ describe('destaques, tabela e legenda', () => {
       destaquesHtml(ctx(aoVivo, 'ao-vivo', true, '2022-t2'), destaques(aoVivo, de2018, indice, null), 'Brasil'),
     ].join(' ');
     for (const palavra of PALAVRAS_PROIBIDAS) expect(texto(html).toLowerCase()).not.toContain(palavra);
+  });
+});
+
+describe('correções da revisão', () => {
+  const primeiroTurno = camada(
+    [
+      { n: 13, nome: 'Lula', partido: 'PT', cor: '13' },
+      { n: 22, nome: 'Flávio Bolsonaro', partido: 'PL', cor: '22' },
+    ],
+    [38.4, 55.5, 6.1, 0, 100],
+  );
+
+  it('a variação do 1º turno diz que a referência é o 1º turno de 2022; a do 2º turno segue "a 2022"', () => {
+    const t1 = placarHtml(ctx(primeiroTurno, '2026-t1', false, '2022-t1'), { nome: 'Brasil' }, primeiroTurno.br, -5.1);
+    expect(texto(t1)).toContain('+5,1 pontos para Flávio Bolsonaro em relação ao 1º turno de 2022');
+    const t2 = placarHtml(ctx(aoVivo, 'ao-vivo', true, '2022-t2'), { nome: 'Brasil' }, aoVivo.br, -5.1);
+    expect(texto(t2)).toContain('em relação a 2022');
+    expect(texto(t2)).not.toContain('1º turno de 2022');
+  });
+
+  it('a "mais dividida" mostra duas casas, porque com uma só quase todas viram 50,0 e 50,0', () => {
+    const empatadas = camada(
+      [
+        { n: 13, nome: 'Lula', partido: 'PT', cor: '13' },
+        { n: 22, nome: 'Jair Bolsonaro', partido: 'PL', cor: '22' },
+      ],
+      [50.9, 49.1, 0, 0, 100],
+      [
+        [3144300, 50.01, 49.99, 0, 0, 100],
+        [2111300, 57.6, 42.4, 0, 0, 100],
+      ],
+    );
+    const lista = new Map<number, Lugar>([
+      [3144300, { ibge: 3144300, slug: 'nanuque-mg', nome: 'Nanuque', uf: 'MG', eleitores: 1 }],
+      [2111300, { ibge: 2111300, slug: 'sao-luis-ma', nome: 'São Luís', uf: 'MA', eleitores: 1 }],
+    ]);
+    const html = destaquesHtml(ctx(empatadas, '2022-t2', false), destaques(empatadas, null, lista, null), 'Brasil');
+    const [dividida, unanime] = html.split('<section').slice(1);
+    expect(texto(dividida)).toContain('50,01 49,99');
+    expect(texto(unanime)).toContain('57,6 42,4');
+  });
+
+  it('o bloco de contexto pode ir sem foto nem crédito (o detalhe do município já tem)', () => {
+    const com = placarHtml(ctx(aoVivo, 'ao-vivo', true), { nome: 'Maranhão', sigla: 'ma' }, aoVivo.br, null);
+    expect(com).toContain('class="foto"');
+    expect(com).toContain('Foto: TSE');
+    const sem = placarHtml(ctx(aoVivo, 'ao-vivo', true), { nome: 'Maranhão', sigla: 'ma', semFoto: true }, aoVivo.br, null);
+    expect(sem).not.toContain('class="foto"');
+    expect(sem).not.toContain('Foto: TSE');
+    expect(sem).not.toContain('com-foto');
+  });
+
+  it('o separador da linha de apuração nunca abre a linha (espaço inquebrável antes do ·)', () => {
+    const html = placarHtml(ctx(aoVivo, 'ao-vivo', true), { nome: 'Brasil' }, aoVivo.br, null);
+    expect(html).toContain('parcial · 63% das seções · Fonte: TSE · 18:42');
+    expect(semQuebraNoSeparador('a · b · c')).toBe('a · b · c');
+  });
+
+  it('o card a um toque fica num rodapé próprio, que a gaveta do celular prende embaixo', () => {
+    const detalhe = placarHtml(ctx(aoVivo, 'ao-vivo', true), { nome: 'São Luís', uf: 'MA', slug: 'sao-luis-ma' }, aoVivo.municipios.get(2111300) ?? null, null, true);
+    expect(detalhe).toMatch(/<div class="ir-fixo"><a class="ir" href="\/c\/sao-luis-ma"/);
   });
 });

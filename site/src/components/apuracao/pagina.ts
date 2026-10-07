@@ -22,21 +22,22 @@ import {
   LINHA_APURADA,
   TENTAR_DE_NOVO,
   linhaApuracao,
+  pilula,
   rotuloAba,
   semConexao,
   turnoDaCamada,
 } from '../../lib/copy.ts';
 import { atualizarFlap, montarFlap } from '../../lib/flap.ts';
-import { parseStatus, type Modo } from '../../lib/status.ts';
+import { parseStatus, type Modo, type Status } from '../../lib/status.ts';
 import { ligarControles } from './controles.ts';
 import { carregarHistorica, carregarIndice, lerStatus, vigiarAoVivo, type AoVivo } from './dados.ts';
 import { montarMapa } from './motor.ts';
-import { destaquesHtml, esc, leituraHtml, legendaHtml, placarHtml, tabelaHtml, type Contexto } from './painel.ts';
+import { destaquesHtml, esc, leituraHtml, legendaHtml, placarHtml, semQuebraNoSeparador, tabelaHtml, type Contexto } from './painel.ts';
 
 const STATUS_A_CADA = 60_000;
-// Celular e tablet: o mapa não é sticky e a gaveta do detalhe cobre a metade de baixo da tela; ao abrir um município, o
-// mapa sobe para o topo e fica inteiro acima da gaveta.
-const MAPA_ROLA = matchMedia('(max-width: 1023px)');
+// Celular: a gaveta do detalhe é fixa e o mapa encolhe para a área que ela deixa livre; ao abrir uma UF ou um município, o
+// mapa sobe para o topo e fica inteiro acima da gaveta. Do tablet para cima o detalhe está na coluna ao lado do mapa.
+const MAPA_ROLA = matchMedia('(max-width: 767px)');
 const SEM_MOVIMENTO = matchMedia('(prefers-reduced-motion: reduce)');
 
 interface Estado {
@@ -136,6 +137,10 @@ function iniciar(raiz: HTMLElement): void {
     semMapa: false,
   };
   let aoVivo: AoVivo | null = null;
+  /** O mapa está pintado com uma camada (e não em "sem dado"): a falha de uma aba sem camada boa o esvazia. */
+  let mapaComCamada = false;
+  let atualizadoStatus: string | null = null;
+  const pilulaEl = document.querySelector<HTMLElement>('[data-pilula]');
 
   const anunciar = (texto: string): void => {
     els.anuncio.textContent = texto;
@@ -164,15 +169,30 @@ function iniciar(raiz: HTMLElement): void {
 
   // ---- desenho ----
 
+  /** A pílula do cabeçalho (que o build escreve no modo do build) acompanha o modo do site e, na aba ao vivo, as seções e a hora. */
+  const desenharPilula = (): void => {
+    // No /design a pílula é a do playground (sempre "pre"): o modo dali vem de ?modo=, não do status.json.
+    if (design || !pilulaEl?.parentElement) return;
+    const viva = estado.aba === 'ao-vivo' ? estado.camada : null;
+    const texto = pilula(estado.modoSite, viva?.br?.secoes, viva?.atualizado ?? atualizadoStatus);
+    if (pilulaEl.textContent !== texto) pilulaEl.textContent = texto;
+    pilulaEl.parentElement.dataset.modo = estado.modoSite;
+  };
+
   const desenharEstado = (): void => {
     els.turno.textContent = rotuloAba(estado.aba, estado.modoSite === 'live');
     els.turno.toggleAttribute('data-ao-vivo', parcial());
     els.quando.hidden = estado.modoSite !== 'pre';
     const situacao = estadoCamada(estado.camada, estado.falhou);
-    const br = estado.camada?.br;
-    if (estado.aba !== 'ao-vivo') els.linha.textContent = estado.camada ? LINHA_APURADA : '';
-    else if (situacao === 'aguardando') els.linha.textContent = AGUARDANDO_SECOES;
-    else if (estado.camada) els.linha.textContent = linhaApuracao(parcial() ? 'parcial' : 'final', br?.secoes ?? 0, estado.camada.atualizado);
+    // Sem camada a linha fica vazia: a que o build escreveu é a de outra eleição, e nunca fica sob o nome desta.
+    let linha = '';
+    if (estado.camada) {
+      if (estado.aba !== 'ao-vivo') linha = LINHA_APURADA;
+      else if (situacao === 'aguardando') linha = AGUARDANDO_SECOES;
+      else linha = linhaApuracao(parcial() ? 'parcial' : 'final', estado.camada.br?.secoes ?? 0, estado.camada.atualizado);
+    }
+    els.linha.textContent = semQuebraNoSeparador(linha);
+    desenharPilula();
     els.aviso.hidden = situacao !== 'erro' && situacao !== 'sem-conexao' && !estado.semMapa;
     if (situacao === 'erro') {
       els.aviso.innerHTML = `${esc(ERRO_CAMADA)} <button type="button" data-ap-tentar>${TENTAR_DE_NOVO}</button>`;
@@ -194,7 +214,9 @@ function iniciar(raiz: HTMLElement): void {
 
     const ctx = contexto();
     if (!ctx) {
-      // Camada a caminho: tudo em espera, nunca o número de outra eleição embaixo do nome desta.
+      // Camada a caminho: tudo em espera, nunca o número de outra eleição embaixo do nome desta. Se ela não vem (404, tempo
+      // esgotado), o mapa também sai da eleição que estava nele: fica em "sem dado" até haver uma camada desta aba.
+      if (estado.falhou) esvaziarMapa();
       trocar(els.placar, '', 'espera');
       trocar(els.detalhe, '', 'espera');
       trocar(els.destaques, destaquesHtml(null, null, escopo), 'espera');
@@ -205,9 +227,10 @@ function iniciar(raiz: HTMLElement): void {
     const { camada } = ctx;
     const doFoco: Selecao | null = foco ? { tipo: 'uf', uf: foco } : null;
     const valorFoco = valorDe(camada, doFoco);
+    // Com um município aberto, o detalhe dele já traz as fotos: o placar da UF vira só o contexto (sem repetir os rostos).
     trocar(
       els.placar,
-      placarHtml(ctx, { nome: escopo, sigla: foco ? sigla(foco) : 'br' }, valorFoco, variacao(valorFoco, valorDe(ref, doFoco))),
+      placarHtml(ctx, { nome: escopo, sigla: foco ? sigla(foco) : 'br', semFoto: municipio !== null }, valorFoco, variacao(valorFoco, valorDe(ref, doFoco))),
       `${estado.aba}|${foco ?? 'BR'}`,
     );
 
@@ -226,6 +249,7 @@ function iniciar(raiz: HTMLElement): void {
         `${estado.aba}|${municipio.ibge}`,
       );
     }
+    controles.reservarGaveta();
 
     trocar(els.destaques, destaquesHtml(ctx, indice ? destaques(camada, ref, indice, foco) : null, escopo), 'destaques');
     if (els.tabela.open && (indice || !foco)) {
@@ -237,8 +261,17 @@ function iniciar(raiz: HTMLElement): void {
 
   // ---- camadas ----
 
+  const esvaziarMapa = (): void => {
+    if (!mapaComCamada) return;
+    mapaComCamada = false;
+    motor.definirCamada(null);
+  };
+
   const aplicarCamada = (): void => {
-    if (estado.camada) motor.definirCamada(estado.camada, estado.referencia);
+    if (estado.camada) {
+      motor.definirCamada(estado.camada, estado.referencia);
+      mapaComCamada = true;
+    }
     desenhar();
     // Os destaques precisam dos nomes: o índice vem depois do mapa, sem disputar a primeira pintura.
     if (!estado.indice) setTimeout(() => void garantirIndice(), 0);
@@ -337,12 +370,12 @@ function iniciar(raiz: HTMLElement): void {
         return;
       }
       if (sel.tipo === 'uf') {
-        els.leitura.innerHTML = leituraHtml(ctx, NOME_UF[sel.uf], null, valorDe(ctx.camada, sel));
+        els.leitura.innerHTML = leituraHtml(ctx, NOME_UF[sel.uf], valorDe(ctx.camada, sel));
         return;
       }
       if (!estado.indice) void garantirIndice();
       const nome = estado.indice?.get(sel.ibge)?.nome ?? '';
-      els.leitura.innerHTML = leituraHtml(ctx, nome, sel.uf, valorDe(ctx.camada, sel));
+      els.leitura.innerHTML = leituraHtml(ctx, nome, valorDe(ctx.camada, sel));
     },
     aoErro: () => {
       estado.semMapa = true;
@@ -378,9 +411,10 @@ function iniciar(raiz: HTMLElement): void {
 
   // ---- modo do site (pre → live → final) ----
 
-  const aplicarModo = (modo: Modo): void => {
+  const aplicarModo = ({ modo, atualizado }: Status): void => {
+    atualizadoStatus = atualizado;
     const antes = estado.modoSite;
-    if (modo === antes) return;
+    if (modo === antes) return desenharPilula();
     estado.modoSite = modo;
     const { ids, padrao } = abas(modo);
     // Quem estava na aba padrão segue o padrão novo (no começo da apuração, o ao vivo); quem escolheu outra fica nela.
@@ -401,7 +435,7 @@ function iniciar(raiz: HTMLElement): void {
     const conferirStatus = (): void => {
       if (document.hidden || estado.modoSite === 'final') return;
       // Falhou a leitura do status: segue no modo atual e confere de novo no próximo minuto.
-      lerStatus().then((s) => aplicarModo(s.modo), () => undefined);
+      lerStatus().then(aplicarModo, () => undefined);
     };
     conferirStatus();
     window.setInterval(conferirStatus, STATUS_A_CADA);

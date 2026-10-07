@@ -43,13 +43,13 @@ function camada(id: string, municipios: Array<[number, ...Linha]>, extra: Partia
 const lugar = (ibge: number, nome: string, uf: UF): Lugar => ({ ibge, slug: nome.toLowerCase(), nome, uf, eleitores: 1 });
 
 describe('abas e referência', () => {
-  it('antes do dia 25: as três apuradas, com o 2º turno de 2022 como padrão', () => {
-    expect(abas('pre')).toEqual({ ids: ['2022-t2', '2022-t1', '2026-t1'], padrao: '2022-t2' });
+  it('antes do dia 25: as três apuradas, da eleição mais nova à mais antiga, com o 2º turno de 2022 como padrão', () => {
+    expect(abas('pre')).toEqual({ ids: ['2026-t1', '2022-t2', '2022-t1'], padrao: '2022-t2' });
   });
 
-  it('a partir do dia 25 o ao vivo vem na frente e é o padrão, também no final', () => {
+  it('a partir do dia 25 o ao vivo vem na frente e é o padrão, também no final; o 1º turno de 2026 fica junto do 2º', () => {
     for (const modo of ['live', 'final'] as const) {
-      expect(abas(modo)).toEqual({ ids: ['ao-vivo', '2022-t2', '2022-t1', '2026-t1'], padrao: 'ao-vivo' });
+      expect(abas(modo)).toEqual({ ids: ['ao-vivo', '2026-t1', '2022-t2', '2022-t1'], padrao: 'ao-vivo' });
     }
   });
 

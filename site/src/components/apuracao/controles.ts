@@ -13,6 +13,8 @@ const TEXTO = {
   erro: 'Não deu para carregar os municípios. Tente de novo.',
 };
 const quantos = (n: number): string => `${n} ${n === 1 ? 'município' : 'municípios'}. Use as setas para escolher.`;
+/** Altura da gaveta do detalhe no celular, em <html>: o mapa encolhe para a área que ela deixa livre (Apuracao.astro). */
+const ALTURA_GAVETA = '--detalhe-h';
 
 export interface Acoes {
   aoTrocarAba(id: IdCamada): void;
@@ -32,6 +34,8 @@ export interface Controles {
   migalha(foco: UF | null, municipio: string | null): void;
   /** Abre ou fecha o detalhe (UF ou município). `nome` é o nome acessível da região. */
   detalheAberto(aberto: boolean, nome?: string): void;
+  /** Lê agora a altura do detalhe aberto, com o conteúdo já escrito, para o mapa ser medido com ela antes do voo. */
+  reservarGaveta(): void;
 }
 
 const el = <T extends HTMLElement>(raiz: ParentNode, seletor: string): T => {
@@ -125,7 +129,7 @@ function ligarBusca(raiz: HTMLElement, acoes: Acoes): void {
     lista.innerHTML = resultados
       .map(
         (l, i) =>
-          `<li id="ap-op-${i}" role="option" aria-selected="false" aria-label="${esc(`${l.nome} (${l.uf})`)}" data-ibge="${l.ibge}"><span class="op-caixa">${nomeDestino(l.nome, 220, 26, 14, 1, 'var(--caixa)')}</span><span class="op-uf">${l.uf}</span></li>`,
+          `<li id="ap-op-${i}" role="option" aria-selected="false" data-ibge="${l.ibge}"><span class="op-caixa">${nomeDestino(l.nome, 220, 26, 14, 1, 'var(--caixa)')}</span><span class="op-uf">${l.uf}</span></li>`,
       )
       .join('');
     if (!consulta) avisar(null);
@@ -243,6 +247,15 @@ export function ligarControles(raiz: HTMLElement, acoes: Acoes): Controles {
   });
 
   const detalhe = el<HTMLElement>(raiz, '[data-ap-detalhe]');
+  // A altura só cresce enquanto o detalhe está aberto: de UF para município o mapa não respira a cada troca. Só vale como
+  // gaveta (celular, position: fixed); no tablet e no desktop o detalhe está na coluna ao lado e não cobre nada.
+  const reservarGaveta = (): void => {
+    if (!detalhe.hasAttribute('data-aberto') || getComputedStyle(detalhe).position !== 'fixed') return;
+    const altura = Math.ceil(detalhe.getBoundingClientRect().height);
+    const estilo = document.documentElement.style;
+    if (altura > (parseFloat(estilo.getPropertyValue(ALTURA_GAVETA)) || 0)) estilo.setProperty(ALTURA_GAVETA, `${altura}px`);
+  };
+  new ResizeObserver(reservarGaveta).observe(detalhe);
   el<HTMLButtonElement>(detalhe, '[data-ap-fechar-detalhe]').addEventListener('click', () => acoes.aoFecharDetalhe());
   raiz.addEventListener('keydown', (e) => {
     if (e.key === 'Escape' && detalhe.hasAttribute('data-aberto') && !raiz.hasAttribute('data-busca-aberta')) acoes.aoFecharDetalhe();
@@ -258,7 +271,11 @@ export function ligarControles(raiz: HTMLElement, acoes: Acoes): Controles {
       const estavaNele = detalhe.contains(document.activeElement);
       detalhe.toggleAttribute('data-aberto', aberto);
       if (aberto) detalhe.focus();
-      else if (estavaNele) raiz.querySelector<HTMLElement>('[data-ap-mapa] canvas')?.focus({ preventScroll: true });
+      else {
+        document.documentElement.style.removeProperty(ALTURA_GAVETA);
+        if (estavaNele) raiz.querySelector<HTMLElement>('[data-ap-mapa] canvas')?.focus({ preventScroll: true });
+      }
     },
+    reservarGaveta,
   };
 }
