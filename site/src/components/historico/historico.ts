@@ -18,6 +18,7 @@ import {
   historicoDe,
   semConexao,
 } from '../../lib/copy.ts';
+import { ajustarDestino } from '../../lib/destino.ts';
 import { renderTabela } from '../../lib/grafico-linha.ts';
 import {
   ANOS,
@@ -28,6 +29,7 @@ import {
   lerAoVivo,
   lerHash,
   lerSerieJson,
+  mesclarAoVivo,
   pontosDaSelecao,
   pontosDe,
   type Ano,
@@ -40,6 +42,13 @@ import { figuraHtml, linhaHistorico, mudouDeNumero, rotuloVazio } from './figura
 const INTERVALO = 20_000;
 const STATUS_A_CADA = 60_000;
 const LIMITE = 8;
+// Linha de destino: o nome encosta na largura da coluna pelo eixo wdth, entre estes tamanhos (px), e nunca é cortado.
+const NOME_MAX = 22;
+const NOME_MIN = 14;
+// O seletor de estado usa o mesmo tamanho do botão Brasil e do campo da cidade; abaixo de 16 px o iOS dá zoom no foco.
+const UF_MAX = 22;
+const UF_MIN = 16;
+const UF_WDTH_MAX = 87.5;
 // No celular o teclado cobre a metade de baixo da tela: o campo da cidade sobe para o topo.
 const TELA_ESTREITA = matchMedia('(max-width: 1023px)');
 
@@ -153,9 +162,18 @@ function iniciar(raiz: HTMLElement): void {
     el.aviso.innerHTML = html ?? '';
   };
 
+  // O nome do estado escolhido encosta na largura do seletor pelo eixo wdth (como o resto do site), sem passar do wdth dos outros controles.
+  const ajustarUf = (): void => {
+    const estilo = getComputedStyle(el.uf);
+    const largura = el.uf.clientWidth - parseFloat(estilo.paddingLeft) - parseFloat(estilo.paddingRight);
+    const [linha] = ajustarDestino(el.uf.selectedOptions[0].text.toLocaleUpperCase('pt-BR'), { largura, tamMax: UF_MAX, tamMin: UF_MIN, maxLinhas: 1 }).linhas;
+    el.uf.style.cssText = `font-size:${Math.max(linha.tamanho, UF_MIN)}px;font-stretch:${Math.min(linha.wdth, UF_WDTH_MAX)}%`;
+  };
+
   const marcarControles = (): void => {
     el.brasil.setAttribute('aria-pressed', String(escopo.tipo === 'br'));
     el.uf.value = escopo.tipo === 'uf' ? escopo.uf : '';
+    ajustarUf();
     el.uf.toggleAttribute('data-ativo', escopo.tipo === 'uf');
     el.cidade.toggleAttribute('data-ativo', escopo.tipo === 'cidade');
     if (escopo.tipo !== 'cidade' && document.activeElement !== el.campo) el.campo.value = '';
@@ -211,8 +229,9 @@ function iniciar(raiz: HTMLElement): void {
       if (resposta.status !== 304) {
         if (!resposta.ok) throw new Error(`${arquivoVivo(escopo)} respondeu ${resposta.status}`);
         const novo = lerAoVivo(await resposta.json(), modo);
-        // Uma borda do CDN pode servir um arquivo mais velho depois de um novo: o gráfico nunca volta no tempo.
-        if (!(novo && vivo && Date.parse(novo.atualizado) < Date.parse(vivo.atualizado))) vivo = novo;
+        // Arquivo incompleto com uma leitura boa na tela: a boa fica, com o aviso de sem conexão (sem guardar o ETag do arquivo ruim).
+        if (!novo && vivo) throw new Error(`${arquivoVivo(escopo)} não tem o formato do ao vivo`);
+        vivo = mesclarAoVivo(vivo, novo);
         etag = resposta.headers.get('ETag');
       }
       falhou = false;
@@ -272,7 +291,13 @@ function iniciar(raiz: HTMLElement): void {
   // ---- controles ----
 
   el.brasil.addEventListener('click', () => void irPara({ tipo: 'br' }));
-  el.uf.addEventListener('change', () => void irPara(el.uf.value ? { tipo: 'uf', uf: el.uf.value as UF } : { tipo: 'br' }));
+  el.uf.addEventListener('change', () => {
+    // Escolher um estado tira a cidade do filtro: o campo não segue mostrando a cidade antiga, esteja o foco onde estiver.
+    el.campo.value = '';
+    desenharLista();
+    ajustarUf();
+    void irPara(el.uf.value ? { tipo: 'uf', uf: el.uf.value as UF } : { tipo: 'br' });
+  });
   raiz.addEventListener('click', (e) => {
     if (!(e.target as Element).closest('[data-hist-tentar]')) return;
     const destino = escopo;
@@ -292,6 +317,8 @@ function iniciar(raiz: HTMLElement): void {
   });
   // Voltar e avançar no histórico, ou um link com outro hash colado na mesma aba.
   addEventListener('hashchange', () => void escolherAnos(lerHash(location.hash)));
+  // Girar o aparelho muda a largura do seletor, e o nome do estado precisa de novo encostar nela.
+  addEventListener('resize', ajustarUf);
 
   // Combobox ARIA 1.2 da cidade, sobre o mesmo /busca.json da home (lib/busca.ts).
   let carregado: EntradaIndice[] | null = null;
@@ -326,7 +353,6 @@ function iniciar(raiz: HTMLElement): void {
     li.id = `${idLista}-op-${i}`;
     li.setAttribute('role', 'option');
     li.setAttribute('aria-selected', 'false');
-    li.setAttribute('aria-label', `${r.nome} (${r.uf})`);
     const nome = document.createElement('span');
     nome.className = 'nome';
     nome.textContent = r.nome;
@@ -335,6 +361,16 @@ function iniciar(raiz: HTMLElement): void {
     sigla.textContent = r.uf;
     li.append(nome, sigla);
     return li;
+  };
+
+  // Uma leitura de layout por desenho: a largura da coluna do nome, igual em todas as linhas.
+  const ajustarNomes = (): void => {
+    const nomes = el.lista.querySelectorAll<HTMLElement>('.nome');
+    const largura = nomes[0]?.clientWidth ?? 0;
+    for (const nome of nomes) {
+      const [linha] = ajustarDestino((nome.textContent ?? '').toLocaleUpperCase('pt-BR'), { largura, tamMax: NOME_MAX, tamMin: NOME_MIN, maxLinhas: 1 }).linhas;
+      nome.style.cssText = `font-size:${linha.tamanho}px;font-stretch:${linha.wdth}%`;
+    }
   };
 
   const desenharLista = (): void => {
@@ -356,6 +392,7 @@ function iniciar(raiz: HTMLElement): void {
     avisarCidade(resultados.length ? null : FILTRO_CIDADE_VAZIA);
     abrir(true);
     el.lista.replaceChildren(...resultados.map(opcao));
+    ajustarNomes();
     el.cidadeStatus.textContent = resultados.length ? filtroQuantas(resultados.length) : FILTRO_CIDADE_VAZIA;
   };
 

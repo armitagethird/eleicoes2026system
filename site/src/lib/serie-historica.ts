@@ -179,6 +179,13 @@ export function lerAoVivo(bruto: unknown, modo: Modo): AoVivo | null {
   };
 }
 
+/** Nova leitura do ao vivo: nunca apaga a última boa (leitura incompleta) nem volta no tempo (uma borda do CDN pode servir um arquivo mais velho). */
+export function mesclarAoVivo(anterior: AoVivo | null, nova: AoVivo | null): AoVivo | null {
+  if (!nova) return anterior;
+  if (anterior && Date.parse(nova.atualizado) < Date.parse(anterior.atualizado)) return anterior;
+  return nova;
+}
+
 /** Põe o ao vivo no último ponto (2º turno de 2026). Sem ao vivo, devolve a lista como veio. */
 export function comAoVivo(pontos: readonly Ponto[], vivo: AoVivo | null): Ponto[] {
   if (!vivo) return [...pontos];

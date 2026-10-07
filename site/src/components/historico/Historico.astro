@@ -259,12 +259,11 @@ const estiloTitulo = `--t:${(faixa.tamanho / REFERENCIA_TITULO) * 100}cqi;--w:${
     pointer-events: none;
   }
 
-  /* Nomes de estado são longos (Rio Grande do Norte): o seletor usa o tamanho de corpo e a largura condensada. */
+  /* Nomes de estado são longos (Rio Grande do Norte): em repouso ("ESTADO") o seletor tem o texto do botão Brasil e do campo, e a ilha
+     encosta o estado escolhido na largura dele pelo eixo wdth (ajustarUf). Sem tracking, para a conta de largura fechar. */
   .hist-uf {
     width: 100%;
     padding: 0 var(--sp-5) 0 var(--sp-2);
-    font-size: var(--fs-2);
-    font-stretch: 62%;
     letter-spacing: 0;
     appearance: none;
     cursor: pointer;
@@ -276,6 +275,7 @@ const estiloTitulo = `--t:${(faixa.tamanho / REFERENCIA_TITULO) * 100}cqi;--w:${
     background: var(--bg);
     color: var(--ink);
     font-family: var(--font-text);
+    font-size: var(--fs-2);
     font-weight: 500;
     font-stretch: 100%;
     text-transform: none;
@@ -322,14 +322,15 @@ const estiloTitulo = `--t:${(faixa.tamanho / REFERENCIA_TITULO) * 100}cqi;--w:${
     border-bottom-left-radius: 0;
   }
 
-  /* A gaveta cobre o que vem embaixo em vez de empurrar a página. */
+  /* A gaveta cobre o que vem embaixo em vez de empurrar a página. Cabem as 8 sugestões (8 x 52 px) sem rolar, em telas de tamanho
+     normal; só em tela muito baixa ela rola, e aí o teclado já cobre: as setas movem a opção ativa (aria-activedescendant) e a rolagem a acompanha. */
   .hist-gaveta {
     position: absolute;
     top: 100%;
     right: 0;
     left: 0;
     z-index: 2;
-    max-height: min(50dvh, 360px);
+    max-height: min(60dvh, 424px);
     overflow-y: auto;
     border: 3px solid var(--ink);
     border-top: 0;
@@ -373,14 +374,13 @@ const estiloTitulo = `--t:${(faixa.tamanho / REFERENCIA_TITULO) * 100}cqi;--w:${
     background: var(--ink);
   }
 
+  /* Linha de destino: tamanho e wdth vêm da ilha (ajustarNomes), que encosta o nome inteiro na coluna; o do CSS é o de reserva. */
   .hist-lista :global(.nome) {
-    overflow: hidden;
     font-family: var(--font-display);
     font-size: var(--fs-3);
     font-weight: 900;
     font-stretch: 87.5%;
     line-height: 1;
-    text-overflow: ellipsis;
     text-transform: uppercase;
     white-space: nowrap;
   }

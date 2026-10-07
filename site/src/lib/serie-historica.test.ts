@@ -13,6 +13,7 @@ import {
   lerAoVivo,
   lerHash,
   lerSerieJson,
+  mesclarAoVivo,
   normalizarAnos,
   pontosDaSelecao,
   pontosDe,
@@ -241,6 +242,47 @@ describe('comAoVivo', () => {
   it('sem ao vivo, devolve a série como estava', () => {
     const base = pontosDe(json)!;
     expect(comAoVivo(base, null)).toEqual(base);
+  });
+});
+
+describe('mesclarAoVivo', () => {
+  const leitura = (atualizado: string, pct = 49.31) =>
+    lerAoVivo(
+      {
+        secoes_pct: 67,
+        atualizado,
+        presidente: {
+          cand: [
+            { n: 13, nome: 'Lula', partido: 'PT', pct },
+            { n: 22, nome: 'Flávio Bolsonaro', partido: 'PL', pct: 100 - pct },
+          ],
+        },
+      },
+      'live',
+    );
+  const antiga = leitura('2026-10-25T18:42:10-03:00');
+  const nova = leitura('2026-10-25T18:42:30-03:00', 49.8);
+
+  it('a leitura nova ocupa o lugar da anterior', () => {
+    expect(mesclarAoVivo(antiga, nova)).toBe(nova);
+    expect(mesclarAoVivo(null, nova)).toBe(nova);
+  });
+
+  it('uma leitura do mesmo instante vale (o ETag mudou, o dado pode ter mudado)', () => {
+    const igual = leitura('2026-10-25T18:42:10-03:00', 49.4);
+    expect(mesclarAoVivo(antiga, igual)).toBe(igual);
+  });
+
+  it('leitura incompleta (null) não apaga a última boa', () => {
+    expect(mesclarAoVivo(antiga, null)).toBe(antiga);
+  });
+
+  it('sem nenhuma leitura boa continua sem ponto', () => {
+    expect(mesclarAoVivo(null, null)).toBeNull();
+  });
+
+  it('uma borda do CDN com arquivo mais velho não faz o gráfico voltar no tempo', () => {
+    expect(mesclarAoVivo(nova, antiga)).toBe(nova);
   });
 });
 
