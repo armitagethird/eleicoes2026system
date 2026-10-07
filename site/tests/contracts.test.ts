@@ -33,9 +33,29 @@ const cargos = (c: { presidente: Cargo; governador: Cargo | null }): Cargo[] => 
 
 describe('schemas', () => {
   it('todos compilam em draft 2020-12', () => {
-    for (const nome of ['status', 'placar', 'cidade', 'hist', 'rankings', 'municipios']) {
+    for (const nome of ['status', 'placar', 'cidade', 'hist', 'municipios']) {
       expect(ajv.getSchema(`${nome}.schema.json`), nome).toBeTypeOf('function');
     }
+  });
+});
+
+describe('candidato.feminino', () => {
+  // lib/copy.ts rotuloPosicao(eleito, feminino) diz "eleita": sem o campo no contrato nada o preenche e sai "eleito" para uma mulher.
+  const br = lerJson('contracts/fixtures/br.json');
+  const comFeminino = (valor: unknown) => ({
+    ...br,
+    presidente: { ...br.presidente, cand: br.presidente.cand.map((c: object, i: number) => (i === 0 ? { ...c, feminino: valor } : c)) },
+  });
+  const validador = () => ajv.getSchema('placar.schema.json')!;
+
+  it('aceita true e false, e é opcional', () => {
+    validar('placar', comFeminino(true), 'feminino: true');
+    validar('placar', comFeminino(false), 'feminino: false');
+    validar('placar', br, 'sem feminino');
+  });
+
+  it('recusa o que não é booleano', () => {
+    for (const valor of ['sim', 1, null]) expect(validador()(comFeminino(valor)), String(valor)).toBe(false);
   });
 });
 
@@ -127,20 +147,6 @@ describe('fixtures: cidades', () => {
     expect(dados.some((c) => c.secoes_pct < 1), 'secoes_pct < 1').toBe(true);
     expect(dados.some((c) => Object.keys(c.presidente.variacao_2022).length === 0 && c.secoes_pct >= 1), 'sem 2022').toBe(true);
     expect(new Set(dados.map((c) => c.selos.length)).size, 'selos variados').toBeGreaterThan(1);
-  });
-});
-
-describe('fixtures: rankings', () => {
-  const rankings = lerJson('contracts/fixtures/rankings.json');
-  const slugs = new Set((lerJson('site/src/data/municipios.json') as Array<{ slug: string }>).map((m) => m.slug));
-
-  it('valida contra o schema e só cita slugs existentes', () => {
-    validar('rankings', rankings, 'rankings.json');
-    for (const lista of Object.values(rankings) as string[][]) for (const slug of lista) expect(slugs.has(slug), slug).toBe(true);
-  });
-
-  it('capitais = as 27 capitais', () => {
-    expect(rankings.capitais).toHaveLength(27);
   });
 });
 

@@ -28,7 +28,14 @@
         "partido": { "type": "string", "minLength": 1 },
         "votos": { "type": "integer", "minimum": 0 },
         "pct": { "description": "Percentual sobre votos válidos (0 a 100).", "type": "number", "minimum": 0, "maximum": 100 },
-        "eleito": { "description": "true somente quando o resultado do cargo está oficialmente definido. Nunca inferir de percentual.", "type": "boolean" }
+        "eleito": {
+          "description": "true somente quando o resultado do cargo está oficialmente definido. Nunca inferir de percentual. Vale no resultado que elege: presidente em br.json, governador em uf/{uf}.json. Em uf/{uf}.json (presidente) e em c/{slug}.json (qualquer cargo) é sempre false: quem perdeu naquele estado ou cidade não pode aparecer como eleito.",
+          "type": "boolean"
+        },
+        "feminino": {
+          "description": "true quando o candidato é mulher (DS_GENERO do TSE). Escolhe 'eleita' em vez de 'eleito' (lib/copy.ts). Ausente = masculino, então o worker deve preencher em todo candidato.",
+          "type": "boolean"
+        }
       }
     },
     "candidatos": {

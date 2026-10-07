@@ -7,8 +7,7 @@
 // FICTÍCIO: todos os números do 2º turno de 2026 (votos, percentuais, seções, selos, ranks).
 // Os números nascem por município (todos os 5.571) e sobem por soma: UF = soma dos seus municípios, Brasil = soma das UFs.
 // Por isso o mapa ao vivo (apuracao.json), os placares (br, uf/*) e as cidades (c/*) contam a mesma história.
-// c/*.json existe só para a amostra de 50 cidades (não se versionam 5.571 arquivos); ranks, selos e rankings.json
-// são calculados entre elas.
+// c/*.json existe só para a amostra de 50 cidades (não se versionam 5.571 arquivos); ranks e selos são calculados entre elas.
 import { cpSync, mkdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -22,7 +21,7 @@ interface Hist {
   t2_2022: { pct: { '13': number; '22': number }; comparecimento_pct: number } | null;
   t1_2026: { pct: { '13': number; '22': number; outros: number }; comparecimento_pct: number };
 }
-interface Quem { n: number; nome: string; partido: string }
+interface Quem { n: number; nome: string; partido: string; feminino?: boolean }
 interface Cenario { secoes?: number; p13?: number | 'espelho' }
 
 const ATUALIZADO = '2026-10-25T18:42:10-03:00';
@@ -30,10 +29,10 @@ const PRESIDENTE: [Quem, Quem] = [
   { n: 13, nome: 'Lula', partido: 'PT' },
   { n: 22, nome: 'Flávio Bolsonaro', partido: 'PL' },
 ];
-// Candidatos a governador são FICTÍCIOS (nome e número); só o formato importa.
+// Candidatos a governador são FICTÍCIOS (nome, número e gênero); só o formato importa. A B é mulher: "eleita" em final.
 const GOVERNADOR: [Quem, Quem] = [
   { n: 12, nome: 'Fictício A', partido: 'FIC' },
-  { n: 45, nome: 'Fictícia B', partido: 'FIC' },
+  { n: 45, nome: 'Fictícia B', partido: 'FIC', feminino: true },
 ];
 const UFS_COM_GOVERNADOR = ['AC', 'AM', 'DF', 'ES', 'RJ', 'RN', 'TO'];
 const SIGLAS_UF = ['AC', 'AL', 'AM', 'AP', 'BA', 'CE', 'DF', 'ES', 'GO', 'MA', 'MG', 'MS', 'MT', 'PA', 'PB', 'PE', 'PI', 'PR', 'RJ', 'RN', 'RO', 'RR', 'RS', 'SC', 'SE', 'SP', 'TO'];
@@ -49,13 +48,6 @@ const AMOSTRA = new Set([
   'santarem-pa', 'sao-joao-da-boa-vista-sp', 'sao-luis-ma', 'sao-paulo-sp', 'serra-da-saudade-mg', 'teresina-pi',
   'uberlandia-mg', 'vila-bela-da-santissima-trindade-mt', 'vitoria-es',
 ]);
-
-const CAPITAIS = [
-  'rio-branco-ac', 'maceio-al', 'macapa-ap', 'manaus-am', 'salvador-ba', 'fortaleza-ce', 'brasilia-df', 'vitoria-es',
-  'goiania-go', 'sao-luis-ma', 'cuiaba-mt', 'campo-grande-ms', 'belo-horizonte-mg', 'belem-pa', 'joao-pessoa-pb',
-  'curitiba-pr', 'recife-pe', 'teresina-pi', 'rio-de-janeiro-rj', 'natal-rn', 'porto-alegre-rs', 'porto-velho-ro',
-  'boa-vista-rr', 'florianopolis-sc', 'sao-paulo-sp', 'aracaju-se', 'palmas-to',
-];
 
 // Casos de borda forçados (o resto é sorteado pelo slug). Só valem para quem está na amostra.
 const CENARIOS: Record<string, Cenario> = {
@@ -160,7 +152,7 @@ const calcs: CidadeCalc[] = municipios.map((m) => {
   return { m, hist, secoes, p13, p22, margem, lider, virou, swing, apto, comparecidos, brancos, nulos, votos13, votos22, gov };
 });
 
-// Ranks, selos e rankings.json: só entre as cidades da amostra, que são as que têm c/{slug}.json.
+// Ranks e selos: só entre as cidades da amostra, que são as que têm c/{slug}.json.
 const amostra = calcs.filter((c) => AMOSTRA.has(c.m.slug));
 const comVoto = amostra.filter((c) => c.secoes >= 1);
 const posicao = (lista: CidadeCalc[], ordem: (c: CidadeCalc) => number): Map<string, number> =>
@@ -313,14 +305,6 @@ writeFileSync(
 );
 
 for (const c of amostra) grava(join(FIXTURES, `c/${c.m.slug}.json`), cidade(c));
-
-const lista = (itens: CidadeCalc[], n = 10) => itens.slice(0, n).map((c) => c.m.slug);
-grava(join(FIXTURES, 'rankings.json'), {
-  dividida: lista([...comVoto].sort((a, b) => dividida.get(a.m.slug)! - dividida.get(b.m.slug)!)),
-  unanime: lista([...comVoto].sort((a, b) => unanime.get(a.m.slug)! - unanime.get(b.m.slug)!)),
-  virada: lista([...viradas].sort((a, b) => virada.get(a.m.slug)! - virada.get(b.m.slug)!)),
-  capitais: CAPITAIS.map((slug) => municipios.find((m) => m.slug === slug)!).sort((a, b) => b.eleitores - a.eleitores).map((m) => m.slug),
-});
 
 rmSync(PUBLIC_DATA, { recursive: true, force: true });
 cpSync(FIXTURES, PUBLIC_DATA, { recursive: true });

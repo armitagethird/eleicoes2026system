@@ -2,7 +2,7 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "placar.schema.json",
   "title": "/data/br.json e /data/uf/{uf}.json (mesma forma)",
-  "description": "governador é null em br.json e em todas as UFs exceto AC, AM, DF, ES, RJ, RN e TO.",
+  "description": "governador é null em br.json e em todas as UFs exceto AC, AM, DF, ES, RJ, RN e TO. eleito do presidente só pode ser true em br.json; em uf/{uf}.json é sempre false (o resultado nacional não elege ninguém no estado). eleito do governador vale em uf/{uf}.json.",
   "type": "object",
   "additionalProperties": false,
   "required": ["v", "turno", "atualizado", "secoes_pct", "comparecimento_pct", "abstencao_pct", "presidente", "governador"],

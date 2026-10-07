@@ -7,7 +7,6 @@ Fonte de verdade do formato dos JSON que o front lê. O worker (depois) será es
 | `/data/status.json` | `schemas/status.schema.json` | `modo`: `pre`, `live` ou `final` |
 | `/data/br.json`, `/data/uf/{uf}.json` | `schemas/placar.schema.json` | mesma forma; `governador` só em AC, AM, DF, ES, RJ, RN e TO |
 | `/data/c/{slug}.json` | `schemas/cidade.schema.json` | `secoes_pct < 1` = "aguardando primeiras seções" |
-| `/data/rankings.json` | `schemas/rankings.schema.json` | `{ dividida, unanime, virada, capitais }`, listas de slugs já ordenadas |
 | `/data/apuracao.json` | `schemas/camada-mapa.schema.json` | camada `ao-vivo` do mapa da `/apuracao`: um município por linha, 5.571 linhas (o worker publica; as fixtures são fictícias) |
 | `/mapa/{id}.json` (`2018-t1`, `2018-t2`, `2022-t1`, `2022-t2`, `2026-t1`) | `schemas/camada-mapa.schema.json` | camadas históricas REAIS, geradas pelo ETL (`site/scripts/etl`) e servidas de `site/public/mapa/`; ver `site/src/data/README.md` |
 | `src/data/municipios.json` | `schemas/municipios.schema.json` | embutido no build; 5.571 municípios REAIS (IBGE + TSE) |
@@ -18,6 +17,10 @@ Fonte de verdade do formato dos JSON que o front lê. O worker (depois) será es
 
 Regras que o schema não expressa e o teste `site/tests/contracts.test.ts` confere: `cand` sempre em ordem crescente de número de urna (13 antes de 22); percentuais dos dois candidatos somam ~100; `eleito` nunca é inferido de percentual; `governador` só nas 7 UFs.
 
+**Onde `eleito` pode ser `true`** (o schema só diz que é booleano; o worker é quem respeita): `presidente` só em `br.json`; `governador` só em `uf/{uf}.json`. Em `uf/{uf}.json` o `presidente` e em `c/{slug}.json` os dois cargos são sempre `false`, porque o card e o placar mostram "eleito(a)" sobre quem tem o flag, e quem perdeu num estado ou numa cidade não pode sair eleito. `simular.test.ts` guarda isso no simulador.
+
+**`feminino`** (opcional, `boolean`, em todo candidato): `true` para mulher, vindo do `DS_GENERO` do TSE. Escolhe "eleita" no lugar de "eleito" (`rotuloPosicao` em `lib/copy.ts`). Ausente vale masculino, por isso o worker preenche em todos os candidatos, não só nas mulheres.
+
 ## Fixtures: o que é real e o que é fictício
 
 `npm run fixtures` (em `/site`) gera `contracts/fixtures/` e copia para `site/public/data/`. É determinístico (semeado pelo slug/UF, sem relógio). `npm run fixtures -- --modo=live` (ou `final`) faz `public/data/status.json` ser `status.live.json` (ou `status.final.json`); o padrão é `pre`.
@@ -27,12 +30,12 @@ Regras que o schema não expressa e o teste `site/tests/contracts.test.ts` confe
 **FICTÍCIO (só para desenvolvimento, nunca exibir como dado oficial):**
 
 - todos os números do 2º turno de 2026: votos, percentuais, brancos, nulos, `secoes_pct`, comparecimento, `diferenca_votos`, `selos`, `rank`, `virou`, e as linhas de `apuracao.json`;
-- os candidatos a governador (`Fictício A`, nº 12, e `Fictícia B`, nº 45, partido `FIC`);
+- os candidatos a governador (`Fictício A`, nº 12, e `Fictícia B`, nº 45, partido `FIC`); só a B traz `feminino: true`, para o final mostrar "eleita";
 - os horários (`atualizado` fixo em 25/10 18:42:10, `status.final` às 21:03).
 
 **Os números nascem por município e sobem por soma.** O script sorteia o 2º turno de cada um dos 5.571 municípios (13 = o 13 do 1º turno real mais uma fatia sorteada dos "outros"; seções entre 35% e 99,5%; brancos 3%, nulos 4%). Cada UF é a soma dos seus municípios e o Brasil é a soma das UFs. Por isso `apuracao.json` (mapa ao vivo), `br.json`, `uf/*.json` e `c/*.json` contam a mesma história: a linha de cada UF e do Brasil em `apuracao.json` é exatamente o placar de `uf/{uf}.json` e `br.json`, e a de cada cidade da amostra é a de `c/{slug}.json` (`site/tests/etl-fixtures.test.ts` confere). Município com menos de 1% das seções fica com percentual 0 e 0 ("aguardando primeiras seções").
 
-**`c/{slug}.json` existe só para uma amostra de 50 cidades** (27 capitais, nomes longos, apóstrofo, hífen, Borá/SP, o menor eleitorado do país, e Boa Esperança do Norte, sem 2022): não se versionam 5.571 arquivos. A lista está em `AMOSTRA` no `scripts/fixtures.ts`; ranks, selos e `rankings.json` são calculados **só entre essas 50**, as únicas com `c/`. `apuracao.json` tem as 5.571 linhas (cerca de 177 KB, 57 KB em gzip).
+**`c/{slug}.json` existe só para uma amostra de 50 cidades** (27 capitais, nomes longos, apóstrofo, hífen, Borá/SP, o menor eleitorado do país, e Boa Esperança do Norte, sem 2022): não se versionam 5.571 arquivos. A lista está em `AMOSTRA` no `scripts/fixtures.ts`; ranks e selos são calculados **só entre essas 50**, as únicas com `c/`. `apuracao.json` tem as 5.571 linhas (cerca de 177 KB, 57 KB em gzip).
 
 Convenções das fixtures: `eleito` é `false` em tudo (cidade não elege; os placares são parciais). Para ver a página se mover e testar o card final use `npm run simular` (em `/site`): reescreve `site/public/data` de 5% a 100% das seções em 2 minutos (`--duracao=60 --intervalo=3` muda o ritmo), com o Brasil somando as UFs, e termina em `status` final, com `eleito: true` no líder do Brasil e nos governadores, tudo FICTÍCIO. Sem `--manter-final`, 30 s depois volta ao pre sozinho; Ctrl+C também restaura. `--restaurar` volta ao pre se o processo morrer à força (no Windows o sinal não chega) e `--destino=<pasta>` escreve noutro lugar, sem tocar no que o dev serve. `variacao_2022` é `{}` quando a cidade não tem 2022 e para governador (o card de governador mostra a margem entre os dois).
 

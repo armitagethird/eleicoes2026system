@@ -73,14 +73,6 @@ export interface Hist {
   t1_2026: { pct: { '13': number; '22': number; outros: number }; comparecimento_pct: number };
 }
 
-/** /data/rankings.json */
-export interface Rankings {
-  dividida: string[];
-  unanime: string[];
-  virada: string[];
-  capitais: string[];
-}
-
 /** src/data/municipios.json */
 export interface Municipio {
   slug: string;

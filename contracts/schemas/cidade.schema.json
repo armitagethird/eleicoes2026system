@@ -2,7 +2,7 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "cidade.schema.json",
   "title": "/data/c/{slug}.json",
-  "description": "governador é null exceto nas cidades de AC, AM, DF, ES, RJ, RN e TO. Se secoes_pct < 1, o front mostra 'aguardando primeiras seções'. selos e rank vêm prontos do worker.",
+  "description": "governador é null exceto nas cidades de AC, AM, DF, ES, RJ, RN e TO. Se secoes_pct < 1, o front mostra 'aguardando primeiras seções'. selos e rank vêm prontos do worker. eleito é sempre false, em presidente e em governador: a cidade não elege.",
   "type": "object",
   "additionalProperties": false,
   "required": ["v", "slug", "nome", "uf", "cod_tse", "cod_ibge", "eleitores", "atualizado", "secoes_pct", "presidente", "governador", "selos", "rank", "virou"],
