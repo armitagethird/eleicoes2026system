@@ -1,0 +1,197 @@
+---
+// Playground de /apuracao (só em dev; o build apaga /design), para aprovação do Romero: a página real nos três modos.
+// O modo vem de ?modo= (pre, live ou final) e não do /data/status.json, então dá para ver o ao vivo antes do dia 25:
+//   pre:   2º turno 2022 (padrão), 1º turno 2022 e 1º turno 2026, das camadas históricas em /mapa;
+//   live:  AO VIVO 2026 da fixture /data/apuracao.json (números fictícios), com polling de 20 s;
+//   final: a mesma fixture, sem "lidera" e com a aba chamada "2º turno 2026".
+// O HTML do build é o do modo pre; nos outros dois a ilha troca as abas e redesenha os painéis.
+import statusPre from '../../../../contracts/fixtures/status.json';
+import Cabecalho from '../../components/Cabecalho.astro';
+import Rodape from '../../components/Rodape.astro';
+import Apuracao from '../../components/apuracao/Apuracao.astro';
+import Base from '../../layouts/Base.astro';
+import { AVISO_FICTICIO } from '../../lib/copy.ts';
+import { parseStatus } from '../../lib/status.ts';
+
+const modos = [
+  { modo: 'pre', rotulo: 'Pre', nota: 'antes do dia 25' },
+  { modo: 'live', rotulo: 'Live', nota: 'ao vivo, fixture' },
+  { modo: 'final', rotulo: 'Final', nota: 'apuração encerrada, fixture' },
+];
+
+const olhar = [
+  'Ordem 13 → 22 (A → B) no placar, no detalhe, nos destaques, na tabela e na legenda, em todas as abas. Em 2018 o 17 veste o azul.',
+  'RESULTADO pinta pela margem de quem teve mais votos; COMPARAR pinta pelo lado que ganhou terreno desde a referência.',
+  'Busca, destaques e tabela levam o mapa ao município; o detalhe abre o card da cidade. No celular o detalhe sobe como gaveta.',
+  '"lidera" só aparece no live; no final e nas camadas históricas, nenhum rótulo de posição.',
+];
+
+const pendencias = [
+  'Todos os textos novos da apuração em copy.ts (rótulos das abas, legenda, "mais votado: 12", "ver o card de…", "ao vivo a partir das…").',
+  'A variação no texto é a da página de cidade (fatia de A entre os dois); a cor do COMPARAR mede a diferença entre os dois (o dobro, no 2º turno). A legenda diz a unidade.',
+  'Rankings calculados aqui pela camada, no foco (Brasil ou UF): mais dividida e mais unânime deixam de fora quem teve um terceiro na frente.',
+];
+---
+
+<Base titulo="Playground da apuração" descricao="/apuracao nos modos pre, live e final, para aprovação." caminho="/design/apuracao">
+  <div class="pagina">
+    <Cabecalho modo="pre" />
+
+    <div class="faixa">
+      <nav class="modos" aria-label="Modo do site">
+        {
+          modos.map(({ modo, rotulo, nota }) => (
+            <a class="modo" href={`?modo=${modo}`} data-modo={modo}>
+              <span class="modo-nome">{rotulo}</span>
+              <span class="modo-nota">{nota}</span>
+            </a>
+          ))
+        }
+      </nav>
+      <p class="aviso">{AVISO_FICTICIO}</p>
+    </div>
+
+    <main>
+      <Apuracao status={parseStatus(statusPre)} design />
+
+      <section class="aprovar" aria-labelledby="aprovar">
+        <h2 class="aprovar-titulo" id="aprovar">Para aprovar</h2>
+        <div class="colunas">
+          <div>
+            <h3 class="subtitulo">O que olhar</h3>
+            <ul class="lista">{olhar.map((item) => <li>{item}</li>)}</ul>
+          </div>
+          <div>
+            <h3 class="subtitulo">Pendências do Romero</h3>
+            <ol class="lista">{pendencias.map((item) => <li>{item}</li>)}</ol>
+          </div>
+        </div>
+      </section>
+    </main>
+
+    <Rodape />
+  </div>
+</Base>
+
+<script>
+  // Marca o modo em uso (a página é estática; o modo vem da query string).
+  const atual = new URL(location.href).searchParams.get('modo') ?? 'pre';
+  document.querySelector(`[data-modo="${atual}"]`)?.setAttribute('aria-current', 'page');
+</script>
+
+<style>
+  .pagina {
+    max-width: 1440px;
+    margin-inline: auto;
+    padding-inline: var(--sp-2);
+  }
+
+  main {
+    display: grid;
+    gap: var(--sp-7);
+    padding-bottom: var(--sp-6);
+  }
+
+  .faixa {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--sp-2);
+    margin-bottom: var(--sp-2);
+    padding-block: var(--sp-1);
+    border-block: var(--stroke-1) solid var(--surface-2);
+  }
+
+  .modos {
+    display: flex;
+    gap: var(--sp-1);
+  }
+
+  .modo {
+    display: grid;
+    min-height: 48px;
+    padding: 4px var(--sp-2);
+    border: var(--stroke-1) solid var(--ink-2);
+    border-radius: var(--radius);
+    text-decoration: none;
+  }
+
+  .modo[aria-current='page'] {
+    border-color: var(--ink);
+    background: var(--ink);
+    color: var(--bg);
+  }
+
+  .modo-nome {
+    font-family: var(--font-display);
+    font-weight: 900;
+    letter-spacing: var(--track-caps);
+    text-transform: uppercase;
+  }
+
+  .modo-nota {
+    font-size: var(--fs-1);
+  }
+
+  .aviso {
+    padding: var(--sp-1) var(--sp-2);
+    border: var(--stroke-1) solid var(--ink-2);
+    font-size: var(--fs-1);
+  }
+
+  .aprovar {
+    display: grid;
+    gap: var(--sp-3);
+    padding-top: var(--sp-2);
+    border-top: var(--stroke-2) solid var(--ink);
+  }
+
+  .aprovar-titulo {
+    font-size: var(--fs-4);
+    text-transform: uppercase;
+  }
+
+  .colunas {
+    display: grid;
+    gap: var(--sp-4);
+  }
+
+  .subtitulo {
+    margin-bottom: var(--sp-1);
+    font-size: var(--fs-2);
+    letter-spacing: var(--track-caps);
+    text-transform: uppercase;
+    color: var(--ink-2);
+  }
+
+  .lista {
+    display: grid;
+    gap: var(--sp-1);
+    max-width: 65ch;
+    margin: 0;
+    padding-left: var(--sp-3);
+  }
+
+  @media (max-width: 1023px) {
+    .pagina {
+      padding-bottom: calc(68px + env(safe-area-inset-bottom));
+    }
+  }
+
+  @media (min-width: 768px) {
+    .pagina {
+      padding-inline: var(--sp-4);
+    }
+
+    .colunas {
+      grid-template-columns: 1fr 1fr;
+    }
+  }
+
+  @media (min-width: 1024px) {
+    .pagina {
+      padding-inline: var(--sp-6);
+    }
+  }
+</style>

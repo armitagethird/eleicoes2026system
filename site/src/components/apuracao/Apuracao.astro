@@ -1,0 +1,1605 @@
+---
+// /apuracao (decisão do Romero, 06/10): o painel de noite de eleição. Mapa municipal à esquerda (motor.ts, canvas), à
+// direita o placar do foco (Brasil ou UF), o detalhe do município e os destaques (os antigos rankings); embaixo, a tabela
+// que é a alternativa acessível ao mapa. No celular o mapa ocupa a largura, RESULTADO | COMPARAR e a busca ficam numa barra
+// fixa ao alcance do polegar e o detalhe sobe como gaveta.
+// O HTML do build já traz os números da aba padrão (o arquivo dela está em public/mapa), escritos pelas mesmas funções que a
+// ilha usa depois (painel.ts): a primeira pintura não espera rede nem a malha municipal. O ao vivo não existe no build.
+import { existsSync, readFileSync } from 'node:fs';
+import { join } from 'node:path';
+import { REFERENCIA, abas, destaques, lerIndice, linhasIndice, linhasTabela, urlCamada, variacao, type IdCamada } from '../../lib/apuracao-dados.ts';
+import { lerCamada, type Camada } from '../../lib/camada-mapa.ts';
+import { NOME_UF, type Municipio } from '../../lib/contratos.ts';
+import {
+  BUSCAR_MUNICIPIO,
+  LINHA_APURADA,
+  MODO_MAPA,
+  VER_TABELA,
+  aoVivoAPartir,
+  rotuloAba,
+} from '../../lib/copy.ts';
+import { ajustarDestino } from '../../lib/destino.ts';
+import type { Status } from '../../lib/status.ts';
+import municipiosJson from '../../data/municipios.json';
+import { destaquesHtml, legendaHtml, placarHtml, tabelaHtml, type Contexto } from './painel.ts';
+
+interface Props {
+  status: Status;
+  /** Só /design/apuracao: a ilha lê o modo de ?modo= em vez de /data/status.json. */
+  design?: boolean;
+}
+
+const { status, design = false } = Astro.props;
+const { ids, padrao } = abas(status.modo);
+const aoVivo = status.modo === 'live';
+
+// Lido do disco no build (o astro build roda em /site): a camada padrão e a referência dela, se o ETL já as gerou.
+const doBuild = (id: IdCamada | null): Camada | null => {
+  if (!id || id === 'ao-vivo') return null;
+  const arquivo = join(process.cwd(), 'public', urlCamada(id));
+  return existsSync(arquivo) ? lerCamada(JSON.parse(readFileSync(arquivo, 'utf8'))) : null;
+};
+const camada = doBuild(padrao);
+const referencia = camada ? doBuild(REFERENCIA[padrao]) : null;
+const ctx: Contexto | null = camada && { id: padrao, camada, idReferencia: referencia ? REFERENCIA[padrao] : null, parcial: false };
+const indice = lerIndice(linhasIndice(municipiosJson as Municipio[]));
+
+const placar = ctx && camada ? placarHtml(ctx, { nome: 'Brasil', sigla: 'br' }, camada.br, variacao(camada.br, referencia?.br ?? null)) : '';
+const painelDestaques = destaquesHtml(ctx, ctx && camada ? destaques(camada, referencia, indice, null) : null, 'Brasil');
+const tabela =
+  ctx && camada ? tabelaHtml(ctx, linhasTabela(camada, referencia, indice, null, (uf) => NOME_UF[uf]), 'Brasil', false, () => undefined) : '';
+const legenda = ctx ? legendaHtml(ctx, 'resultado') : '';
+
+// DESTINO do título: ajustado no build numa largura de referência e escrito em cqi; no desktop um teto em px o segura.
+const REFERENCIA_TITULO = 1000;
+const [faixa] = ajustarDestino('APURAÇÃO', { largura: REFERENCIA_TITULO, tamMax: 230, tamMin: 60, maxLinhas: 1 }).linhas;
+const estiloTitulo = `--t:${(faixa.tamanho / REFERENCIA_TITULO) * 100}cqi;--w:${faixa.wdth}%`;
+---
+
+<div class="apuracao" data-apuracao data-modo={status.modo} data-design={design ? '' : undefined}>
+  <header class="ap-topo">
+    <h1 class="ap-titulo"><span style={estiloTitulo}>Apuração</span></h1>
+    <div class="ap-estado">
+      <p class="ap-turno" data-ao-vivo={aoVivo ? '' : undefined} data-ap-turno>{rotuloAba(padrao, aoVivo)}</p>
+      <p class="ap-linha" data-ap-linha>{camada ? LINHA_APURADA : ''}</p>
+      <p class="ap-quando" hidden={status.modo !== 'pre'} data-ap-quando>{aoVivoAPartir(status.inicio)}</p>
+      <p class="ap-aviso" role="status" hidden data-ap-aviso></p>
+    </div>
+  </header>
+
+  <div class="ap-controles">
+    <div class="ap-abas" role="tablist" aria-label="Eleição" data-ap-abas>
+      {
+        ids.map((id) => (
+          <button
+            type="button"
+            class="aba"
+            role="tab"
+            id={`aba-${id}`}
+            aria-selected={id === padrao ? 'true' : 'false'}
+            aria-controls="ap-painel"
+            tabindex={id === padrao ? 0 : -1}
+            data-id={id}
+          >
+            {rotuloAba(id, aoVivo)}
+          </button>
+        ))
+      }
+    </div>
+
+    <div class="ap-acoes">
+      <fieldset class="ap-modo">
+        <legend class="sr-only">Cor do mapa</legend>
+        <label><input type="radio" name="ap-modo" value="resultado" checked data-ap-modo /><span>{MODO_MAPA.resultado}</span></label>
+        <label><input type="radio" name="ap-modo" value="variacao" data-ap-modo /><span>{MODO_MAPA.variacao}</span></label>
+      </fieldset>
+      <button type="button" class="ap-abrir-busca" aria-expanded="false" aria-controls="ap-busca" data-ap-abrir-busca>
+        <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="10" cy="10" r="6.5"></circle><path d="m15 15 6 6"></path></svg>
+        <span class="sr-only">{BUSCAR_MUNICIPIO}</span>
+      </button>
+    </div>
+
+    <div class="ap-busca" id="ap-busca" role="search" data-ap-busca>
+      <div class="ap-busca-linha">
+        <label class="sr-only" for="ap-campo">{BUSCAR_MUNICIPIO}</label>
+        <input
+          class="ap-campo"
+          id="ap-campo"
+          type="text"
+          role="combobox"
+          aria-autocomplete="list"
+          aria-expanded="false"
+          aria-controls="ap-sugestoes"
+          autocomplete="off"
+          autocapitalize="words"
+          spellcheck="false"
+          enterkeyhint="go"
+          placeholder={BUSCAR_MUNICIPIO}
+          data-ap-campo
+        />
+        <button type="button" class="ap-fechar-busca" data-ap-fechar-busca>
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m6 6 12 12M18 6 6 18"></path></svg>
+          <span class="sr-only">Fechar a busca</span>
+        </button>
+      </div>
+      <ul class="ap-sugestoes" id="ap-sugestoes" role="listbox" aria-label="Municípios" hidden data-ap-sugestoes></ul>
+      <p class="ap-busca-aviso" hidden data-ap-busca-aviso></p>
+      <p class="sr-only" role="status" data-ap-busca-status></p>
+    </div>
+  </div>
+
+  <div class="ap-grade" id="ap-painel" role="tabpanel" aria-labelledby={`aba-${padrao}`} data-ap-painel>
+    <div class="ap-mapa-col">
+      <nav class="ap-migalha" aria-label="Onde o mapa está">
+        <ol data-ap-migalha><li><span class="atual" aria-current="location">Brasil</span></li></ol>
+      </nav>
+      <div class="ap-mapa" data-ap-mapa></div>
+      <p class="ap-leitura" aria-hidden="true" data-ap-leitura></p>
+      <div class="ap-legenda" data-ap-legenda set:html={legenda} />
+    </div>
+
+    <aside class="ap-lateral" aria-label="Detalhe, placar e destaques">
+      <section class="ap-detalhe" aria-label="Detalhe" tabindex="-1" data-ap-detalhe>
+        <button type="button" class="ap-fechar-detalhe" data-ap-fechar-detalhe>
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m6 6 12 12M18 6 6 18"></path></svg>
+          <span class="sr-only">Fechar o detalhe</span>
+        </button>
+        <div data-ap-detalhe-corpo></div>
+      </section>
+      <section class="ap-placar" aria-label="Placar" data-ap-placar set:html={placar} />
+      <div class="ap-destaques" data-ap-destaques set:html={painelDestaques} />
+    </aside>
+  </div>
+
+  <details class="ap-tabela" data-ap-tabela>
+    <summary>{VER_TABELA}</summary>
+    <div class="ap-tabela-rolagem" data-ap-tabela-corpo set:html={tabela} />
+  </details>
+
+  <p class="sr-only" role="status" data-ap-anuncio></p>
+</div>
+
+<script>
+  import './pagina.ts';
+</script>
+
+<style>
+  /* Toda grade daqui tem coluna explícita (minmax(0, 1fr)), nunca a implícita "auto": trilho medido pelo conteúdo mede de
+     novo cada container de tamanho (as listas de destaques) e a carga gastava ~1 s de layout no celular (medido com CPU 4x). */
+  .apuracao {
+    /* Altura da barra fixa do celular (filete de 4 + 8 + 48 + 8): a gaveta para em cima dela. */
+    --barra-h: 68px;
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+    gap: var(--sp-3);
+  }
+
+  /* ---------- topo: título DESTINO e o estado da camada ---------- */
+
+  .ap-topo {
+    display: grid;
+    gap: var(--sp-2);
+  }
+
+  .ap-titulo {
+    container-type: inline-size;
+    padding-top: var(--sp-1);
+    line-height: 0.9;
+    text-transform: uppercase;
+    overflow-x: clip;
+  }
+
+  .ap-titulo span {
+    display: block;
+    font-size: min(var(--t), 112px);
+    font-stretch: var(--w);
+    white-space: nowrap;
+  }
+
+  .ap-estado {
+    display: grid;
+    gap: var(--sp-1);
+    align-content: end;
+  }
+
+  .ap-turno,
+  .ap-linha,
+  .ap-quando,
+  .ap-aviso {
+    font-family: var(--font-display);
+    font-weight: 900;
+    line-height: 1.15;
+    letter-spacing: var(--track-caps);
+    text-transform: uppercase;
+  }
+
+  .ap-turno {
+    display: flex;
+    align-items: center;
+    gap: var(--sp-1);
+    font-size: var(--fs-3);
+  }
+
+  /* Ao vivo: a placa quadrada que pisca três vezes e fica acesa, como na pílula do cabeçalho (WCAG 2.2.2). Nunca acento. */
+  .ap-turno[data-ao-vivo]::before {
+    content: '';
+    width: 12px;
+    height: 12px;
+    background: var(--ink);
+    animation: pisca 1.2s steps(1, end) 3;
+  }
+
+  @keyframes pisca {
+    50% {
+      opacity: 0;
+    }
+  }
+
+  .ap-linha {
+    min-height: 1.15em;
+    font-size: var(--fs-1);
+    color: var(--ink-2);
+  }
+
+  .ap-quando {
+    font-size: var(--fs-1);
+  }
+
+  .ap-aviso {
+    padding: var(--sp-1) var(--sp-2);
+    border: var(--stroke-1) solid var(--ink-2);
+    font-size: var(--fs-1);
+    text-wrap: balance;
+  }
+
+  .ap-aviso :global(button) {
+    margin-left: var(--sp-1);
+    padding: 0;
+    border: 0;
+    background: none;
+    font: inherit;
+    letter-spacing: inherit;
+    text-transform: inherit;
+    text-decoration: underline;
+    text-decoration-thickness: var(--stroke-1);
+    text-underline-offset: 3px;
+    cursor: pointer;
+  }
+
+  /* ---------- controles ---------- */
+
+  .ap-controles {
+    display: grid;
+    gap: var(--sp-2);
+  }
+
+  /* Abas como placas de letreiro; no celular rolam de lado, de borda a borda da tela. */
+  .ap-abas {
+    display: flex;
+    gap: var(--sp-1);
+    margin-inline: calc(-1 * var(--sp-2));
+    padding-inline: var(--sp-2);
+    overflow-x: auto;
+    scrollbar-width: none;
+  }
+
+  .ap-abas::-webkit-scrollbar {
+    display: none;
+  }
+
+  .ap-abas :global(.aba) {
+    flex: none;
+    min-height: 44px;
+    padding: 0 var(--sp-2);
+    border: var(--stroke-1) solid var(--ink-2);
+    border-radius: var(--radius);
+    background: none;
+    font-family: var(--font-display);
+    font-size: var(--fs-2);
+    font-weight: 900;
+    font-stretch: 87.5%;
+    letter-spacing: var(--track-caps);
+    text-transform: uppercase;
+    white-space: nowrap;
+    cursor: pointer;
+    transition:
+      background-color var(--dur-1) var(--ease),
+      color var(--dur-1) var(--ease),
+      transform var(--dur-1) var(--ease);
+  }
+
+  .ap-abas :global(.aba[aria-selected='true']) {
+    border-color: var(--ink);
+    background: var(--ink);
+    color: var(--bg);
+  }
+
+  .ap-abas :global(.aba:active) {
+    transform: translateY(1px);
+  }
+
+  @media (hover: hover) {
+    .ap-abas :global(.aba[aria-selected='false']:hover) {
+      border-color: var(--ink);
+    }
+  }
+
+  /* RESULTADO | COMPARAR: rádios nativos (setas do teclado de graça) dentro de uma placa dividida. */
+  .ap-modo {
+    display: grid;
+    grid-auto-columns: 1fr;
+    grid-auto-flow: column;
+    min-width: 0;
+    margin: 0;
+    padding: 2px;
+    border: var(--stroke-1) solid var(--ink-2);
+    border-radius: var(--radius);
+  }
+
+  .ap-modo label {
+    position: relative;
+    display: grid;
+    place-items: center;
+    min-height: 40px;
+    padding: 0 var(--sp-2);
+    border-radius: 6px;
+    font-family: var(--font-display);
+    font-size: var(--fs-2);
+    font-weight: 900;
+    font-stretch: 87.5%;
+    letter-spacing: var(--track-caps);
+    text-transform: uppercase;
+    white-space: nowrap;
+    cursor: pointer;
+    transition:
+      background-color var(--dur-1) var(--ease),
+      color var(--dur-1) var(--ease);
+  }
+
+  .ap-modo input {
+    position: absolute;
+    inset: 0;
+    margin: 0;
+    opacity: 0;
+    cursor: pointer;
+  }
+
+  .ap-modo label:has(input:checked) {
+    background: var(--ink);
+    color: var(--bg);
+  }
+
+  .ap-modo label:has(input:focus-visible) {
+    outline: 3px solid var(--ink);
+    outline-offset: 3px;
+  }
+
+  .ap-abrir-busca,
+  .ap-fechar-busca,
+  .ap-fechar-detalhe {
+    display: grid;
+    place-items: center;
+    width: 48px;
+    height: 48px;
+    padding: 0;
+    border: var(--stroke-1) solid var(--ink-2);
+    border-radius: var(--radius);
+    background: none;
+    cursor: pointer;
+  }
+
+  .ap-abrir-busca svg,
+  .ap-fechar-busca svg,
+  .ap-fechar-detalhe svg {
+    width: 24px;
+    height: 24px;
+    fill: none;
+    stroke: currentColor;
+    stroke-width: 3;
+  }
+
+  /* Busca: letreiro como o da home, menor. */
+  .ap-busca {
+    position: relative;
+  }
+
+  .ap-busca-linha {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    gap: var(--sp-1);
+  }
+
+  .ap-campo {
+    width: 100%;
+    height: 48px;
+    padding: 0 var(--sp-2);
+    border: 3px solid var(--ink);
+    border-radius: var(--radius);
+    background: var(--bg);
+    font-family: var(--font-display);
+    font-size: var(--fs-2);
+    font-weight: 900;
+    font-stretch: 87.5%;
+    letter-spacing: var(--track-caps);
+    text-transform: uppercase;
+    appearance: none;
+  }
+
+  .ap-campo::placeholder {
+    color: var(--ink-2);
+    opacity: 1;
+  }
+
+  .ap-campo:focus {
+    outline: 3px solid var(--ink);
+    outline-offset: -6px;
+  }
+
+  /* Container da lista (um só): a caixa do nome de cada opção = a lista menos o respiro, a sigla e o vão. */
+  .ap-sugestoes {
+    container-type: inline-size;
+    --caixa: calc(100cqi - 96px);
+    margin: 0;
+    padding: 0;
+    list-style: none;
+    border: 3px solid var(--ink);
+    border-top: 0;
+    border-radius: 0 0 var(--radius) var(--radius);
+    background: var(--bg);
+    overflow-y: auto;
+    overscroll-behavior: contain;
+  }
+
+  /* Flex e não grid, pelo mesmo motivo dos destaques: a caixa do nome é um container de tamanho. */
+  .ap-sugestoes :global([role='option']) {
+    position: relative;
+    display: flex;
+    align-items: center;
+    gap: var(--sp-2);
+    min-height: 52px;
+    padding: var(--sp-1) var(--sp-2);
+    border-top: var(--stroke-1) solid var(--surface-2);
+    cursor: pointer;
+  }
+
+  .ap-sugestoes :global([role='option']:first-child) {
+    border-top: 0;
+  }
+
+  .ap-sugestoes :global([role='option'][aria-selected='true']),
+  .ap-sugestoes :global([role='option']:hover) {
+    background: var(--surface-1);
+  }
+
+  .ap-sugestoes :global([role='option'][aria-selected='true'])::before {
+    content: '';
+    position: absolute;
+    inset: 0 auto 0 0;
+    width: var(--stroke-2);
+    background: var(--ink);
+  }
+
+  .ap-sugestoes :global(.op-caixa) {
+    flex: 1 1 0;
+    min-width: 0;
+    overflow: hidden;
+  }
+
+  .ap-sugestoes :global(.op-uf) {
+    flex: none;
+    width: var(--sp-6);
+  }
+
+  .ap-busca-aviso {
+    padding: var(--sp-2);
+    font-family: var(--font-display);
+    font-size: var(--fs-1);
+    font-weight: 900;
+    letter-spacing: var(--track-caps);
+    text-transform: uppercase;
+    color: var(--ink-2);
+  }
+
+  /* ---------- grade: mapa e lateral ---------- */
+
+  .ap-grade {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+    gap: var(--sp-5);
+  }
+
+  .ap-mapa-col {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+    gap: var(--sp-1);
+  }
+
+  .ap-migalha ol {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0 var(--sp-1);
+    margin: 0;
+    padding: 0;
+    list-style: none;
+  }
+
+  .ap-migalha :global(li) {
+    display: flex;
+    align-items: center;
+    gap: var(--sp-1);
+    min-height: 44px;
+    font-family: var(--font-display);
+    font-size: var(--fs-2);
+    font-weight: 900;
+    letter-spacing: var(--track-caps);
+    text-transform: uppercase;
+  }
+
+  .ap-migalha :global(li + li)::before {
+    content: '›';
+    color: var(--ink-2);
+  }
+
+  .ap-migalha :global(button) {
+    min-height: 44px;
+    padding: 0;
+    border: 0;
+    background: none;
+    font: inherit;
+    letter-spacing: inherit;
+    text-transform: inherit;
+    color: var(--ink-2);
+    text-decoration: underline;
+    text-decoration-thickness: var(--stroke-1);
+    text-underline-offset: 4px;
+    cursor: pointer;
+  }
+
+  @media (hover: hover) {
+    .ap-migalha :global(button:hover) {
+      color: var(--ink);
+    }
+  }
+
+  .ap-mapa {
+    position: relative;
+    aspect-ratio: 1;
+    min-height: 0;
+    scroll-margin-top: var(--sp-6);
+  }
+
+  /* Uma linha só, sempre da mesma altura: o hover nunca empurra o mapa. */
+  .ap-leitura {
+    display: flex;
+    align-items: center;
+    overflow: hidden;
+    white-space: nowrap;
+    gap: var(--sp-1) var(--sp-2);
+    min-height: 32px;
+    font-family: var(--font-display);
+    font-size: var(--fs-1);
+    font-weight: 900;
+    letter-spacing: var(--track-caps);
+    text-transform: uppercase;
+  }
+
+  @media (hover: none) {
+    .ap-leitura {
+      display: none;
+    }
+  }
+
+  .ap-leitura :global(.l-nome) {
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    font-size: var(--fs-2);
+  }
+
+  .ap-leitura :global(:is(.l-uf, .l-c)) {
+    flex: none;
+  }
+
+  .ap-leitura :global(.l-uf),
+  .ap-leitura :global(.l-aguardando) {
+    color: var(--ink-2);
+  }
+
+  .ap-leitura :global(.l-c) {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    font-size: var(--fs-2);
+    color: var(--cor);
+  }
+
+  /* Legenda: uma régua de degraus por candidato (A em cima), os limiares embaixo e as cores fora da régua. */
+  .ap-legenda {
+    display: grid;
+    gap: var(--sp-1);
+    padding-top: var(--sp-1);
+  }
+
+  .ap-legenda :global(:is(.lg-titulo, .lg-cand, .lg-numeros, .lg-unidade, .lg-extra)) {
+    font-family: var(--font-display);
+    font-size: var(--fs-1);
+    font-weight: 900;
+    line-height: 1.2;
+    letter-spacing: var(--track-caps);
+    text-transform: uppercase;
+  }
+
+  .ap-legenda :global(:is(.lg-titulo, .lg-unidade, .lg-extra)) {
+    color: var(--ink-2);
+  }
+
+  .ap-legenda :global(.lg-grade) {
+    display: grid;
+    grid-template-columns: max-content minmax(0, 360px);
+    align-items: center;
+    gap: 6px var(--sp-2);
+  }
+
+  .ap-legenda :global(.lg-cand) {
+    grid-column: 1;
+    display: flex;
+    align-items: center;
+    gap: var(--sp-1);
+    color: var(--cor);
+  }
+
+  .ap-legenda :global(.lg-nome) {
+    font-stretch: 75%;
+  }
+
+  .ap-legenda :global(.lg-chips) {
+    grid-column: 2;
+    display: grid;
+    grid-auto-columns: 1fr;
+    grid-auto-flow: column;
+    gap: 2px;
+    height: var(--sp-2);
+  }
+
+  .ap-legenda :global(:is(.lg-marcas, .lg-unidade)) {
+    grid-column: 2;
+  }
+
+  .ap-legenda :global(.lg-numeros) {
+    display: grid;
+    grid-auto-columns: 1fr;
+    grid-auto-flow: column;
+  }
+
+  .ap-legenda :global(.lg-extras) {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--sp-1) var(--sp-3);
+  }
+
+  .ap-legenda :global(.lg-extra) {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--sp-1);
+  }
+
+  .ap-legenda :global(:is(.lg-chips i, .lg-extra i)) {
+    display: block;
+  }
+
+  .ap-legenda :global(.lg-extra i) {
+    width: var(--sp-2);
+    height: var(--sp-2);
+  }
+
+  .ap-legenda :global(i.sem-dado) {
+    background: var(--surface-2);
+  }
+
+  .ap-legenda :global(i.neutro) {
+    background: var(--ink-2);
+  }
+
+  /* Alto contraste do Windows: os degraus são a informação da legenda, então mantêm a cor, com filete para a borda. */
+  @media (forced-colors: active) {
+    .ap-legenda :global(i) {
+      forced-color-adjust: none;
+      outline: 1px solid CanvasText;
+      outline-offset: -1px;
+    }
+  }
+
+  .ap-lateral {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+    align-content: start;
+    gap: var(--sp-5);
+    min-width: 0;
+  }
+
+  .ap-placar,
+  .ap-detalhe {
+    container-type: inline-size;
+    position: relative;
+    padding-top: var(--sp-2);
+    border-top: var(--stroke-2) solid var(--ink);
+  }
+
+  /* Antes da camada chegar, o placar guarda a altura dele (sem pulo quando os números entram). */
+  .ap-placar:empty::after {
+    content: '';
+    display: block;
+    height: 344px;
+    background: var(--surface-1);
+  }
+
+  .ap-fechar-detalhe {
+    position: absolute;
+    top: var(--sp-2);
+    right: 0;
+    z-index: 1;
+  }
+
+  .ap-detalhe:not([data-aberto]) {
+    display: none;
+  }
+
+  /* ---------- folha de lugar (placar e detalhe), HTML de painel.ts ---------- */
+
+  .ap-lateral :global(.folha-lugar) {
+    display: grid;
+    gap: var(--sp-2);
+  }
+
+  .ap-lateral :global(.topo) {
+    display: grid;
+    grid-template-columns: auto minmax(0, 1fr);
+    align-items: center;
+    column-gap: var(--sp-2);
+    row-gap: 4px;
+  }
+
+  .ap-lateral :global(.topo .bandeira) {
+    grid-row: span 2;
+    object-fit: contain;
+    flex: none;
+  }
+
+  .ap-lateral :global(.topo:not(.com-bandeira)) {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .ap-detalhe :global(.topo) {
+    padding-right: 56px;
+  }
+
+  .ap-lateral :global(.lugar) {
+    container-type: inline-size;
+    line-height: 0.95;
+    text-transform: uppercase;
+  }
+
+  .ap-lateral :global(.nd) {
+    display: block;
+    white-space: nowrap;
+  }
+
+  .ap-lateral :global(:is(.meta, .linha, .partido, .outros-linha, .aguardando, .credito)) {
+    font-family: var(--font-display);
+    font-size: var(--fs-1);
+    font-weight: 900;
+    line-height: 1.2;
+    letter-spacing: var(--track-caps);
+    text-transform: uppercase;
+    color: var(--ink-2);
+  }
+
+  .ap-lateral :global(.tinta) {
+    color: var(--ink);
+  }
+
+  .ap-lateral :global(.aguardando) {
+    padding-block: var(--sp-2);
+    color: var(--ink);
+  }
+
+  /* Gesto 3: a seta aponta para o lado de quem ganhou terreno. */
+  .apuracao :global(.seta) {
+    display: grid;
+    grid-template-columns: auto auto minmax(0, 1fr);
+    align-items: center;
+    gap: var(--sp-1);
+    font-family: var(--font-display);
+    font-size: var(--fs-1);
+    font-weight: 900;
+    line-height: 1.15;
+    letter-spacing: var(--track-caps);
+    text-transform: uppercase;
+    color: var(--cor);
+  }
+
+  .apuracao :global(.seta.dir) {
+    grid-template-columns: auto minmax(0, max-content) auto;
+    justify-content: end;
+  }
+
+  .apuracao :global(.seta.dir .tri) {
+    order: 1;
+  }
+
+  .apuracao :global(.tri) {
+    width: 16px;
+    height: 20px;
+    fill: currentColor;
+  }
+
+  .apuracao :global(.pts) {
+    font-size: var(--fs-4);
+    font-stretch: 87.5%;
+    letter-spacing: 0;
+    line-height: 1;
+  }
+
+  /* A barra do site: folhas proporcionais, costura de 4 px em --bg e a marca de 50% acima e abaixo. */
+  .apuracao :global(.barra) {
+    --marca: var(--sp-1);
+    position: relative;
+    display: flex;
+    gap: var(--stroke-2);
+    height: var(--sp-6);
+    margin-block: var(--marca);
+    background: var(--bg);
+  }
+
+  .apuracao :global(.barra.vazia) {
+    background: var(--surface-1);
+  }
+
+  .apuracao :global(.barra::before),
+  .apuracao :global(.barra::after) {
+    content: '';
+    position: absolute;
+    left: calc(50% - 1px);
+    width: var(--stroke-1);
+    height: var(--marca);
+    background: var(--ink-2);
+  }
+
+  .apuracao :global(.barra::before) {
+    bottom: 100%;
+  }
+
+  .apuracao :global(.barra::after) {
+    top: 100%;
+  }
+
+  .apuracao :global(.barra > i) {
+    display: flex;
+    align-items: center;
+    flex: var(--p) 1 0%;
+    min-width: 0;
+    background: var(--cor);
+  }
+
+  .apuracao :global(.barra > i.outros) {
+    background: var(--surface-2);
+  }
+
+  .apuracao :global(.barra > i.dir) {
+    justify-content: flex-end;
+  }
+
+  .apuracao :global(.rotulo) {
+    padding-inline: var(--sp-2);
+    font-family: var(--font-display);
+    font-size: var(--fs-1);
+    font-weight: 900;
+    letter-spacing: var(--track-caps);
+    text-transform: uppercase;
+    white-space: nowrap;
+    color: var(--bg);
+  }
+
+  .ap-lateral :global(.cols) {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    column-gap: var(--sp-2);
+  }
+
+  .ap-lateral :global(.col) {
+    display: contents;
+    color: var(--cor);
+  }
+
+  .ap-lateral :global(.col.esq > *) {
+    grid-column: 1;
+  }
+
+  .ap-lateral :global(.col.dir > *) {
+    grid-column: 2;
+    justify-self: end;
+    text-align: right;
+  }
+
+  .ap-lateral :global(.quem) {
+    grid-row: 1;
+    display: flex;
+    align-items: center;
+    gap: var(--sp-1);
+    font-family: var(--font-display);
+    font-size: min(var(--fs-3), 4.6cqi);
+    font-weight: 900;
+    font-stretch: 62%;
+    line-height: 1.1;
+    text-transform: uppercase;
+  }
+
+  .ap-lateral :global(.dir .quem) {
+    flex-direction: row-reverse;
+  }
+
+  .apuracao :global(.placa-n) {
+    flex: none;
+    padding-inline: 0.3em;
+    background: var(--cor);
+    color: var(--bg);
+  }
+
+  .ap-lateral :global(.partido) {
+    grid-row: 2;
+    margin-top: 4px;
+  }
+
+  .ap-lateral :global(.pct) {
+    grid-row: 3;
+    margin-top: var(--sp-1);
+    font-family: var(--font-display);
+    font-size: min(var(--fs-6), 20cqi);
+    font-weight: 900;
+    font-stretch: 75%;
+    line-height: 0.9;
+    white-space: nowrap;
+  }
+
+  .ap-lateral :global(.compacto .pct) {
+    font-size: min(72px, 15cqi);
+  }
+
+  .ap-lateral :global(.sinal) {
+    margin-left: 0.04em;
+    font-size: 0.4em;
+  }
+
+  /* Foto oficial do TSE (só nas camadas de 2026): a mesma caixa de FotoCandidato.astro, com filete de 3 px na cor do candidato.
+     Fica nas duas linhas de identidade (o texto centra nela) e o percentual segue na largura de foto e texto. */
+  .ap-lateral :global(.foto) {
+    display: block;
+    flex: none;
+    border: 3px solid var(--cor);
+    background: var(--surface-1);
+  }
+
+  .ap-lateral :global(.foto img) {
+    max-width: none;
+    object-fit: cover;
+  }
+
+  .ap-lateral :global(.cols.com-foto) {
+    grid-template-columns: auto minmax(0, 1fr) minmax(0, 1fr) auto;
+    column-gap: var(--sp-1);
+  }
+
+  .ap-lateral :global(.com-foto .col.esq > .foto) {
+    grid-column: 1;
+    grid-row: 1 / span 2;
+  }
+
+  .ap-lateral :global(.com-foto .col.dir > .foto) {
+    grid-column: 4;
+    grid-row: 1 / span 2;
+  }
+
+  .ap-lateral :global(.com-foto .col.esq > :is(.quem, .partido)) {
+    grid-column: 2;
+  }
+
+  .ap-lateral :global(.com-foto .col.dir > :is(.quem, .partido)) {
+    grid-column: 3;
+  }
+
+  .ap-lateral :global(.com-foto .col.esq > .pct) {
+    grid-column: 1 / 3;
+  }
+
+  .ap-lateral :global(.com-foto .col.dir > .pct) {
+    grid-column: 3 / 5;
+  }
+
+  .ap-lateral :global(.com-foto .quem) {
+    align-self: end;
+  }
+
+  .ap-lateral :global(.com-foto .partido) {
+    align-self: start;
+  }
+
+  /* Crédito das fotos, uma vez por placar: colado à linha de fonte. */
+  .ap-lateral :global(.credito) {
+    margin-top: calc(var(--sp-1) * -1);
+  }
+
+  /* Placas que viram (lib/flap.ts): a célula guarda a caixa do algarismo, sem fundo (o número é a cor do candidato). */
+  .ap-lateral :global([data-flap-c]) {
+    --flap-fundo: var(--bg);
+  }
+
+  .ap-lateral :global(.linha) {
+    text-wrap: balance;
+  }
+
+  /* O card da cidade a um toque: o botão primário do sistema (fundo --ink, texto --bg). */
+  .ap-lateral :global(.ir) {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: var(--sp-1);
+    min-height: 48px;
+    padding: 0 var(--sp-3);
+    border-radius: var(--radius);
+    background: var(--ink);
+    color: var(--bg);
+    font-family: var(--font-display);
+    font-size: var(--fs-2);
+    font-weight: 900;
+    letter-spacing: var(--track-caps);
+    text-decoration: none;
+    text-transform: uppercase;
+    transition: transform var(--dur-1) var(--ease);
+  }
+
+  .ap-lateral :global(.ir .tri) {
+    width: 10px;
+    height: 12px;
+  }
+
+  .ap-lateral :global(.ir:active) {
+    transform: translateY(1px);
+  }
+
+  @media (hover: hover) {
+    .ap-lateral :global(.ir:hover) {
+      text-decoration: underline;
+      text-decoration-thickness: 3px;
+      text-underline-offset: 4px;
+    }
+  }
+
+  /* ---------- destaques ---------- */
+
+  .ap-destaques {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+    gap: var(--sp-5);
+  }
+
+  .ap-destaques :global(.dq-titulo) {
+    padding-top: var(--sp-1);
+    border-top: var(--stroke-2) solid var(--ink);
+    font-size: var(--fs-3);
+    font-stretch: 87.5%;
+    letter-spacing: var(--track-caps);
+    text-transform: uppercase;
+  }
+
+  .ap-destaques :global(.dq-escopo) {
+    color: var(--ink-2);
+  }
+
+  /* Um container por lista (não por linha): a caixa do nome = a lista menos posição, sigla, números e vãos. */
+  .ap-destaques :global(.dq) {
+    container-type: inline-size;
+  }
+
+  .ap-destaques :global(.dq-lista) {
+    --caixa: calc(100cqi - 200px);
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+    margin: var(--sp-1) 0 0;
+    padding: 0;
+    list-style: none;
+  }
+
+  .ap-destaques :global(.dq-item) {
+    display: block;
+    width: 100%;
+    min-height: 64px;
+    padding: var(--sp-1) 0;
+    border: 0;
+    border-bottom: var(--stroke-1) solid var(--surface-2);
+    background: none;
+    font: inherit;
+    text-align: left;
+    cursor: pointer;
+    transition:
+      background-color var(--dur-1) var(--ease),
+      transform var(--dur-1) var(--ease);
+  }
+
+  .ap-destaques :global(.dq-desenho) {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    gap: 6px;
+    min-height: 48px;
+  }
+
+  .ap-destaques :global(.dq-linha) {
+    display: flex;
+    align-items: center;
+    gap: var(--sp-2);
+    min-width: 0;
+  }
+
+  .ap-destaques :global(:is(.dq-pos, .dq-uf, .dq-num)) {
+    flex: none;
+  }
+
+  .ap-destaques :global(.dq-item:active) {
+    transform: translateY(1px);
+  }
+
+  @media (hover: hover) {
+    .ap-destaques :global(.dq-item:hover) {
+      background: var(--surface-1);
+    }
+
+    .ap-destaques :global(.dq-item:hover .nd) {
+      text-decoration: underline;
+      text-decoration-thickness: var(--stroke-2);
+      text-underline-offset: 0.12em;
+    }
+  }
+
+  .ap-destaques :global(.dq-pos) {
+    display: grid;
+    place-items: center;
+    min-width: var(--sp-4);
+    height: var(--sp-4);
+    background: var(--ink);
+    font-family: var(--font-display);
+    font-size: var(--fs-2);
+    font-weight: 900;
+    line-height: 1;
+    color: var(--bg);
+  }
+
+  .ap-destaques :global(.dq-caixa) {
+    flex: 1 1 0;
+    min-width: 0;
+    overflow: hidden;
+  }
+
+  .ap-destaques :global(.dq-caixa .nd),
+  .ap-sugestoes :global(.op-caixa .nd) {
+    display: block;
+    font-family: var(--font-display);
+    font-weight: 900;
+    line-height: 1;
+    text-transform: uppercase;
+    white-space: nowrap;
+  }
+
+  .ap-destaques :global(.dq-uf),
+  .ap-sugestoes :global(.op-uf) {
+    display: grid;
+    place-items: center;
+    min-width: var(--sp-5);
+    min-height: var(--sp-3);
+    border: var(--stroke-1) solid var(--ink-2);
+    font-family: var(--font-display);
+    font-size: var(--fs-1);
+    font-weight: 900;
+    letter-spacing: var(--track-caps);
+    color: var(--ink-2);
+  }
+
+  .ap-destaques :global(.dq-num) {
+    display: flex;
+    align-items: center;
+    gap: var(--sp-1);
+    font-family: var(--font-display);
+    font-size: var(--fs-2);
+    font-weight: 900;
+    font-stretch: 87.5%;
+  }
+
+  .ap-destaques :global(:is(.dq-pct, .dq-seta)) {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    color: var(--cor);
+  }
+
+  .ap-destaques :global(.dq-aguardando) {
+    font-size: var(--fs-1);
+    letter-spacing: var(--track-caps);
+    text-transform: uppercase;
+    color: var(--ink-2);
+  }
+
+  .ap-destaques :global(.dq-linha :is(.barra.fina, .dq-aguardando)) {
+    flex: 1 1 0;
+  }
+
+  .ap-destaques :global(.barra.fina) {
+    --marca: 0px;
+    gap: 2px;
+    height: 6px;
+    margin: 0;
+  }
+
+  .ap-destaques :global(.dq-espera) {
+    display: flex;
+    align-items: center;
+    min-height: 64px;
+    border-bottom: var(--stroke-1) solid var(--surface-2);
+  }
+
+  .ap-destaques :global(.dq-espera)::before {
+    content: '';
+    width: 60%;
+    height: var(--sp-3);
+    background: var(--surface-2);
+  }
+
+  .ap-destaques :global(.dq-vazio) {
+    padding-block: var(--sp-2);
+    font-family: var(--font-display);
+    font-size: var(--fs-1);
+    font-weight: 900;
+    letter-spacing: var(--track-caps);
+    text-transform: uppercase;
+    text-wrap: balance;
+    color: var(--ink-2);
+  }
+
+  .ap-destaques :global(.capitais .dq-lista) {
+    --caixa: calc(100cqi - 56px);
+  }
+
+  @container (min-width: 480px) {
+    .ap-destaques :global(.capitais .dq-lista) {
+      --caixa: calc(50cqi - 68px);
+      grid-template-columns: 1fr 1fr;
+      column-gap: var(--sp-3);
+    }
+  }
+
+  /* ---------- tabela ---------- */
+
+  .ap-tabela {
+    border-top: var(--stroke-2) solid var(--ink);
+  }
+
+  .ap-tabela summary {
+    display: flex;
+    align-items: center;
+    gap: var(--sp-1);
+    min-height: 56px;
+    font-family: var(--font-display);
+    font-size: var(--fs-3);
+    font-weight: 900;
+    font-stretch: 87.5%;
+    letter-spacing: var(--track-caps);
+    text-transform: uppercase;
+    list-style: none;
+    cursor: pointer;
+  }
+
+  .ap-tabela summary::-webkit-details-marker {
+    display: none;
+  }
+
+  .ap-tabela summary::after {
+    content: '';
+    width: 0;
+    height: 0;
+    border-block: 6px solid transparent;
+    border-left: 10px solid currentColor;
+    transition: transform var(--dur-1) var(--ease);
+  }
+
+  .ap-tabela[open] summary::after {
+    transform: rotate(90deg);
+  }
+
+  .ap-tabela-rolagem {
+    overflow-x: auto;
+    padding-bottom: var(--sp-3);
+  }
+
+  .ap-tabela :global(.tb) {
+    width: 100%;
+    border-collapse: collapse;
+  }
+
+  .ap-tabela :global(:is(.tb th, .tb td)) {
+    padding: var(--sp-1) var(--sp-2) var(--sp-1) 0;
+    border-bottom: var(--stroke-1) solid var(--surface-2);
+    text-align: left;
+    white-space: nowrap;
+  }
+
+  .ap-tabela :global(.tb thead th) {
+    font-family: var(--font-display);
+    font-size: var(--fs-1);
+    font-weight: 900;
+    letter-spacing: var(--track-caps);
+    text-transform: uppercase;
+    color: var(--cor, var(--ink-2));
+  }
+
+  .ap-tabela :global(.tb .num) {
+    text-align: right;
+    font-family: var(--font-display);
+    font-weight: 900;
+    color: var(--cor, var(--ink));
+  }
+
+  .ap-tabela :global(.tb tbody th) {
+    font-weight: 500;
+  }
+
+  .ap-tabela :global(:is(.tb button, .tb a)) {
+    min-height: 32px;
+    padding: 0;
+    border: 0;
+    background: none;
+    font: inherit;
+    color: inherit;
+    text-decoration: underline;
+    text-decoration-thickness: var(--stroke-1);
+    text-underline-offset: 3px;
+    cursor: pointer;
+  }
+
+  /* ---------- celular e tablet: barra fixa, busca por cima e gaveta ---------- */
+
+  @media (max-width: 1023px) {
+    .ap-acoes {
+      position: fixed;
+      inset: auto 0 0;
+      z-index: 3;
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) auto;
+      gap: var(--sp-1);
+      padding: var(--sp-1) var(--sp-2) calc(var(--sp-1) + env(safe-area-inset-bottom));
+      border-top: var(--stroke-2) solid var(--ink);
+      background: var(--bg);
+    }
+
+    .ap-modo label {
+      min-height: 40px;
+    }
+
+    .ap-busca {
+      display: none;
+    }
+
+    /* Aberta, a busca cobre o topo da tela: o campo fica longe do teclado e as sugestões descem abaixo dele. */
+    .apuracao[data-busca-aberta] .ap-busca {
+      position: fixed;
+      inset: 0 0 auto;
+      z-index: 5;
+      display: grid;
+      gap: 0;
+      max-height: 100dvh;
+      padding: var(--sp-2);
+      border-bottom: var(--stroke-2) solid var(--ink);
+      background: var(--bg);
+    }
+
+    .apuracao[data-busca-aberta] .ap-sugestoes {
+      max-height: 60dvh;
+    }
+
+    .ap-detalhe {
+      position: fixed;
+      inset: auto 0 calc(var(--barra-h) + env(safe-area-inset-bottom));
+      z-index: 4;
+      max-height: min(72dvh, 560px);
+      padding: var(--sp-2);
+      overflow-y: auto;
+      overscroll-behavior: contain;
+      background: var(--bg);
+      transform: translateY(100%);
+      visibility: hidden;
+      transition:
+        transform var(--dur-3) var(--ease),
+        visibility 0s linear var(--dur-3);
+    }
+
+    .ap-detalhe:not([data-aberto]) {
+      display: block;
+    }
+
+    .ap-detalhe[data-aberto] {
+      transform: none;
+      visibility: visible;
+      transition: transform var(--dur-3) var(--ease);
+    }
+
+    /* O foco entra na gaveta ao abrir: o contorno fica por dentro (no padding), que a rolagem da gaveta corta o que passa da borda. */
+    .ap-detalhe:focus-visible {
+      outline-offset: -3px;
+    }
+
+    /* A gaveta é fixa e não empurra a página: sem esta folga, o fim da página (a tabela, alternativa ao mapa) ficaria
+       sempre debaixo dela com uma UF ou um município em foco. A folga é a altura máxima da gaveta. */
+    .apuracao:has([data-ap-detalhe][data-aberto]) {
+      padding-bottom: min(72dvh, 560px);
+    }
+
+    .ap-fechar-detalhe {
+      top: var(--sp-2);
+      right: var(--sp-2);
+    }
+
+    /* A gaveta cobre o mínimo do mapa: folha mais baixa, números menores, o card a um toque na largura toda. */
+    .ap-detalhe :global(.folha-lugar) {
+      gap: var(--sp-1);
+    }
+
+    .ap-detalhe :global(.barra) {
+      height: var(--sp-4);
+    }
+
+    .ap-detalhe :global(.pct) {
+      font-size: min(56px, 13cqi);
+    }
+
+    .ap-detalhe :global(.ir) {
+      width: 100%;
+      font-stretch: 87.5%;
+    }
+  }
+
+  @media (min-width: 768px) and (max-width: 1023px) {
+    .ap-detalhe {
+      inset-inline: auto var(--sp-4);
+      width: min(480px, calc(100% - var(--sp-8)));
+      border-inline: var(--stroke-1) solid var(--surface-2);
+    }
+  }
+
+  /* ---------- desktop: mapa sticky à esquerda, lateral rolando à direita ---------- */
+
+  @media (min-width: 1024px) {
+    /* As mesmas colunas da grade de baixo: o título fica sobre o mapa e o estado sobre a lateral. */
+    .ap-topo {
+      grid-template-columns: minmax(0, 7fr) minmax(0, 5fr);
+      align-items: end;
+      column-gap: var(--sp-5);
+    }
+
+    /* Desktop: o título cede altura para o Brasil inteiro caber na primeira dobra. */
+    .ap-titulo span {
+      font-size: min(var(--t), 72px);
+    }
+
+    .ap-estado {
+      justify-items: end;
+      text-align: right;
+      padding-bottom: var(--sp-1);
+    }
+
+    /* Até 1279 px as abas têm a linha delas e modo e busca vão embaixo; daí para cima, tudo numa linha. */
+    .ap-controles {
+      grid-template-columns: auto minmax(240px, 320px);
+      justify-content: space-between;
+      align-items: center;
+      gap: var(--sp-2) var(--sp-3);
+    }
+
+    .ap-abas {
+      grid-column: 1 / -1;
+      margin-inline: 0;
+      padding-inline: 0;
+      overflow: visible;
+    }
+
+    .ap-abrir-busca,
+    .ap-fechar-busca {
+      display: none;
+    }
+
+    .ap-busca-linha {
+      grid-template-columns: minmax(0, 1fr);
+    }
+
+    .ap-sugestoes {
+      position: absolute;
+      top: 100%;
+      right: 0;
+      left: 0;
+      z-index: 4;
+      max-height: min(60dvh, 420px);
+    }
+
+    .ap-grade {
+      grid-template-columns: minmax(0, 7fr) minmax(0, 5fr);
+      align-items: start;
+      column-gap: var(--sp-5);
+    }
+
+    /* Migalha e leitura do hover dividem a primeira linha. O mapa tem a altura que sobra na primeira dobra embaixo do topo
+       (~296 px de cabeçalho, título, controles e migalha): o Brasil inteiro aparece sem rolar. Ao rolar, a coluna gruda. */
+    .ap-mapa-col {
+      position: sticky;
+      top: var(--sp-2);
+      grid-template-columns: auto minmax(0, 1fr);
+      grid-template-areas:
+        'migalha leitura'
+        'mapa mapa'
+        'legenda legenda';
+      column-gap: var(--sp-3);
+    }
+
+    .ap-migalha {
+      grid-area: migalha;
+    }
+
+    .ap-leitura {
+      grid-area: leitura;
+      justify-content: flex-end;
+    }
+
+    .ap-mapa {
+      grid-area: mapa;
+      height: max(480px, calc(100dvh - 360px));
+    }
+
+    /* Legenda baixa: o texto à esquerda, a régua à direita, para o mapa ganhar a altura. */
+    .ap-legenda {
+      grid-area: legenda;
+      grid-template-columns: minmax(0, 1fr) auto;
+      align-items: start;
+      column-gap: var(--sp-3);
+    }
+
+    .ap-legenda :global(.lg-titulo) {
+      grid-column: 1;
+      grid-row: 1;
+    }
+
+    .ap-legenda :global(.lg-extras) {
+      grid-column: 1;
+      grid-row: 2;
+    }
+
+    .ap-legenda :global(.lg-grade) {
+      grid-column: 2;
+      grid-row: 1 / span 2;
+      grid-template-columns: max-content 240px;
+    }
+
+    .ap-mapa {
+      aspect-ratio: auto;
+    }
+  }
+
+  @media (min-width: 1280px) {
+    .ap-controles {
+      grid-template-columns: minmax(0, 1fr) auto minmax(240px, 320px);
+    }
+
+    .ap-abas {
+      grid-column: auto;
+    }
+
+    .ap-mapa {
+      height: max(480px, calc(100dvh - 296px));
+    }
+  }
+</style>

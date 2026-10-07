@@ -1,0 +1,55 @@
+---
+// Apuração em tempo real (decisão do Romero, 06/10): substitui /rankings, que virou o painel de destaques desta página
+// (public/_redirects leva /rankings para cá). O modo vem de contracts/fixtures/status.json no build; a ilha confirma em
+// /data/status.json e passa ao ao vivo quando a apuração começa.
+import statusFixture from '../../../contracts/fixtures/status.json';
+import Cabecalho from '../components/Cabecalho.astro';
+import Rodape from '../components/Rodape.astro';
+import Apuracao from '../components/apuracao/Apuracao.astro';
+import Base from '../layouts/Base.astro';
+import { descricaoApuracao, tituloApuracao } from '../lib/copy.ts';
+import { parseStatus } from '../lib/status.ts';
+
+const status = parseStatus(statusFixture);
+---
+
+<Base titulo={tituloApuracao} descricao={descricaoApuracao} caminho="/apuracao">
+  <div class="pagina">
+    <Cabecalho modo={status.modo} />
+    <main>
+      <Apuracao status={status} />
+    </main>
+    <Rodape />
+  </div>
+</Base>
+
+<style>
+  .pagina {
+    max-width: 1440px;
+    margin-inline: auto;
+    padding-inline: var(--sp-2);
+  }
+
+  main {
+    padding-bottom: var(--sp-6);
+  }
+
+  /* Celular e tablet: a barra fixa de controles (68 px) não cobre o rodapé. */
+  @media (max-width: 1023px) {
+    .pagina {
+      padding-bottom: calc(68px + env(safe-area-inset-bottom));
+    }
+  }
+
+  @media (min-width: 768px) {
+    .pagina {
+      padding-inline: var(--sp-4);
+    }
+  }
+
+  @media (min-width: 1024px) {
+    .pagina {
+      padding-inline: var(--sp-6);
+    }
+  }
+</style>

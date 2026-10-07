@@ -1,5 +1,5 @@
 ---
-// Cabeçalho do site: wordmark (900, wdth 125, caixa-alta), a pílula de estado e o link para os rankings
+// Cabeçalho do site: wordmark (900, wdth 125, caixa-alta), a pílula de estado e a navegação (apuração e histórico)
 // (design/DIRECTION.md, Home). O indicador "ao vivo" não usa acento (só do selo) nem cor de candidato: é --ink.
 import { pilula } from '../lib/copy.ts';
 import { SITE_NAME } from '../lib/site.ts';
@@ -17,6 +17,10 @@ const { modo, secoesPct, atualizado } = Astro.props;
 const { pathname } = Astro.url;
 // O ano no fim do nome ("Placar 2026") sai em amarelo: o toque de Brasil do wordmark. Nome sem ano fica todo em --ink.
 const [, nome, ano] = SITE_NAME.match(/^(.*?)(\d{4})$/) ?? [SITE_NAME, SITE_NAME, ''];
+const links = [
+  { href: '/apuracao', texto: 'Apuração' },
+  { href: '/historico', texto: 'Histórico' },
+];
 ---
 
 <header class="cabecalho">
@@ -26,7 +30,13 @@ const [, nome, ano] = SITE_NAME.match(/^(.*?)(\d{4})$/) ?? [SITE_NAME, SITE_NAME
     <span data-pilula>{pilula(modo, secoesPct, atualizado)}</span>
   </p>
   <nav aria-label="Principal">
-    <a class="rankings" href="/rankings" aria-current={pathname.startsWith('/rankings') ? 'page' : undefined}>Rankings</a>
+    {
+      links.map(({ href, texto }) => (
+        <a class="link" href={href} aria-current={pathname.startsWith(href) ? 'page' : undefined}>
+          {texto}
+        </a>
+      ))
+    }
   </nav>
 </header>
 
@@ -43,9 +53,9 @@ const [, nome, ano] = SITE_NAME.match(/^(.*?)(\d{4})$/) ?? [SITE_NAME, SITE_NAME
     padding-block: var(--sp-1);
   }
 
-  /* Os dois links têm 44 px de altura (alvo de toque do projeto) sem aumentar a letra. */
+  /* Os links têm 44 px de altura (alvo de toque do projeto) sem aumentar a letra. */
   .marca,
-  .rankings {
+  .link {
     display: inline-flex;
     align-items: center;
     min-height: 44px;
@@ -67,26 +77,42 @@ const [, nome, ano] = SITE_NAME.match(/^(.*?)(\d{4})$/) ?? [SITE_NAME, SITE_NAME
     color: var(--amarelo);
   }
 
-  .rankings {
-    font-size: var(--fs-2);
-    letter-spacing: var(--track-caps);
+  /* Até 899 px os links vão no menor tamanho de rótulo, no wdth 62 e sem tracking: a 360 px dividem a primeira linha
+     com a marca, e de 720 a 899 px cabem na linha única junto com a marca e a pílula. */
+  .link {
+    font-size: var(--fs-1);
+    font-stretch: 62%;
     text-decoration: underline;
     text-decoration-thickness: 3px;
     text-underline-offset: 4px;
   }
 
-  .rankings[aria-current='page'] {
+  .link[aria-current='page'] {
     text-decoration-color: var(--ink-2);
   }
 
   @media (hover: hover) {
-    .rankings:hover {
+    .link:hover {
       text-decoration-color: var(--ink-2);
     }
   }
 
   nav {
     grid-area: nav;
+    display: flex;
+    gap: var(--sp-1);
+  }
+
+  @media (min-width: 900px) {
+    .link {
+      font-size: var(--fs-2);
+      font-stretch: 87.5%;
+      letter-spacing: var(--track-caps);
+    }
+
+    nav {
+      gap: var(--sp-2);
+    }
   }
 
   /* Indicador de estado, não controle: reto como as folhas e as placas (o raio de 8 px é só dos controles). */
