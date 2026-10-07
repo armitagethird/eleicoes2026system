@@ -4,7 +4,9 @@ Síntese de quatro propostas (letreiro, lambe-lambe, placa, coringa) e das crít
 
 ## A ideia em uma frase
 
-> **Atualização 06/10 (decisão do Romero): cor fixa por candidato.** 13 Lula = vermelho `--cand-13` (#F2464B); 22 Flávio Bolsonaro = azul claro `--cand-22` (#6CC4FF), em todo o site, no card e no mapa, como nos grandes veículos. Isto substitui toda menção abaixo a "líder = --ink / segundo = --ink-2" e a "acento na variação". Quem lidera se diz em texto ("LIDERA") e pela barra. A variação vs 2022 usa a cor do candidato que ganhou terreno. `--accent` (violeta) só no selo. Texto sobre preenchimento vermelho ou azul usa `--bg` (contraste 5,2:1 e 9,9:1).
+> **Atualização 06/10 (decisão do Romero): cor fixa por candidato.** 13 Lula = vermelho `--cand-13` (#F2464B); 22 Flávio Bolsonaro = azul claro `--cand-22` (#6CC4FF), em todo o site, no card e no mapa, como nos grandes veículos. Isto substitui toda menção abaixo a "líder = --ink / segundo = --ink-2" e a "acento na variação". Quem lidera se diz em texto ("LIDERA") e pela barra. A variação vs 2022 usa a cor do candidato que ganhou terreno. `--accent` só no selo. Texto sobre preenchimento vermelho ou azul usa `--bg` (contraste 5,1:1 e 9,7:1).
+
+> **Atualização 06/10 (decisão do Romero): tema Brasil, leve.** Fundo `#0E1411` (preto levemente esverdeado). Verde `#2BB673` e amarelo-ouro `#F5C518` só em detalhes de marca: a faixa de 4 px no topo de toda página e do card (verde 62% · amarelo 38%, cortes retos), o wordmark e o favicon. O acento do selo passa a ser o amarelo-ouro. Nada de candidato muda.
 
 Cada cidade é um destino de letreiro de ônibus. O nome dela, em caixa-alta Archivo 900, ocupa a largura inteira, de margem a margem. O eixo de largura da fonte (wdth 62–125) estica NATAL e comprime SANTA BÁRBARA D'OESTE, então cada cidade tem uma silhueta tipográfica própria que se reconhece a 350 px antes de ler qualquer número. Embaixo vêm duas folhas de lambe-lambe coladas lado a lado: 13 sempre à esquerda, em vermelho; 22 sempre à direita, em azul claro.
 
@@ -40,19 +42,21 @@ Os tokens estão em `site/src/styles/tokens.css` e a justificativa em `design/TO
 
 | Token | Valor | Uso |
 |---|---|---|
-| `--bg` | `#121110` | fundo (preto quente, muro à noite) |
-| `--ink` | `#F2EEE3` | texto principal (16,3:1) |
-| `--ink-2` | `#8B867A` | texto secundário (5,2:1) |
+| `--bg` | `#0E1411` | fundo (preto levemente esverdeado) |
+| `--ink` | `#F4F1E6` | texto principal (16,5:1) |
+| `--ink-2` | `#95A097` | texto secundário (6,9:1) |
 | `--cand-13` | `#F2464B` | Lula: vermelho, em todo lugar (5,2:1) |
 | `--cand-22` | `#6CC4FF` | Flávio Bolsonaro: azul claro, em todo lugar (9,9:1) |
-| `--accent` | `#B57BFF` | selo, nada mais (6,5:1) |
-| `--surface-1` | `#1B1A18` | placas, campos |
-| `--surface-2` | `#2B2924` | "outros" no 1º turno, separadores |
+| `--accent` | `#F5C518` | amarelo-ouro: selo, nada mais (11,4:1) |
+| `--verde` | `#2BB673` | marca: faixa, wordmark, favicon (7,1:1) |
+| `--amarelo` | `#F5C518` | marca: faixa, wordmark, favicon |
+| `--surface-1` | `#16201B` | placas, campos |
+| `--surface-2` | `#223029` | "outros" no 1º turno, separadores, sem dado |
 
 Regras de uso:
 - O foco do teclado é `--ink`, nunca `--accent` nem cor de candidato.
 - Indicador de "ao vivo" não usa acento nem cor de candidato.
-- Vermelho e azul só como cores dos candidatos, nunca como cor de marca (logo, botões, fundo). Verde e amarelo só nas bandeiras.
+- Vermelho e azul só como cores dos candidatos, nunca como cor de marca (logo, botões, fundo). Verde e amarelo só nas bandeiras e nos detalhes de marca (faixa, wordmark, favicon, selo).
 - O playground pode alternar o acento do selo (`data-acento="teal" | "coral"`) só para aprovação.
 
 ## Forma
@@ -170,7 +174,7 @@ Decisão do Romero em 06/10. Base legal: Res. TSE 23.600, art. 10.
 
 ## Pendências de aprovação do Romero (sinalizar no checkpoint, não decidir sozinho)
 
-1. Fonte Archivo e acento violeta `#B57BFF` no selo. O playground alterna teal e coral.
+1. Fonte Archivo e tema Brasil leve: fundo esverdeado, faixa verde e amarela, selo amarelo-ouro. O playground compara o selo em ouro, verde e violeta (antigo).
 2. Tons dos candidatos: vermelho `#F2464B` e azul claro `#6CC4FF` (decidido o princípio; tom exato a aprovar).
 3. Placa do mapa com barra vermelho/azul. Estilo G1 (pintar a sigla ou a placa inteira com a cor de quem lidera na UF) fica como opção a aprovar. O agente do mapa testou a sigla colorida e a leitura de relance ficou bem mais rápida, mas a opção foi retirada porque a regra escrita veta cor escolhida por liderança. Reativar só com aprovação do Romero.
 4. Governador sem comparação com 2022 (mostra a margem); cidade em `final` sem rótulo de posição. Cores dos candidatos a governador: a definir com os candidatos reais. Por enquanto vale `lib/cores.ts`: os números 13 e 22 têm a cor do partido em qualquer cargo, e os demais ficam neutros (`--ink` / `--ink-2`). Nunca pintar um candidato com a cor de outro partido.

@@ -37,9 +37,9 @@ Referência: lambe-lambe, letreiro de ônibus, placa de rua. Tipográfico, denso
 ### Cor pertence ao candidato (decisão do Romero, 06/10/2026)
 
 - Revoga a regra original de "cor pertence à posição". Como fazem os grandes veículos (Globo, G1, CNN), cada candidato tem **cor fixa** em todo o site, no card e no mapa: **13 Lula = vermelho (`--cand-13`)**, **22 Flávio Bolsonaro = azul claro (`--cand-22`)**. A cor não troca quando a liderança troca; quem lidera é indicado por texto ("lidera") e pela barra.
-- **Um único acento** (`--accent`, violeta) só para o selo. A variação vs 2022 usa a cor do candidato que ganhou terreno. **Proibido como cor de marca do site** (logo, botões, fundo): vermelho, azul, verde, amarelo; vermelho e azul existem só como cores dos candidatos.
+- **Tema Brasil, leve (decisão do Romero, 06/10/2026).** Fundo levemente esverdeado; verde (`--verde`) e amarelo-ouro (`--amarelo`) só em detalhes de marca (faixa no topo, wordmark, favicon) e o **acento** (`--accent`, amarelo-ouro) só no selo. Nunca colorem dado de candidato. A variação vs 2022 usa a cor do candidato que ganhou terreno. Vermelho e azul existem só como cores dos candidatos, nunca como marca.
 - Fundo escuro no card (`--bg`). O site herda o card: tema escuro como padrão; tema claro via `prefers-color-scheme` só se custar menos de uma hora.
-- Verde e amarelo aparecem **apenas** nas bandeiras (ver 3.4).
+- Verde e amarelo: nas bandeiras e nos detalhes de marca acima, sempre leves; nunca em barra, mapa ou número de candidato.
 
 ### Tipografia
 

@@ -1,20 +1,23 @@
 /*
  * Tokens (valores justificados em design/TOKENS.md; direção em design/DIRECTION.md).
  * Cor fixa por candidato (decisão do Romero, 06/10): --cand-13 vermelho, --cand-22 azul claro, em todo o site.
- * Texto sobre preenchimento de candidato usa --bg. --accent (violeta) só no selo.
- * Vermelho e azul nunca como cor de marca (logo, botões, fundo).
+ * Texto sobre preenchimento de candidato usa --bg.
+ * Tema Brasil, leve (decisão do Romero, 06/10): fundo levemente esverdeado; --verde e --amarelo só em detalhes de marca
+ * (faixa, wordmark, favicon); --accent (amarelo-ouro) só no selo. Vermelho e azul nunca como cor de marca.
  */
 :root {
   color-scheme: dark;
 
-  --bg: #121110;
-  --ink: #f2eee3;
-  --ink-2: #8b867a;
+  --bg: #0e1411;
+  --ink: #f4f1e6;
+  --ink-2: #95a097;
   --cand-13: #f2464b;
   --cand-22: #6cc4ff;
-  --accent: #b57bff;
-  --surface-1: #1b1a18;
-  --surface-2: #2b2924;
+  --accent: #f5c518;
+  --verde: #2bb673;
+  --amarelo: #f5c518;
+  --surface-1: #16201b;
+  --surface-2: #223029;
 
   /* Escala de tipo (6 passos). Nomes de cidade usam o ajuste de largura de lib/destino.ts, limitado por --fs-5/--fs-6. */
   --fs-1: 0.8125rem;
@@ -50,9 +53,9 @@
 }
 
 /* Alternativas de acento só para o playground (/design), para aprovação. */
-[data-acento='teal'] {
-  --accent: #24ccc1;
+[data-acento='verde'] {
+  --accent: #2bb673;
 }
-[data-acento='coral'] {
-  --accent: #ff7a66;
+[data-acento='violeta'] {
+  --accent: #b57bff;
 }

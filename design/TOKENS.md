@@ -6,16 +6,18 @@ Os valores vivem em `site/src/styles/tokens.css`. Cada linha abaixo diz por que 
 
 | Token | Valor | Por quê |
 |---|---|---|
-| `--bg` | `#121110` | Preto quente, de muro à noite e cartaz colado. O fundo escuro vem do card (brief, seção 3). |
-| `--ink` | `#F2EEE3` | Branco de papel de cartaz para o texto principal: 16,27:1 contra `--bg`. |
-| `--ink-2` | `#8B867A` | Cinza médio quente para texto secundário: 5,20:1 contra `--bg` (texto AA). |
+| `--bg` | `#0E1411` | Preto levemente esverdeado: o tema Brasil, leve (decisão do Romero, 06/10). O fundo escuro vem do card (brief, seção 3). |
+| `--ink` | `#F4F1E6` | Branco de papel de cartaz para o texto principal: 16,48:1 contra `--bg`. |
+| `--ink-2` | `#95A097` | Cinza esverdeado para texto secundário: 6,88:1 contra `--bg` e 5,09:1 contra `--surface-2`. |
 | `--cand-13` | `#F2464B` | Vermelho do Lula (decisão do Romero, 06/10: cor fixa por candidato, como Globo, G1 e CNN). Dá 5,17:1 contra `--bg`, o que serve como texto; `--bg` sobre ele também fica em 5,17:1. |
 | `--cand-22` | `#6CC4FF` | Azul claro do Flávio Bolsonaro: 9,86:1 contra `--bg`; `--bg` sobre ele fica em 9,86:1. Tem luminância bem diferente do vermelho (1,91:1 entre os dois), então os dois se distinguem também em escala de cinza e para daltônicos. |
-| `--accent` | `#B57BFF` | Violeta, só no selo: 6,50:1 contra `--bg`. Não compete com o vermelho nem com o azul dos candidatos. |
-| `--surface-1` | `#1B1A18` | Superfície de placa e de campo. `--ink` sobre ela fica em 15,0:1. |
-| `--surface-2` | `#2B2924` | "Outros" no 1º turno e separadores. `--ink-2` sobre ela fica em 4,01:1. |
+| `--accent` | `#F5C518` | Amarelo-ouro, só no selo: 11,43:1 contra `--bg`, e `--bg` sobre ele também. Não se confunde com o vermelho nem com o azul dos candidatos. |
+| `--verde` | `#2BB673` | Verde da marca (faixa, wordmark, favicon): 7,14:1 contra `--bg`. Nunca em dado. |
+| `--amarelo` | `#F5C518` | Amarelo da marca, o mesmo do acento. Nunca em dado. |
+| `--surface-1` | `#16201B` | Superfície de placa e de campo. |
+| `--surface-2` | `#223029` | "Outros" no 1º turno, separadores e município sem dado. `--ink-2` sobre ela fica em 5,09:1. |
 
-Alternativas de acento, só no playground para aprovação: teal `#24CCC1` (9,41:1) e coral `#FF7A66` (7,39:1).
+Alternativas do selo, só no playground para aprovação: verde `#2BB673` (7,14:1) e violeta `#B57BFF`, o anterior.
 
 ## Tipo
 

@@ -9,6 +9,14 @@ html {
   text-size-adjust: 100%;
 }
 
+/* Faixa de marca no topo de toda página: o verde e o amarelo do Brasil, leves, em cortes retos (sem degradê). */
+body::before {
+  content: '';
+  display: block;
+  height: var(--stroke-2);
+  background: linear-gradient(90deg, var(--verde) 0 62%, var(--amarelo) 62% 100%);
+}
+
 body {
   margin: 0;
   background: var(--bg);
