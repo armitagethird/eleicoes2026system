@@ -87,3 +87,17 @@ export function horaCurta(valor: string | Date | null | undefined): string {
   if (h === '--') return '';
   return `${Number(h)}h${min === '00' ? '' : min}`;
 }
+
+const diaMesBrasilia = new Intl.DateTimeFormat('pt-BR', { timeZone: 'America/Sao_Paulo', day: 'numeric', month: 'short' });
+
+/** "25 out" em America/Sao_Paulo (dia e mês abreviado, sem "de" nem ponto). Entrada ausente ou inválida devolve "". */
+export function diaMesCurto(valor: string | Date | null | undefined): string {
+  if (!valor) return '';
+  const data = valor instanceof Date ? valor : new Date(valor);
+  if (Number.isNaN(data.getTime())) return '';
+  return diaMesBrasilia
+    .formatToParts(data)
+    .filter(({ type }) => type === 'day' || type === 'month')
+    .map(({ value }) => value.replace('.', ''))
+    .join(' ');
+}

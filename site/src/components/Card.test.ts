@@ -44,6 +44,8 @@ const VARIANTES: Record<string, CardData> = {
     cand: [lula(47.2, { n: 12, nome: 'Fictícia Aparecida dos Santos Pereira', partido: 'FIC' }), flavio(52.8, { n: 45, nome: 'Fictício Antônio Carlos de Souza Lima', partido: 'FIC' })],
   }),
   palpite: com({ modo: 'palpite', cand: [lula(57), flavio(43)] }),
+  'palpite em final': com({ modo: 'palpite', cand: [lula(61), flavio(39)], erroPalpite: 2.6 }),
+  'palpite em final, acertou': com({ modo: 'palpite', cand: [lula(58), flavio(42)], erroPalpite: 0.04 }),
   'cidade de nome longo': com({ local: 'Vila Bela da Santíssima Trindade', uf: 'MT' }),
   'cidade com cedilha': com({ local: 'Açailândia' }),
   aguardando: com({ secoesPct: 0.4 }),
@@ -445,6 +447,62 @@ describe('renderCard: escala e área segura', () => {
       expect(y, 'topo do retângulo').toBeGreaterThanOrEqual(44);
       expect(y + h, 'base do retângulo').toBeLessThanOrEqual(631);
     }
+  });
+});
+
+describe('renderCard: erro do palpite em final (zona C)', () => {
+  /** A frase da zona C em ordem de leitura: texto menor, número grande, texto menor. */
+  const zonaC = (svg: string): Texto[] => textos(svg).filter((t) => ['frase', 'numero-frase', 'acertou'].some((c) => t.classe.split(' ').includes(c)));
+  const lido = (svg: string): string[] => zonaC(svg).map((t) => t.conteudo);
+  const palpite = (extra: Partial<CardData>): CardData => com({ modo: 'palpite', cand: [lula(61), flavio(39)], ...extra });
+
+  it('diz "você errou por X pontos" no lugar da diferença entre os dois', () => {
+    const svg = renderCard(VARIANTES['palpite em final']);
+    expect(lido(svg)).toEqual(['VOCÊ ERROU POR', '2,6', 'PONTOS']);
+    expect(svg).not.toContain('DIFERENÇA DE');
+  });
+
+  it('é de ninguém: em --ink, sem seta, e o número leva o tamanho de destaque', () => {
+    const svg = renderCard(VARIANTES['palpite em final']);
+    for (const t of zonaC(svg)) expect(t.fill, t.conteudo).toBe(INK);
+    expect(svg).not.toContain('class="seta"');
+    expect(porClasse(svg, 'numero-frase')[0].size).toBeGreaterThanOrEqual(56);
+    for (const t of porClasse(svg, 'frase')) expect(t.size, t.conteudo).toBeGreaterThanOrEqual(30);
+  });
+
+  it('singular e plural pelo format.ts: 1,0 e 0,5 são "ponto", 1,1 é "pontos"', () => {
+    expect(lido(renderCard(palpite({ erroPalpite: 1.04 })))).toEqual(['VOCÊ ERROU POR', '1,0', 'PONTO']);
+    expect(lido(renderCard(palpite({ erroPalpite: 0.5 })))).toEqual(['VOCÊ ERROU POR', '0,5', 'PONTO']);
+    expect(lido(renderCard(palpite({ erroPalpite: 1.1 })))).toEqual(['VOCÊ ERROU POR', '1,1', 'PONTOS']);
+    expect(lido(renderCard(palpite({ erroPalpite: 22 })))).toEqual(['VOCÊ ERROU POR', '22,0', 'PONTOS']);
+  });
+
+  it('erro que arredonda para 0,0 vira "você acertou o resultado", numa linha só, sem número nem "pontos"', () => {
+    const svg = renderCard(VARIANTES['palpite em final, acertou']);
+    expect(lido(svg)).toEqual(['VOCÊ ACERTOU O RESULTADO']);
+    expect(porClasse(svg, 'acertou')[0].size).toBeGreaterThanOrEqual(56);
+    expect(porClasse(svg, 'acertou')[0].fill).toBe(INK);
+    expect(svg).not.toMatch(/PONTO|DIFERENÇA DE/);
+  });
+
+  it('o selo SEU PALPITE e o rodapé PALPITE · NÃO É RESULTADO continuam', () => {
+    for (const nome of ['palpite em final', 'palpite em final, acertou']) {
+      const conteudos = textos(renderCard(VARIANTES[nome])).map((t) => t.conteudo);
+      expect(conteudos, nome).toEqual(expect.arrayContaining(['SEU PALPITE', 'PALPITE · NÃO É RESULTADO']));
+    }
+  });
+
+  it('só aparece no modo palpite e só com o erro definido', () => {
+    const semErro = renderCard(palpite({}));
+    expect(lido(semErro)).toEqual(['DIFERENÇA DE', '22,0', 'PONTOS']);
+    expect(semErro).not.toMatch(/VOCÊ/);
+    for (const modo of ['parcial', 'final'] as const) expect(renderCard(com({ modo, erroPalpite: 2.6 })), modo).not.toMatch(/VOCÊ ERROU/);
+  });
+
+  it('o texto alternativo diz o mesmo que o card', () => {
+    const desc = (d: CardData): string => renderCard(d).match(/<desc>(.*?)<\/desc>/)?.[1] ?? '';
+    expect(desc(VARIANTES['palpite em final'])).toContain('você errou por 2,6 pontos');
+    expect(desc(VARIANTES['palpite em final, acertou'])).toContain('você acertou o resultado');
   });
 });
 

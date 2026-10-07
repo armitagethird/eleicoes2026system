@@ -7,17 +7,25 @@ import {
   PALAVRAS_PROIBIDAS,
   apuracaoCard,
   contagemFalada,
-  descricaoRankings,
   descricaoUf,
   linhaApuracao,
-  listasAbrem,
   pilula,
-  rankingsComecam,
   rotuloPosicao,
   semConexao,
-  tituloRankings,
   tituloUf,
   variacao2022,
+  LINHA_APURADA,
+  aoVivoAPartir,
+  descricaoApuracao,
+  legendaMapa,
+  rotuloAba,
+  semVirada,
+  tituloApuracao,
+  turnoDaCamada,
+  variacaoDesde,
+  BRASIL,
+  MAPA_TECLAS,
+  rotuloMotor,
 } from './copy.ts';
 
 describe('copy', () => {
@@ -107,40 +115,70 @@ describe('copy de estado, rankings e 404', () => {
     expect(GOVERNADOR_PRE).not.toMatch(/\d+[,.]\d/);
   });
 
-  it('rankings no pre dizem a hora e o dia do início, lidos do status', () => {
-    expect(rankingsComecam('2026-10-25T17:00:00-03:00')).toBe('os rankings começam às 17h do dia 25');
-    expect(rankingsComecam('2026-10-25T17:30:00-03:00')).toBe('os rankings começam às 17h30 do dia 25');
-  });
-
-  it('rankings no pre sem início conhecido não inventa hora', () => {
-    expect(rankingsComecam(null)).toBe('os rankings começam com a apuração do 2º turno');
-    expect(rankingsComecam('amanhã')).toBe('os rankings começam com a apuração do 2º turno');
-  });
-
-  it('a frase do pre de /rankings diz hora e dia do início e não repete "rankings"', () => {
-    expect(listasAbrem('2026-10-25T17:00:00-03:00')).toBe('as listas abrem com a apuração, às 17h do dia 25');
-    expect(listasAbrem('2026-10-25T17:30:00-03:00')).toBe('as listas abrem com a apuração, às 17h30 do dia 25');
-    expect(listasAbrem('2026-10-25T17:00:00-03:00')).not.toContain('ranking');
-  });
-
-  it('a frase do pre de /rankings sem início conhecido não inventa hora', () => {
-    for (const inicio of [null, undefined, 'amanhã']) {
-      expect(listasAbrem(inicio)).toBe('as listas abrem com a apuração do 2º turno');
-    }
-  });
-
   it('nenhum texto novo usa palavra proibida', () => {
     const textos = [
       tituloUf('Bahia', 'BA'),
       descricaoUf('Bahia', 'BA'),
       GOVERNADOR_PRE,
-      rankingsComecam('2026-10-25T17:00:00-03:00'),
-      rankingsComecam(null),
-      listasAbrem('2026-10-25T17:00:00-03:00'),
-      listasAbrem(null),
-      tituloRankings,
-      descricaoRankings,
     ].join(' ');
     for (const palavra of PALAVRAS_PROIBIDAS) expect(textos).not.toContain(palavra);
+  });
+});
+
+describe('copy da apuração', () => {
+  it('título do brief da página', () => {
+    expect(tituloApuracao).toBe('Apuração em tempo real do 2º turno 2026 — mapa por município');
+  });
+
+  it('nome de cada camada; o ao vivo só se chama assim durante a apuração', () => {
+    expect(turnoDaCamada('2018-t1')).toBe('1º turno 2018');
+    expect(turnoDaCamada('2022-t2')).toBe('2º turno 2022');
+    expect(turnoDaCamada('ao-vivo')).toBe('2º turno 2026');
+    expect(rotuloAba('ao-vivo', true)).toBe('ao vivo 2026');
+    expect(rotuloAba('ao-vivo', false)).toBe('2º turno 2026');
+    expect(rotuloAba('2026-t1', true)).toBe('1º turno 2026');
+  });
+
+  it('a variação contra 2022 é exatamente a frase de sempre; contra outro ano, só troca o ano', () => {
+    expect(variacaoDesde('Lula', 3.4, '2022')).toBe(variacao2022('Lula', 3.4));
+    expect(variacaoDesde('Lula', 1, '2018')).toBe('+1,0 ponto para Lula em relação a 2018');
+  });
+
+  it('"lidera" na legenda só durante a apuração', () => {
+    expect(legendaMapa('resultado', true, '')).toContain('lidera');
+    expect(legendaMapa('resultado', false, '')).not.toContain('lidera');
+    expect(legendaMapa('variacao', true, '2º turno 2018')).toContain('desde o 2º turno 2018');
+  });
+
+  it('quando o mapa passa a ser ao vivo, sem inventar hora', () => {
+    expect(aoVivoAPartir('2026-10-25T17:00:00-03:00')).toBe('ao vivo a partir das 17h do dia 25');
+    expect(aoVivoAPartir(null)).toBe('ao vivo durante a apuração do 2º turno');
+  });
+
+  it('nenhum texto da apuração usa palavra proibida', () => {
+    const textos = [
+      tituloApuracao,
+      descricaoApuracao,
+      LINHA_APURADA,
+      legendaMapa('resultado', true, ''),
+      legendaMapa('resultado', false, ''),
+      legendaMapa('variacao', false, '2º turno 2018'),
+      semVirada('2º turno 2018'),
+    ].join(' ');
+    for (const palavra of PALAVRAS_PROIBIDAS) expect(textos.toLowerCase()).not.toContain(palavra);
+  });
+});
+
+describe('copy do motor do mapa', () => {
+  it('nome acessível do canvas: o rótulo do mapa e o lugar em foco', () => {
+    expect(rotuloMotor('2º turno 2022', 'Maranhão')).toBe(
+      'Mapa por município, 2º turno 2022. A mesma informação está na tabela abaixo do mapa. Mostrando: Maranhão.',
+    );
+    expect(rotuloMotor(null, BRASIL)).toBe('Mostrando: Brasil.');
+  });
+
+  it('instrução de teclado sem palavra proibida nem resultado', () => {
+    for (const palavra of [...PALAVRAS_PROIBIDAS, 'lidera', 'eleit']) expect(MAPA_TECLAS.toLowerCase()).not.toContain(palavra);
+    expect(MAPA_TECLAS).toContain('Esc volta ao Brasil');
   });
 });

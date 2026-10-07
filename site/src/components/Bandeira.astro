@@ -11,9 +11,11 @@ interface Props {
   /** Largura da caixa em px CSS; a altura é largura × 0,7. */
   largura?: number;
   carregamento?: 'lazy' | 'eager';
+  /** Dentro de um link ou rótulo que já diz de qual lugar é: alt vazio, para o nome acessível não ganhar "Bandeira do ..." (WCAG 2.5.3). */
+  decorativa?: boolean;
 }
 
-const { uf, largura = 40, carregamento = 'lazy' } = Astro.props;
+const { uf, largura = 40, carregamento = 'lazy', decorativa = false } = Astro.props;
 const { src, srcset } = rasterBandeira(uf, largura);
 const altura = Math.round(largura * 0.7);
 ---
@@ -22,7 +24,7 @@ const altura = Math.round(largura * 0.7);
   class="bandeira"
   src={src}
   srcset={srcset}
-  alt={altBandeira(uf)}
+  alt={decorativa ? '' : altBandeira(uf)}
   width={largura}
   height={altura}
   loading={carregamento}

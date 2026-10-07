@@ -1,14 +1,17 @@
 ---
 // Página do estado (BRIEF, Fase 2; design/DIRECTION.md): o nome em DESTINO, a bandeira, o placar do estado, o governador
-// (só nas UFs que o têm) e as cidades por número de eleitores, cada uma levando ao card.
+// (só nas UFs que o têm), o card do estado com o COMPARTILHAR (components/CartaoUf.astro, como a página de cidade) e as
+// cidades por número de eleitores, cada uma levando ao card. Ao vivo, o card é o placar do presidente: só o governador tem placar.
 // Uma página por UF (getStaticPaths: 27). Tudo que não muda no dia sai no HTML, sem JS. Como a home e a cidade, o modo vem
 // de contracts/fixtures/status.json e o JSON ao vivo da UF de contracts/fixtures/uf, no build; a ilha ao vivo é da Fase 3.
 //   pre:           1º turno 2026 da UF (13 · outros · 22) com o 2º turno de 2022 como referência; governador só avisa o dia.
 //   parcial/final: o 2º turno da UF, com a variação vs 2022, e o do governador quando o JSON o traz.
 import brFixture from '../../../../contracts/fixtures/br.json';
 import statusFixture from '../../../../contracts/fixtures/status.json';
+import AoVivoCarga from '../../components/AoVivoCarga.astro';
 import Bandeira from '../../components/Bandeira.astro';
 import Cabecalho from '../../components/Cabecalho.astro';
+import CartaoUf from '../../components/CartaoUf.astro';
 import Placar from '../../components/Placar.astro';
 import { estiloNome } from '../../components/rankings.ts';
 import Rodape from '../../components/Rodape.astro';
@@ -46,9 +49,12 @@ const aoVivo = status.modo === 'pre' ? undefined : doEstado;
 const governador = aoVivo?.governador;
 // O governador existe onde o JSON do estado o traz (a lista de UFs é do contrato, não daqui). No pre só o aviso, sem número.
 const temGovernador = Boolean(doEstado?.governador);
-// Dois blocos lado a lado (tablet); e, com dois placares de verdade (ao vivo), alto demais para ficar fixo ao rolar a lista.
-const duo = aoVivo ? Boolean(governador) : temGovernador;
+// Dois blocos lado a lado (tablet) só no pre; ao vivo, o presidente é o card (CartaoUf) e só o governador tem placar, e card
+// mais governador é alto demais para ficar fixo ao rolar a lista.
+const duo = !aoVivo && temGovernador;
 const alta = Boolean(aoVivo && governador);
+// A página sai do build em pre e vira live/final no cliente (components/AoVivo.ts): leva as cascas ocultas ao vivo (card e governador).
+const aoVivoNoCliente = status.modo === 'pre';
 
 // O hist só tem percentuais; nome e partido de 13 e 22 vêm do contrato (nomes reais, iguais em todos os arquivos).
 const nomes = brFixture.presidente.cand.map(({ n, nome: quem, partido }) => ({ n, nome: quem, partido }));
@@ -84,7 +90,7 @@ const faseAoVivo = status.modo === 'final' ? 'final' : 'parcial';
   <div class="pagina">
     <Cabecalho modo={status.modo} secoesPct={aoVivo?.secoes_pct} atualizado={aoVivo?.atualizado} />
 
-    <main>
+    <main data-ao-vivo={aoVivoNoCliente ? `uf/${sigla}` : undefined}>
       <header class="topo">
         <div class="faixa">
           <p class="uf" aria-hidden="true">
@@ -103,14 +109,6 @@ const faseAoVivo = status.modo === 'final' ? 'final' : 'parcial';
           {
             aoVivo ? (
               <>
-                <Placar
-                  modo={faseAoVivo}
-                  lugar={nome}
-                  cand={aoVivo.presidente.cand}
-                  variacao={aoVivo.presidente.variacao_2022}
-                  secoesPct={aoVivo.secoes_pct}
-                  atualizado={aoVivo.atualizado}
-                />
                 {governador && (
                   <Placar
                     modo={faseAoVivo}
@@ -124,9 +122,9 @@ const faseAoVivo = status.modo === 'final' ? 'final' : 'parcial';
               </>
             ) : (
               <>
-                <Placar modo="pre" lugar={nome} cand={nomes} hist={histUf(uf)} />
+                <Placar modo="pre" lugar={nome} cand={nomes} hist={histUf(uf)} carregamentoFotos="eager" />
                 {temGovernador && (
-                  <section class="governador" aria-labelledby="governador-titulo">
+                  <section class="governador" data-so-pre aria-labelledby="governador-titulo">
                     <h2 class="sr-only" id="governador-titulo">
                       {nome}
                     </h2>
@@ -136,9 +134,11 @@ const faseAoVivo = status.modo === 'final' ? 'final' : 'parcial';
                     <p class="gov-aviso">{GOVERNADOR_PRE}</p>
                   </section>
                 )}
+                {aoVivoNoCliente && temGovernador && <Placar modo="parcial" lugar={nome} cargo="governador" casca />}
               </>
             )
           }
+          <CartaoUf uf={uf} status={status} placar={aoVivo} cand={nomes} aoVivoNoCliente={aoVivoNoCliente} />
         </div>
 
         {
@@ -173,6 +173,7 @@ const faseAoVivo = status.modo === 'final' ? 'final' : 'parcial';
       </div>
     </main>
 
+    {aoVivoNoCliente && <AoVivoCarga />}
     <Rodape />
   </div>
 </Base>
@@ -273,7 +274,7 @@ const faseAoVivo = status.modo === 'final' ? 'final' : 'parcial';
   }
 
   /* Sem o nome do estado abrindo cada placar, o filete do bloco do governador no pre também separa os dois placares do ao vivo. */
-  .placares :global(.placar + .placar) {
+  .placares :global(.placar:not([hidden]) ~ .placar:not([hidden])) {
     padding-top: var(--sp-2);
     border-top: var(--stroke-2) solid var(--ink);
   }
@@ -400,6 +401,11 @@ const faseAoVivo = status.modo === 'final' ? 'final' : 'parcial';
       max-width: none;
     }
 
+    /* O card do estado ocupa a largura toda, também quando os placares ficam lado a lado. */
+    .placares.duo > :global(.cartao) {
+      grid-column: 1 / -1;
+    }
+
     .lista {
       grid-template-columns: repeat(2, minmax(0, 1fr));
       column-gap: var(--sp-3);
@@ -436,9 +442,10 @@ const faseAoVivo = status.modo === 'final' ? 'final' : 'parcial';
     }
   }
 
-  /* A lista é longa (MG: 853 cidades): o placar acompanha a rolagem, só onde cabe inteiro na janela. */
+  /* A lista é longa (MG: 853 cidades): o card acompanha a rolagem, só onde cabe inteiro na janela (não no pre, em que o placar
+     do 1º turno e o card em espera, juntos, passam de 880 px). */
   @media (min-width: 1024px) and (min-height: 760px) {
-    .placares:not(.alta) {
+    .placares:not(.alta):not(:has(:global([data-so-pre]:not([hidden])))):not(:has(:global([data-placar-cargo='governador']:not([hidden])))) {
       position: sticky;
       top: var(--sp-3);
     }

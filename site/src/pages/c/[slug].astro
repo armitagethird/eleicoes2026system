@@ -1,7 +1,8 @@
 ---
 // Página da cidade (BRIEF, Fase 2; design/DIRECTION.md): onde o card vive e de onde é compartilhado.
-// Uma página por município (getStaticPaths lê src/data/municipios.json: 50 hoje, 5.571 depois). Tudo que não muda no dia
-// (nome, UF, hist de 2022 e do 1º turno) sai no HTML, sem JS; o JS da página é só a ilha Compartilhar, e só em parcial/final.
+// Uma página por município (getStaticPaths lê src/data/municipios.json: 5.571). Tudo que não muda no dia (nome, UF, hist de
+// 2022 e do 1º turno) sai no HTML, sem JS; o JS são as ilhas: ao vivo (AoVivoCarga, CidadeAoVivo), palpite, minhas cidades,
+// me avisa e compartilhar (o card ao vivo, só em parcial/final).
 //   pre:          o destaque é o Comparativo (2022 × 1º turno 2026); o card do 2º turno fica em espera, com a hora de início
 //                 como promessa, e não há botão de compartilhar.
 //   parcial/final: o card inline é a peça central, com o botão Compartilhar; o Comparativo vira contexto.
@@ -9,12 +10,16 @@
 // /design/cidade importa esta página como componente e passa `status`, `cidade` e `embutida`.
 import brFixture from '../../../../contracts/fixtures/br.json';
 import statusFixture from '../../../../contracts/fixtures/status.json';
+import AoVivoCarga from '../../components/AoVivoCarga.astro';
 import Bandeira from '../../components/Bandeira.astro';
 import Botao from '../../components/Botao.astro';
 import Cabecalho from '../../components/Cabecalho.astro';
 import { renderCard } from '../../components/Card.ts';
 import CidadeAoVivo from '../../components/CidadeAoVivo.astro';
 import Comparativo from '../../components/Comparativo.astro';
+import MeAvisa from '../../components/MeAvisa.astro';
+import MinhasCidades from '../../components/MinhasCidades.astro';
+import Palpite from '../../components/Palpite.astro';
 import Rodape from '../../components/Rodape.astro';
 import Base from '../../layouts/Base.astro';
 import { urlBandeiraPng } from '../../lib/bandeiras.ts';
@@ -59,6 +64,8 @@ const cardAoVivo = aoVivo && cardDeCidade(aoVivo, hist, status.modo === 'final' 
 const apurando = Boolean(cardAoVivo) && (aoVivo?.secoes_pct ?? 0) >= 1;
 const card = { ...(cardAoVivo ?? cardEmEspera(m, nomes, status.inicio)), bandeiraHref: urlBandeiraPng(m.uf) };
 const legendaEspera = status.modo === 'pre' && status.inicio ? esperaDoCard(hora(status.inicio), diaMes(status.inicio)) : null;
+// A página sai do build em pre e vira live/final no cliente (components/AoVivo.ts): leva a casca oculta do card ao vivo.
+const aoVivoNoCliente = !embutida && status.modo === 'pre';
 
 // DESTINO: o nome ajustado no build numa largura de referência e escrito em cqi, então encosta nas duas margens em qualquer
 // largura, sem JS. Até 1023 px, até duas linhas; no desktop, uma faixa só. O ajuste mede a caixa-alta; o HTML guarda a
@@ -89,11 +96,11 @@ const linhasTitulo = linhas.map((l, i) => {
   <div class="pagina">
     <Cabecalho modo={status.modo} secoesPct={aoVivo?.secoes_pct} atualizado={aoVivo?.atualizado} />
 
-    <main>
+    <main data-ao-vivo={aoVivoNoCliente ? `c/${m.slug}` : undefined}>
       <header class="topo">
         <a class="uf" href={`/uf/${m.uf.toLowerCase()}`} aria-label={`${m.uf} ${NOME_UF[m.uf]}: página do estado`}>
-          <Bandeira uf={m.uf.toLowerCase() as Lowercase<typeof m.uf>} largura={40} carregamento="eager" />
-          <span class="sigla">{m.uf}</span>
+          <Bandeira uf={m.uf.toLowerCase() as Lowercase<typeof m.uf>} largura={40} carregamento="eager" decorativa />
+          <span class="sigla">{m.uf}</span>{' '}
           <span class="estado">{NOME_UF[m.uf]}</span>
         </a>
         {
@@ -102,9 +109,16 @@ const linhasTitulo = linhas.map((l, i) => {
               {m.nome} ({m.uf})
             </h1>
           ) : (
-            <h1 class="destino">
+            <h1 class="destino" data-so-pre>
               {linhasTitulo.map((l) => <span class="linha" style={l.estilo}>{l.texto}</span>)}
               <span class="sr-only"> ({m.uf})</span>
+            </h1>
+          )
+        }
+        {
+          aoVivoNoCliente && (
+            <h1 class="sr-only" data-so-vivo hidden>
+              {m.nome} ({m.uf})
             </h1>
           )
         }
@@ -125,24 +139,42 @@ const linhasTitulo = linhas.map((l, i) => {
             <>
               <div class="principal">
                 <Comparativo hist={hist} cand={nomes} destaque id={`comparativo${sufixo}`} />
+                {status.modo === 'pre' && <Palpite card={card} slug={m.slug} id={`palpite${sufixo}`} />}
               </div>
-              <section class="lateral espera" aria-labelledby={`espera-titulo${sufixo}`}>
+              <section class="lateral espera" data-so-pre aria-labelledby={`espera-titulo${sufixo}`}>
                 <h2 class="espera-titulo" id={`espera-titulo${sufixo}`}>
                   Card do 2º turno
                 </h2>
                 <figure class="card" set:html={renderCard(card)} />
                 {legendaEspera && <p class="legenda">{legendaEspera}</p>}
               </section>
+              {
+                aoVivoNoCliente && (
+                  <div class="vivo" data-so-vivo hidden>
+                    <CidadeAoVivo card={card} slug={m.slug} casca />
+                  </div>
+                )
+              }
             </>
           )
         }
       </div>
+
+      {
+        status.modo === 'pre' && (
+          <div data-so-pre>
+            <MeAvisa cidade={m} inicio={status.inicio} id={`me-avisa${sufixo}`} />
+          </div>
+        )
+      }
+      <MinhasCidades cidade={m} />
 
       <p class="fim">
         <Botao href="/" variante="secundario">Buscar outra cidade</Botao>
       </p>
     </main>
 
+    {aoVivoNoCliente && <AoVivoCarga />}
     <Rodape />
   </div>
 </Moldura>
@@ -233,6 +265,11 @@ const linhasTitulo = linhas.map((l, i) => {
     text-transform: uppercase;
   }
 
+  /* Ao vivo (a ilha revela .vivo e esconde a espera): o card sobe para a frente de tudo e o comparativo vira o contexto. */
+  .vivo {
+    order: -1;
+  }
+
   /* O card tem o mesmo fundo da página: ganha um filete e, no celular, vai de borda a borda. */
   .card {
     margin-inline: calc(var(--sp-2) * -1);
@@ -290,6 +327,14 @@ const linhasTitulo = linhas.map((l, i) => {
     .lateral {
       position: sticky;
       top: var(--sp-3);
+      grid-column: 8 / span 5;
+    }
+
+    .vivo {
+      grid-column: 1 / span 7;
+    }
+
+    .conteudo:has(> .vivo:not([hidden])) .principal {
       grid-column: 8 / span 5;
     }
   }

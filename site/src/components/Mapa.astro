@@ -2,8 +2,9 @@
 // O muro de 28 (design/DIRECTION.md, Mapa): Brasil + 27 UFs em placas iguais, coladas lado a lado numa grade
 // aproximadamente geográfica que desenha o Brasil (lib/cartograma.ts). Cada placa: bandeira intacta, sigla e a barra do
 // site (13 à esquerda, 22 à direita, proporcionais, costura de 4 px em --bg e marca de 50%); com |variação vs 2022|
-// >= 0,5 ponto, a seta para o lado de quem ganhou terreno, na cor dele. Cor fixa por candidato (lib/cores.ts), nunca
-// pela liderança: a sigla fica em --ink e a placa nunca é pintada. A entrada escalonada mexe só em sigla, seta e barra,
+// >= 0,5 ponto, a seta para o lado de quem ganhou terreno, na cor dele. Cor fixa por candidato (lib/cores.ts). Única
+// exceção, aprovada pelo Romero (06/10): a sigla vai na cor de quem tem mais votos ali (--ink sem dado, em empate ou com
+// "outros" na frente; mapa-dados.ts), e a placa nunca é pintada. A entrada escalonada mexe só em sigla, seta e barra,
 // nunca na bandeira (sem opacidade nem movimento).
 // Se adapta ao container (container queries): placas em retrato e título e legenda acima do muro nos estreitos
 // (celular); placas em paisagem, com título, legenda e painel de detalhe nos vazios do oceano, nos largos (>= 520 px).
@@ -15,6 +16,7 @@ import { AREAS, CARTOGRAMA, gridArea, ordemEntrada, vizinho, type Direcao, type 
 import {
   LINHA_PRIMEIRO_TURNO,
   MAPA_SETA,
+  MAPA_SIGLA,
   MAPA_TITULO,
   OUTROS_CANDIDATOS,
   linhaApuracao,
@@ -121,6 +123,7 @@ const areas = `--area-titulo:${gridArea(AREAS.titulo)};--area-painel:${gridArea(
             </li>
           )
         }
+        <li>{MAPA_SIGLA[mapa.fase]}</li>
       </ul>
     </div>
 
@@ -147,11 +150,9 @@ const areas = `--area-titulo:${gridArea(AREAS.titulo)};--area-painel:${gridArea(
               data-seta={p.v.seta ? '' : undefined}
             >
               <span class="bandeira" data-mapa-bandeira>
-                <Bandeira uf={p.bandeira} largura={BANDEIRA} />
+                <Bandeira uf={p.bandeira} largura={BANDEIRA} decorativa />
               </span>
-              <span class="sigla" aria-hidden="true">
-                {p.lugar}
-              </span>
+              <span class="sigla" data-cor={p.v.maisVotado || undefined}>{p.lugar}</span>
               {p.v.seta && (
                 <span class="seta" aria-hidden="true">
                   <svg class="tri" viewBox="0 0 10 12">
@@ -180,7 +181,7 @@ const areas = `--area-titulo:${gridArea(AREAS.titulo)};--area-painel:${gridArea(
     >
       <div class="p-topo">
         <span class="bandeira" data-mapa-bandeira>
-          <Bandeira uf={inicial.bandeira} largura={BANDEIRA} />
+          <Bandeira uf={inicial.bandeira} largura={BANDEIRA} decorativa />
         </span>
         <span class="p-caixa">
           <a class="p-nome" href={inicial.href} aria-label={inicial.v.rotulo} tabindex="-1" data-mapa-p="nome">{inicial.nome}</a>
@@ -417,6 +418,15 @@ const areas = `--area-titulo:${gridArea(AREAS.titulo)};--area-painel:${gridArea(
     font-stretch: 75%;
     font-size: calc(var(--cw) * 0.42);
     line-height: 0.9;
+  }
+
+  /* Sigla na cor de quem tem mais votos ali (--ink quando não há lado). O vermelho tem 4,58:1 sobre --surface-1. */
+  .sigla[data-cor='13'] {
+    color: var(--cor-13);
+  }
+
+  .sigla[data-cor='22'] {
+    color: var(--cor-22);
   }
 
   /* Seta de deslocamento na cor de quem ganhou terreno; um só desenho (◀), espelhado para o 22 (▶). */

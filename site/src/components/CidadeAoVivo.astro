@@ -10,26 +10,31 @@ import { PIX_KEY } from '../lib/site.ts';
 
 interface Props {
   card: CardData;
-  slug: string;
+  /** A cidade (/c/{slug}). Num estado, no lugar dele vai `uf`. */
+  slug?: string;
+  /** O estado (/uf/{uf}, componente CartaoUf.astro): o Compartilhar leva /uf/{uf} no link e no nome do arquivo. */
+  uf?: string;
   /** Hora da última atualização (ISO 8601): vai no aviso de falha de rede. */
   atualizado?: string | null;
   /** Mostra o aviso de falha de rede (a ilha ao vivo o liga com a mesma frase). Só o playground o liga no HTML. */
   semRede?: boolean;
   /** Prefixo dos ids, para a mesma cidade aparecer em mais de um modo na mesma página (/design/cidade). */
   id?: string;
+  /** Casca da ilha ao vivo (components/AoVivo.ts), no HTML do modo pre: o card sai vazio (a ilha o desenha com renderCard, no cliente) para a página não pagar o SVG duas vezes. */
+  casca?: boolean;
 }
 
-const { card, slug, atualizado, semRede = false, id = 'ao-vivo' } = Astro.props;
+const { card, slug, uf, atualizado, semRede = false, id = 'ao-vivo', casca = false } = Astro.props;
 // "<" fora do JSON: um nome de cidade nunca fecha o <script> que o carrega.
-const dados = JSON.stringify({ card, slug }).replace(/</g, '\\u003c');
+const dados = JSON.stringify({ card, slug, uf }).replace(/</g, '\\u003c');
 ---
 
 <section class="ao-vivo" aria-labelledby={`${id}-titulo`} data-cidade>
   <h2 class="sr-only" id={`${id}-titulo`}>Card do 2º turno 2026 em {card.local} ({card.uf})</h2>
-  <figure class="card" data-card set:html={renderCard(card)} />
+  <figure class="card" data-card set:html={casca ? '' : renderCard(card)} />
   <p class="conexao" role="status" data-conexao hidden={!semRede}>{semRede ? semConexao(atualizado) : ''}</p>
 
-  <div class="acoes">
+  <div class="acoes" data-acoes>
     <Botao class="compartilhar" data-compartilhar>Compartilhar</Botao>
     <p class="estado" role="status" data-compartilhar-estado></p>
   </div>
@@ -55,7 +60,12 @@ const dados = JSON.stringify({ card, slug }).replace(/</g, '\\u003c');
   // A ilha entra em dois tempos: só este carregador vai com a página. O Compartilhar (card, destino, copy: uns 10 KB em 3 saltos)
   // sai do caminho do LCP, chega depois do load e já está em cache quando a pessoa toca. Se o toque vier antes, o próprio clique o espera.
   const carregar = () => import('./Compartilhar.ts');
-  addEventListener('load', () => setTimeout(carregar, 1000));
+  // Na casca do modo pre (oculta) não adianta carregar: quem a revela é a ilha AoVivo.ts, e ela aquece o módulo na hora.
+  addEventListener('load', () =>
+    setTimeout(() => {
+      if (document.querySelector('[data-cidade]')?.getClientRects().length) void carregar();
+    }, 1000),
+  );
   document.addEventListener('click', (evento) => {
     const alvo = evento.target as Element;
     if (!alvo.closest('[data-compartilhar], [data-pix-copiar]')) return;
@@ -95,6 +105,11 @@ const dados = JSON.stringify({ card, slug }).replace(/</g, '\\u003c');
   .acoes {
     display: grid;
     gap: var(--sp-1);
+  }
+
+  /* Cidade aguardando as primeiras seções: nada a compartilhar ainda (a ilha liga e desliga). */
+  .acoes[hidden] {
+    display: none;
   }
 
   .acoes :global(.compartilhar) {

@@ -11,6 +11,7 @@ import {
   apuracaoCard,
   diferencaPontosCard,
   diferencaVotosCard,
+  erroPalpiteCard,
   rotuloPosicao,
   variacaoCard,
   type FraseCard,
@@ -45,6 +46,8 @@ export interface CardData {
   variacao?: number;
   /** Votos entre os dois; usado quando a margem é menor que 1 ponto. */
   diferencaVotos?: number;
+  /** Só no modo palpite, em final: quantos pontos o palpite errou (módulo). A zona C diz "você errou por X pontos" em vez da margem. */
+  erroPalpite?: number;
   /** Menor que 1 = aguardando primeiras seções. Ignorado no palpite. */
   secoesPct: number;
   /** HH:MM da última atualização. Ignorado no palpite. */
@@ -204,10 +207,17 @@ function zonaC(frase: FraseCard, { cor, seta, y }: OpcoesFrase): string {
   return saida.join('');
 }
 
-/** Sem seções apuradas, a zona C vira o aviso, no tamanho do número, em vez de qualquer percentual ou margem. */
-function zonaAguardando(y: number): string {
-  const { linhas } = ajustarDestino(maiusculas(AGUARDANDO_SECOES), { largura: LARGURA_UTIL, tamMax: FRASE.numero, tamMin: FRASE.numero, maxLinhas: 1 });
-  return texto(X0, y, { size: linhas[0].tamanho, wdth: linhas[0].wdth, fill: COR.ink }, escapar(linhas[0].texto), ' class="aguardando"');
+/** Texto único no tamanho do número, de margem a margem pelo wdth, em --ink: o aviso de "aguardando" e o "você acertou o resultado" do palpite. */
+function zonaAviso(aviso: string, classe: string, y: number): string {
+  const { linhas } = ajustarDestino(maiusculas(aviso), { largura: LARGURA_UTIL, tamMax: FRASE.numero, tamMin: FRASE.numero, maxLinhas: 1 });
+  return texto(X0, y, { size: linhas[0].tamanho, wdth: linhas[0].wdth, fill: COR.ink }, escapar(linhas[0].texto), ` class="${classe}"`);
+}
+
+/** Zona C: a frase com número; a frase sem número (o palpite que acertou); ou, sem seções apuradas, o aviso em vez de qualquer percentual ou margem. */
+function zonaDestaque(destaque: ReturnType<typeof escolherFrase> | null, y: number): string {
+  if (!destaque) return zonaAviso(AGUARDANDO_SECOES, 'aguardando', y);
+  if (!destaque.frase.numero) return zonaAviso(destaque.frase.antes, 'acertou', y);
+  return zonaC(destaque.frase, { cor: destaque.cor, seta: destaque.seta, y });
 }
 
 /** O que a barra e as colunas mostram de cada candidato: a cor é a dele; o rótulo de posição (lidera/eleito) é só de quem o tem. */
@@ -347,7 +357,8 @@ function descricao(d: CardData, modo: ModoCard, aguardando: boolean, frase: Fras
 function escolherFrase(d: CardData, e: CandidatoCard, r: CandidatoCard, modo: ModoCard): { frase: FraseCard; cor: string; seta: OpcoesFrase['seta'] } {
   const margem = Math.abs(e.pct - r.pct);
   const margemEmPontos = { frase: diferencaPontosCard(margem), cor: COR.ink, seta: null };
-  if (modo === 'palpite') return margemEmPontos;
+  // O erro do palpite não é de ninguém: fica em --ink, sem seta.
+  if (modo === 'palpite') return d.erroPalpite === undefined ? margemEmPontos : { frase: erroPalpiteCard(d.erroPalpite), cor: COR.ink, seta: null };
   if (margem < 1 && d.diferencaVotos !== undefined) return { frase: diferencaVotosCard(d.diferencaVotos), cor: COR.ink, seta: null };
   // Governador não tem comparação com 2022: mostra a margem entre os dois.
   if (d.cargo === 'presidente' && margem >= 1 && d.variacao !== undefined && Math.abs(d.variacao) >= 0.05) {
@@ -399,7 +410,7 @@ export function renderCard(d: CardData): string {
     `<g style="font-family:Archivo,'Arial Narrow',Arial,sans-serif;font-weight:900;font-variant-numeric:tabular-nums">`,
     zonaA(d, modo, modo === 'palpite' ? SELO_PALPITE : d.selo, ACENTOS[d.acento ?? 'ouro']),
     titulo.svg,
-    destaque ? zonaC(destaque.frase, { cor: destaque.cor, seta: destaque.seta, y: Y.variacao + titulo.desce }) : zonaAguardando(Y.variacao + titulo.desce),
+    zonaDestaque(destaque, Y.variacao + titulo.desce),
     zonaD({ modo, y: Y.barra + titulo.desce, pctEsq: e.pct, esq: segmentos[0], dir: segmentos[1], aguardando }),
     rot.svg,
     percentuais(colunas, aguardando, tetoDosPercentuais),

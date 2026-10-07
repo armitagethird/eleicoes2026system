@@ -145,6 +145,8 @@ try {
   const base = variantes.find((v) => v.nome === 'parcial-87')?.card as CardData;
   variantes.push({ nome: 'palpite', card: comPalpite(base, 57) });
   variantes.push({ nome: 'palpite-22-lidera', card: comPalpite(base, 38.5) });
+  variantes.push({ nome: 'palpite-final', card: { ...comPalpite(base, 61), erroPalpite: 2.6 } });
+  variantes.push({ nome: 'palpite-final-acertou', card: { ...comPalpite(base, 58), erroPalpite: 0.04 } });
   const brasil = cardDePlacar(
     { ...placar(null), presidente: { ...placar(null).presidente, cand: [lula(50.9, 3356101, true), flavio(49.1, 3160389)] } },
     { nome: 'Brasil', uf: 'BR' },

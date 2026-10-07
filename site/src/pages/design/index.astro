@@ -135,6 +135,8 @@ const casos: Array<{ titulo: string; itens: Caso[] }> = [
       { id: 'cedilha', rotulo: 'Cedilha no nome', olhar: 'Açailândia: o Ç desce e empurra o que vem abaixo.', card: deCidade({ local: 'Açailândia', uf: 'MA', secoes: 55, pct13: 57.2, variacao: 1.4 }) },
       { id: 'selo-longo', rotulo: 'Selo longo', olhar: 'Selo e linha de meta dividem a mesma largura.', card: deCidade({ local: 'Conceição do Mato Dentro', uf: 'MG', secoes: 88, pct13: 44.9, variacao: -4.2, selos: ['mais_dividida_br'] }) },
       { id: 'palpite-22-lidera', rotulo: 'Palpite, 22 à frente', olhar: 'O mesmo contorno, com o palpite maior para o 22.', card: comPalpite(saoLuis, 38.5) },
+      { id: 'palpite-final', rotulo: 'Palpite, final', olhar: 'Em final, a zona C diz o erro em pontos, em tinta neutra e sem seta. Selo e rodapé de palpite continuam.', card: { ...comPalpite(saoLuis, 61), erroPalpite: 2.6 } },
+      { id: 'palpite-final-acertou', rotulo: 'Palpite, final, acertou', olhar: 'Erro que arredonda para 0,0: "você acertou o resultado", numa linha só, sem número.', card: { ...comPalpite(saoLuis, 58), erroPalpite: 0.04 } },
       { id: 'brasil-eleito', rotulo: 'Brasil, eleito', olhar: 'Só aqui aparece o rótulo de eleito: o JSON traz eleito: true.', card: doBrasilEleito() },
     ],
   },

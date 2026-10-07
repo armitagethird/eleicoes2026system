@@ -4,9 +4,11 @@
 // e 22 azul claro quem quer que lidere; quem lidera se diz em texto ("lidera") e pela barra. Barra, plaquinha, nome,
 // percentual, 2022 e seta de deslocamento usam a cor do candidato. Tolera dados ausentes.
 import Bandeira from './Bandeira.astro';
+import FotoCandidato from './FotoCandidato.astro';
 import {
   AGUARDANDO_SECOES,
   CARGO_GOVERNADOR,
+  CREDITO_FOTO,
   LINHA_PRIMEIRO_TURNO,
   OUTROS_CANDIDATOS,
   PRIMEIRO_TURNO_2026,
@@ -19,6 +21,7 @@ import {
 import type { Candidato, Hist, UF } from '../lib/contratos.ts';
 import { corCandidato } from '../lib/cores.ts';
 import { percentual } from '../lib/format.ts';
+import { fotoCandidato } from '../lib/fotos.ts';
 import { variacaoDe } from '../lib/variacao.ts';
 
 /** Nome e partido de um candidato (no modo pre os percentuais vêm do hist, que não tem nomes). */
@@ -33,6 +36,8 @@ interface Comum {
   larguraBandeira?: number;
   /** Cargo no cabeçalho. Padrão: presidente. */
   cargo?: 'presidente' | 'governador';
+  /** eager só para o placar da primeira dobra; os outros, lazy. */
+  carregamentoFotos?: 'lazy' | 'eager';
 }
 
 /** pre: 1º turno 2026 (13 · outros · 22), com o 2º turno de 2022 como referência embaixo. Sem "lidera" e sem seta. */
@@ -54,6 +59,8 @@ interface PropsApuracao extends Comum {
   /** secoes_pct do JSON. Abaixo de 1: "aguardando primeiras seções". */
   secoesPct?: number;
   atualizado?: string | null;
+  /** Casca da ilha ao vivo (components/AoVivo.ts): sai oculta, sem números, com todos os ganchos [data-placar-*]; a ilha preenche e a revela. */
+  casca?: boolean;
 }
 
 type Props = PropsPre | PropsApuracao;
@@ -70,8 +77,10 @@ interface Lado {
 const LARGURA_PLACA = 40;
 
 const props = Astro.props;
-const { modo, lugar, bandeira, larguraBandeira = LARGURA_PLACA, cargo = 'presidente' } = props;
+const { modo, lugar, bandeira, larguraBandeira = LARGURA_PLACA, cargo = 'presidente', carregamentoFotos = 'lazy' } = props;
 const numeroValido = (x: unknown): x is number => typeof x === 'number' && Number.isFinite(x);
+const casca = props.modo !== 'pre' && props.casca === true;
+const semLado: Lado = { n: 0, pct: null, eleito: false };
 
 let lados: Lado[];
 let outros: number | null = null;
@@ -85,6 +94,8 @@ if (props.modo === 'pre') {
   });
   outros = t1?.outros ?? null;
   referencia2022 = t2 ? [t2['13'], t2['22']] : null;
+} else if (casca) {
+  lados = [semLado, semLado];
 } else {
   lados = [...(props.cand ?? [])]
     .sort((a, b) => a.n - b.n)
@@ -117,7 +128,12 @@ const segmentos = comNumeros
       ...(outros !== null && outros > 0 ? [{ classe: 'outros', p: outros, cor: null, rotulo: null }] : []),
       { classe: 'dir', p: p1, cor: cores[1], rotulo: rotuloDaFolha(1) },
     ].filter((s) => s.p > 0)
-  : [];
+  : casca
+    ? [
+        { classe: 'esq', p: 0, cor: cores[0], rotulo: null },
+        { classe: 'dir', p: 0, cor: cores[1], rotulo: null },
+      ]
+    : [];
 
 // Seta para o lado de quem ganhou terreno desde 2022 (◀ = coluna da esquerda, ▶ = da direita).
 const variacoes =
@@ -131,7 +147,7 @@ function setaDe({ i, v }: { i: number; v: number }) {
   const [numero, ...resto] = variacao2022(lados[i].nome ?? String(lados[i].n), v).split(' ');
   return { lado: i === 0 ? 'esq' : 'dir', cor: cores[i], numero, resto: resto.join(' ') };
 }
-const seta = variacoes[0] ? setaDe(variacoes[0]) : null;
+const seta = variacoes[0] ? setaDe(variacoes[0]) : casca ? { lado: 'esq', cor: cores[0], numero: '', resto: '' } : null;
 
 let linha: string | null = null;
 if (props.modo === 'pre') linha = completo ? LINHA_PRIMEIRO_TURNO : null;
@@ -141,9 +157,21 @@ const semSinal = (pct: number): string => percentual(pct).replace('%', '');
 const longo = comNumeros && lados.some((l) => (l.pct ?? 0) >= 99.95);
 const turno = modo === 'pre' ? PRIMEIRO_TURNO_2026 : TURNO_CARD;
 const nomeCargo = cargo === 'governador' ? CARGO_GOVERNADOR : 'presidente';
+
+// Foto oficial do TSE só para presidente (o 13 e o 22 de governador são outros candidatos). A casca ao vivo ainda não sabe os
+// números dos candidatos: no 2º turno de presidente são o 13 e o 22.
+const numerosFoto = cargo === 'presidente' ? lados.map((l, i) => (casca ? [13, 22][i] : l.n)) : [];
+const comFotos = numerosFoto.some((n) => fotoCandidato(n));
 ---
 
-<section class:list={['placar', modo, { longo }]} aria-label={`${lugar}: ${nomeCargo}, ${turno}`}>
+<section
+  class:list={['placar', modo, { longo }]}
+  aria-label={`${lugar}: ${nomeCargo}, ${turno}`}
+  hidden={casca}
+  data-so-pre={modo === 'pre' ? '' : undefined}
+  data-so-vivo={casca ? '' : undefined}
+  data-placar-cargo={casca ? cargo : undefined}
+>
   <header class:list={['topo', { 'com-bandeira': bandeira }]}>
     {bandeira && <Bandeira uf={bandeira} largura={larguraBandeira} />}
     <h2 class="lugar">{lugar}</h2>
@@ -152,7 +180,7 @@ const nomeCargo = cargo === 'governador' ? CARGO_GOVERNADOR : 'presidente';
 
   {
     seta && (
-      <p class:list={['seta', seta.lado]} style={`--cor:${seta.cor}`}>
+      <p class:list={['seta', seta.lado]} style={`--cor:${seta.cor}`} hidden={casca} data-placar-seta={casca ? '' : undefined}>
         <svg class="triangulo" viewBox="0 0 10 12" aria-hidden="true">
           <path d={seta.lado === 'esq' ? 'M0 6 10 0v12z' : 'M10 6 0 0v12z'} />
         </svg>
@@ -173,8 +201,17 @@ const nomeCargo = cargo === 'governador' ? CARGO_GOVERNADOR : 'presidente';
     <div class="barra" aria-hidden="true">
       {
         segmentos.map((s) => (
-          <span class:list={['folha', s.classe]} style={s.cor ? `--p:${s.p};--cor:${s.cor}` : `--p:${s.p}`}>
-            {s.rotulo && <span class="rotulo">{s.rotulo}</span>}
+          <span
+            class:list={['folha', s.classe]}
+            style={s.cor ? `--p:${s.p};--cor:${s.cor}` : `--p:${s.p}`}
+            hidden={casca}
+            data-placar-folha={casca ? s.classe : undefined}
+          >
+            {(s.rotulo || casca) && (
+              <span class="rotulo" hidden={casca} data-placar-rotulo={casca ? '' : undefined}>
+                {s.rotulo}
+              </span>
+            )}
           </span>
         ))
       }
@@ -183,19 +220,21 @@ const nomeCargo = cargo === 'governador' ? CARGO_GOVERNADOR : 'presidente';
 
   {
     lados.length === 2 && (
-      <div class="colunas">
+      <div class:list={['colunas', { 'com-foto': comFotos }]}>
         {lados.map((l, i) => (
-          <div class:list={['coluna', i === 0 ? 'esq' : 'dir']} style={`--cor:${cores[i]}`}>
+          <div class:list={['coluna', i === 0 ? 'esq' : 'dir']} style={`--cor:${cores[i]}`} data-placar-coluna={casca ? '' : undefined}>
+            {comFotos && <FotoCandidato n={numerosFoto[i]} carregamento={carregamentoFotos} />}
             <p class="quem">
-              <span class="placa-n">{l.n}</span>
-              {l.nome && <span class="nome">{l.nome}</span>}
-              {rotuloDaFolha(i) && <span class="sr-only">, {rotuloDaFolha(i)}</span>}
+              <span class="placa-n" data-placar-n={casca ? '' : undefined}>{l.n || ''}</span>
+              {(l.nome || casca) && <span class="nome" data-placar-nome={casca ? '' : undefined}>{l.nome}</span>}
+              {(rotuloDaFolha(i) || casca) && <span class="sr-only" data-placar-rotulo-sr={casca ? '' : undefined}>, {rotuloDaFolha(i)}</span>}
             </p>
-            {l.partido && <p class="partido">{l.partido}</p>}
-            {comNumeros && l.pct !== null && (
-              <p class="pct">
-                {semSinal(l.pct)}
-                <span class="sinal">%</span>
+            {(l.partido || casca) && <p class="partido" data-placar-partido={casca ? '' : undefined}>{l.partido}</p>}
+            {(casca || (comNumeros && l.pct !== null)) && (
+              <p class="pct" hidden={casca} data-placar-pct={casca ? '' : undefined}>
+                {casca ? <span data-flap aria-hidden="true">--,-</span> : semSinal(l.pct as number)}
+                <span class="sinal" aria-hidden={casca ? 'true' : undefined}>%</span>
+                {casca && <span class="sr-only" data-placar-falado />}
               </p>
             )}
           </div>
@@ -204,7 +243,7 @@ const nomeCargo = cargo === 'governador' ? CARGO_GOVERNADOR : 'presidente';
     )
   }
 
-  {!comNumeros && modo !== 'pre' && <p class="aguardando">{AGUARDANDO_SECOES}</p>}
+  {!comNumeros && modo !== 'pre' && <p class="aguardando" data-placar-aguardando={casca ? '' : undefined}>{AGUARDANDO_SECOES}</p>}
 
   {
     comNumeros && referencia2022 && (
@@ -227,7 +266,9 @@ const nomeCargo = cargo === 'governador' ? CARGO_GOVERNADOR : 'presidente';
     )
   }
 
-  {linha && <p class="linha">{linha}</p>}
+  {(linha || casca) && <p class="linha" data-placar-linha={casca ? '' : undefined}>{linha}</p>}
+  {comFotos && <p class="credito">{CREDITO_FOTO}</p>}
+  {casca && cargo === 'presidente' && <p class="conexao" role="status" data-conexao hidden />}
 </section>
 
 <style>
@@ -264,6 +305,7 @@ const nomeCargo = cargo === 'governador' ? CARGO_GOVERNADOR : 'presidente';
   .aguardando,
   .legenda-outros,
   .partido,
+  .credito,
   .ref-rotulo {
     font-family: var(--font-display);
     font-size: var(--fs-1);
@@ -336,7 +378,7 @@ const nomeCargo = cargo === 'governador' ? CARGO_GOVERNADOR : 'presidente';
     background: var(--surface-1);
   }
 
-  .barra:has(.folha) {
+  .barra:has(.folha:not([hidden])) {
     background: var(--bg);
   }
 
@@ -363,12 +405,14 @@ const nomeCargo = cargo === 'governador' ? CARGO_GOVERNADOR : 'presidente';
     top: 100%;
   }
 
+  /* Ao vivo, a barra acompanha o JSON novo em vez de saltar (base.css zera a transição com prefers-reduced-motion). */
   .folha {
     display: flex;
     align-items: center;
     flex: var(--p) 1 0%;
     min-width: 0;
     background: var(--cor);
+    transition: flex-grow var(--dur-3) var(--ease);
   }
 
   .folha.outros {
@@ -484,6 +528,49 @@ const nomeCargo = cargo === 'governador' ? CARGO_GOVERNADOR : 'presidente';
     font-size: 0.4em;
   }
 
+  /* Com foto: [foto] [placa e nome, partido] ... [nome e placa, partido] [foto]. A foto ocupa as duas linhas de identidade (o
+     texto fica centrado nela) e o percentual segue na largura de foto e texto, alinhado às bordas como sem foto. */
+  .com-foto {
+    grid-template-columns: auto minmax(0, 1fr) minmax(0, 1fr) auto;
+    column-gap: var(--sp-1);
+  }
+
+  .com-foto .coluna.esq > :global(.foto) {
+    grid-column: 1;
+    grid-row: 1 / span 2;
+  }
+
+  .com-foto .coluna.dir > :global(.foto) {
+    grid-column: 4;
+    grid-row: 1 / span 2;
+  }
+
+  .com-foto .coluna.esq > .quem,
+  .com-foto .coluna.esq > .partido {
+    grid-column: 2;
+  }
+
+  .com-foto .coluna.dir > .quem,
+  .com-foto .coluna.dir > .partido {
+    grid-column: 3;
+  }
+
+  .com-foto .coluna.esq > .pct {
+    grid-column: 1 / 3;
+  }
+
+  .com-foto .coluna.dir > .pct {
+    grid-column: 3 / 5;
+  }
+
+  .com-foto .quem {
+    align-self: end;
+  }
+
+  .com-foto .partido {
+    align-self: start;
+  }
+
   .aguardando {
     padding-block: var(--sp-2);
     color: var(--ink);
@@ -524,5 +611,22 @@ const nomeCargo = cargo === 'governador' ? CARGO_GOVERNADOR : 'presidente';
   .linha {
     padding-top: var(--sp-1);
     text-wrap: balance;
+  }
+
+  /* Crédito das fotos, uma vez por placar: colado à linha de fonte, que ele acompanha. */
+  .credito {
+    margin-top: calc(var(--sp-1) * -1);
+  }
+
+  /* display: grid e flex vencem o [hidden] do navegador: a casca ao vivo e os pedaços que a ilha liga e desliga precisam dele. */
+  .placar[hidden],
+  .placar [hidden] {
+    display: none;
+  }
+
+  .conexao {
+    padding: var(--sp-1) var(--sp-2);
+    border: var(--stroke-1) solid var(--ink-2);
+    font-size: var(--fs-1);
   }
 </style>

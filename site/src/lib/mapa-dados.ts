@@ -51,6 +51,8 @@ export interface VistaPlaca {
   setaNumero: string;
   /** Frase do painel: "+3,4 pontos para 13 em relação a 2022" ('' sem variação). */
   variacao: string;
+  /** Quem tem mais votos ali, para a cor da sigla ('' = sigla neutra: sem dado, empate ou "outros" na frente). A placa nunca é pintada. */
+  maisVotado: '13' | '22' | '';
   /** Proporções da barra em custom properties. */
   estilo: string;
 }
@@ -91,9 +93,17 @@ export function mapaApuracao(
 // Arredonda como o texto mostra: a seta e o número nunca discordam ("+0,5" sempre vem com seta).
 const umaCasa = (x: number): number => Math.round(Math.abs(x) * 10) / 10;
 
+// Por número de urna, nunca por posição. No 1º turno "outros" soma os demais candidatos: se ele passa os dois, ninguém tem a cor.
+function quemTemMaisVotos(pct: Placa['pct']): '13' | '22' | '' {
+  if (!pct) return '';
+  if (pct['13'] > pct['22'] && pct['13'] > pct.outros) return '13';
+  if (pct['22'] > pct['13'] && pct['22'] > pct.outros) return '22';
+  return '';
+}
+
 export function vista(placa: Placa, fase: Fase): VistaPlaca {
   const { pct, variacao, secoes } = placa;
-  const rotulo = rotuloPlacaMapa(placa.nome, fase, pct, variacao, secoes);
+  const rotulo = rotuloPlacaMapa(placa.lugar, placa.nome, fase, pct, variacao, secoes);
   const meta = !pct ? AGUARDANDO_SECOES : fase === 'pre' ? PRIMEIRO_TURNO_2026 : secoes === null ? fase : apuracaoCard(fase, secoes);
   const ganhou = variacao === null || umaCasa(variacao) === 0 ? '' : variacao > 0 ? '13' : '22';
   const texto = ganhou ? variacao2022(ganhou, Math.abs(variacao as number)) : '';
@@ -108,6 +118,7 @@ export function vista(placa: Placa, fase: Fase): VistaPlaca {
     seta,
     setaNumero: seta ? texto.split(' ')[0] : '',
     variacao: texto,
+    maisVotado: quemTemMaisVotos(pct),
     estilo: pct ? `--a:${pct['13']};--o:${pct.outros};--b:${pct['22']}` : '--a:0;--o:0;--b:0',
   };
 }

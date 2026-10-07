@@ -1,4 +1,4 @@
-// Gera public/og/fallback.png, a imagem OG das páginas sem card próprio (home, UFs, rankings, 404): 1200x675, só tipografia.
+// Gera public/og/fallback.png, a imagem OG das páginas sem card próprio (home, UFs, apuração, histórico, 404): 1200x675, só tipografia.
 // Nome, domínio e @ vêm de src/lib/site.ts e as cores de src/styles/tokens.css, então trocar um deles é rodar o script de novo.
 // Tema Brasil: fundo de --bg, a faixa verde e amarela do topo (a de base.css e do card) e a marca do favicon. Sem vermelho nem azul
 // (são cores dos candidatos, nunca da marca). Rodar: npm run og (precisa do Chrome, como card:previews).

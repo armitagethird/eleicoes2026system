@@ -7,9 +7,11 @@
 // mesma fase: sem os dados do 2º turno (o build não os conhece; o ao vivo é da Fase 3), os dois dizem "aguardando".
 import brFixture from '../../../contracts/fixtures/br.json';
 import statusFixture from '../../../contracts/fixtures/status.json';
+import AoVivoCarga from '../components/AoVivoCarga.astro';
 import CampoBusca from '../components/CampoBusca.astro';
 import Cabecalho from '../components/Cabecalho.astro';
 import Mapa from '../components/Mapa.astro';
+import MinhasCidades from '../components/MinhasCidades.astro';
 import Painel from '../components/Painel.astro';
 import Pesquisas from '../components/Pesquisas.astro';
 import Placar from '../components/Placar.astro';
@@ -43,6 +45,8 @@ const idTitulo = embutida ? `titulo-${status.modo}` : 'titulo-home';
 const presidente = placar?.presidente;
 const fase: Fase = status.modo === 'pre' ? 'pre' : status.modo === 'live' ? 'parcial' : 'final';
 const apuracao = { placares: { ...ufs, BR: placar }, atualizado: placar?.atualizado ?? null };
+// A página sai do build em pre e vira live/final no cliente (components/AoVivo.ts): leva a casca oculta do placar ao vivo.
+const aoVivo = !embutida && fase === 'pre';
 
 // O hist só tem percentuais; nome e partido de 13 e 22 vêm do contrato (nomes reais, iguais em todos os arquivos).
 const nomes = brFixture.presidente.cand.map(({ n, nome, partido }) => ({ n, nome, partido }));
@@ -74,7 +78,7 @@ const linhasTitulo = linhas.map((l, i) => {
   <div class="pagina">
     <Cabecalho modo={status.modo} secoesPct={placar?.secoes_pct} atualizado={placar?.atualizado} />
 
-    <main class="home">
+    <main class="home" data-ao-vivo={aoVivo ? 'br' : undefined}>
       <h1 class="destino" id={idTitulo}>
         {linhasTitulo.map((l) => <span class="linha" style={l.estilo}>{l.texto}</span>)}
       </h1>
@@ -86,8 +90,9 @@ const linhasTitulo = linhas.map((l, i) => {
           fase === 'pre' ? (
             <>
               <Painel inicio={status.inicio} />
-              <Placar modo="pre" lugar="Brasil" bandeira="br" cand={nomes} hist={hist} />
+              <Placar modo="pre" lugar="Brasil" bandeira="br" cand={nomes} hist={hist} carregamentoFotos="eager" />
               <Pesquisas />
+              {aoVivo && <Placar modo="parcial" lugar="Brasil" bandeira="br" casca />}
             </>
           ) : (
             <Placar
@@ -98,6 +103,7 @@ const linhasTitulo = linhas.map((l, i) => {
               variacao={presidente?.variacao_2022}
               secoesPct={placar?.secoes_pct}
               atualizado={placar?.atualizado}
+              carregamentoFotos="eager"
             />
           )
         }
@@ -108,6 +114,9 @@ const linhasTitulo = linhas.map((l, i) => {
       </div>
     </main>
 
+    <MinhasCidades />
+
+    {aoVivo && <AoVivoCarga />}
     <Rodape />
   </div>
 </Moldura>

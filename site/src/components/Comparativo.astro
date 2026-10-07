@@ -3,10 +3,12 @@
 // linguagem FOLHA do card e do mapa. A cor é do candidato (lib/cores.ts), nunca da posição: 13 vermelho à esquerda,
 // 22 azul claro à direita. A variação é só entre 13 e 22 (lib/cidade.ts) e a seta aponta para o lado de quem ganhou terreno.
 // Sem 2022 (cidade nova): só o 1º turno de 2026, com uma explicação neutra. Zero JS.
+import FotoCandidato from './FotoCandidato.astro';
 import { variacaoEntreDois } from '../lib/cidade.ts';
 import type { Candidato, Hist } from '../lib/contratos.ts';
 import {
   COMPARATIVO_TITULO,
+  CREDITO_FOTO,
   OUTROS_CANDIDATOS,
   PRIMEIRO_TURNO_2026,
   SEGUNDO_TURNO_2022,
@@ -17,6 +19,7 @@ import {
 } from '../lib/copy.ts';
 import { corCandidato } from '../lib/cores.ts';
 import { percentual } from '../lib/format.ts';
+import { fotoCandidato } from '../lib/fotos.ts';
 
 interface Props {
   /** hist da cidade (src/data/hist). Ausente: o bloco não sai. */
@@ -60,20 +63,21 @@ const ganhou = variacao !== null && Math.abs(variacao) >= 0.05 ? (variacao > 0 ?
 const [numeroVariacao, ...restoVariacao] =
   ganhou === null ? [] : variacao2022(lados[ganhou].nome ?? String(lados[ganhou].n), Math.abs(variacao ?? 0)).split(' ');
 
+const comFotos = lados.some((l) => fotoCandidato(l.n));
 const semSinal = (pct: number): string => percentual(pct).replace('%', '');
 const aviso = !t2 ? SEM_2022 : ganhou === null ? SEM_MUDANCA_2022 : null;
 ---
 
 {
   turnos.length > 0 && (
-    <section class:list={['comparativo', { destaque }]} aria-labelledby={`${id}-titulo`}>
+    <section class:list={['comparativo', { destaque }]} data-comparativo aria-labelledby={`${id}-titulo`}>
       <h2 class="titulo" id={`${id}-titulo`}>
         {t2 ? COMPARATIVO_TITULO : PRIMEIRO_TURNO_2026}
       </h2>
 
       {
         destaque && ganhou !== null && (
-          <p class:list={['variacao', ganhou === 0 ? 'esq' : 'dir']} style={`--cor:${lados[ganhou].cor}`}>
+          <p class:list={['variacao', ganhou === 0 ? 'esq' : 'dir']} data-so-pre style={`--cor:${lados[ganhou].cor}`}>
             <svg class="triangulo" viewBox="0 0 10 12" aria-hidden="true">
               <path d={ganhou === 0 ? 'M0 6 10 0v12z' : 'M10 6 0 0v12z'} />
             </svg>
@@ -87,11 +91,14 @@ const aviso = !t2 ? SEM_2022 : ganhou === null ? SEM_MUDANCA_2022 : null;
       <div class="legenda">
         {
           lados.map((l, i) => (
-            <p class:list={['quem', i === 0 ? 'esq' : 'dir']} style={`--cor:${l.cor}`}>
-              <span class="placa-n">{l.n}</span>
-              {l.nome && <span class="nome">{l.nome}</span>}
-              {l.partido && <span class="partido">{l.partido}</span>}
-            </p>
+            <div class:list={['identidade', i === 0 ? 'esq' : 'dir']}>
+              <FotoCandidato n={l.n} carregamento={destaque ? 'eager' : 'lazy'} />
+              <p class:list={['quem', i === 0 ? 'esq' : 'dir']} style={`--cor:${l.cor}`}>
+                <span class="placa-n">{l.n}</span>
+                {l.nome && <span class="nome">{l.nome}</span>}
+                {l.partido && <span class="partido">{l.partido}</span>}
+              </p>
+            </div>
           ))
         }
       </div>
@@ -126,6 +133,7 @@ const aviso = !t2 ? SEM_2022 : ganhou === null ? SEM_MUDANCA_2022 : null;
       </div>
 
       {t1 && t2 && <p class="nota">{notaSoEntreDois(t1.outros)}</p>}
+      {comFotos && <p class="credito">{CREDITO_FOTO}</p>}
     </section>
   )
 }
@@ -217,6 +225,18 @@ const aviso = !t2 ? SEM_2022 : ganhou === null ? SEM_MUDANCA_2022 : null;
     display: flex;
     justify-content: space-between;
     gap: var(--sp-2);
+  }
+
+  /* Foto na borda de fora, identidade ao lado dela: [foto] [13 LULA PT] ... [PL FLÁVIO BOLSONARO 22] [foto]. */
+  .identidade {
+    display: flex;
+    align-items: center;
+    gap: var(--sp-1);
+    min-width: 0;
+  }
+
+  .identidade.dir {
+    flex-direction: row-reverse;
   }
 
   .quem {
@@ -379,6 +399,18 @@ const aviso = !t2 ? SEM_2022 : ganhou === null ? SEM_MUDANCA_2022 : null;
     max-width: 60ch;
     font-size: var(--fs-1);
     line-height: 1.5;
+    color: var(--ink-2);
+  }
+
+  /* Crédito das fotos da legenda, uma vez por bloco. */
+  .credito {
+    margin-top: calc(var(--sp-1) * -1);
+    font-family: var(--font-display);
+    font-size: var(--fs-1);
+    font-weight: 900;
+    line-height: 1.2;
+    letter-spacing: var(--track-caps);
+    text-transform: uppercase;
     color: var(--ink-2);
   }
 </style>
