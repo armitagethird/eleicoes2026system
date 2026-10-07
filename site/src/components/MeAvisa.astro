@@ -1,0 +1,372 @@
+---
+// ME AVISA (BRIEF, seção 4). Coleta e-mail, que é dado pessoal (LGPD): só o e-mail (mais o slug da cidade e o aceite), com
+// consentimento explícito em texto, caixa nunca pré-marcada, a promessa exata de DOIS envios (um às 17h do dia 25, com o link da
+// cidade, e um com o resultado final), a finalidade e a saída sempre à vista. Nada vai em query string: o POST leva JSON no corpo.
+// Atrás de flag (lib/flags.ts): desligado, ou ligado sem endpoint seguro, NÃO renderiza nada (nem o título).
+// O estado vive em data-estado (pronto | enviando | enviado | falhou | ja-pediu) e o CSS mostra o que cabe a cada um; a ilha
+// (me-avisa.ts) só troca o estado. Os textos de erro ficam em data-msg-* para a ilha não carregar copy.
+import Botao from './Botao.astro';
+import {
+  ME_AVISA_CAMPO,
+  ME_AVISA_ENVIANDO,
+  ME_AVISA_ENVIAR,
+  ME_AVISA_ERRO,
+  ME_AVISA_EXEMPLO,
+  ME_AVISA_FALHA,
+  ME_AVISA_FINALIDADE,
+  ME_AVISA_JA_PEDIU,
+  ME_AVISA_OK,
+  ME_AVISA_OUTRO,
+  ME_AVISA_TITULO,
+  meAvisaConsentimento,
+  meAvisaPromessa,
+} from '../lib/copy.ts';
+import { ME_AVISA, type FlagMeAvisa } from '../lib/flags.ts';
+import { meAvisaDisponivel } from '../lib/me-avisa.ts';
+import { SITE_NAME } from '../lib/site.ts';
+
+interface Props {
+  cidade: { slug: string; nome: string; uf: string };
+  /** Início da apuração (status.inicio): a hora e o dia da promessa. */
+  inicio?: string | null;
+  /** Só /design/me-avisa força o flag ligado; em qualquer outra página vale lib/flags.ts. */
+  flag?: FlagMeAvisa;
+  /** Prefixo dos ids, para mais de um formulário na mesma página (/design/me-avisa, /design/cidade). */
+  id?: string;
+}
+
+const { cidade, inicio, flag = ME_AVISA, id = 'me-avisa' } = Astro.props;
+const disponivel = meAvisaDisponivel(flag);
+---
+
+{
+  disponivel && (
+    <section
+      class="me-avisa"
+      aria-labelledby={`${id}-titulo`}
+      data-me-avisa
+      data-estado="pronto"
+      data-cidade={cidade.slug}
+      data-endpoint={flag.endpoint}
+      data-msg-vazio={ME_AVISA_ERRO.vazio}
+      data-msg-invalido={ME_AVISA_ERRO.invalido}
+      data-msg-consentimento={ME_AVISA_ERRO.consentimento}
+      data-msg-falha={ME_AVISA_FALHA}
+    >
+      <h2 class="titulo" id={`${id}-titulo`}>
+        {ME_AVISA_TITULO}
+      </h2>
+      <p class="promessa">{meAvisaPromessa(inicio)}</p>
+
+      <form class="form" method="post" action={flag.endpoint}>
+        <div class="campo">
+          <label class="rotulo" for={`${id}-email`}>
+            {ME_AVISA_CAMPO}
+          </label>
+          <input
+            class="entrada"
+            id={`${id}-email`}
+            type="email"
+            name="email"
+            required
+            maxlength="254"
+            autocomplete="email"
+            inputmode="email"
+            autocapitalize="off"
+            spellcheck="false"
+            enterkeyhint="send"
+            placeholder={ME_AVISA_EXEMPLO}
+            aria-describedby={`${id}-erro-email`}
+            data-email
+          />
+          <p class="erro" id={`${id}-erro-email`} hidden data-erro-email></p>
+        </div>
+
+        <div class="campo">
+          <label class="consentimento" for={`${id}-consentimento`}>
+            <input
+              class="caixa"
+              id={`${id}-consentimento`}
+              type="checkbox"
+              name="consentimento"
+              required
+              aria-describedby={`${id}-finalidade ${id}-erro-consentimento`}
+              data-consentimento
+            />
+            <span>{meAvisaConsentimento(SITE_NAME, `${cidade.nome} (${cidade.uf})`)}</span>
+          </label>
+          <p class="erro" id={`${id}-erro-consentimento`} hidden data-erro-consentimento></p>
+          <p class="finalidade" id={`${id}-finalidade`}>
+            {ME_AVISA_FINALIDADE}
+          </p>
+        </div>
+
+        <div class="isca" aria-hidden="true">
+          <label>
+            Não preencha este campo
+            <input type="text" name="comentario" tabindex="-1" autocomplete="off" data-isca />
+          </label>
+        </div>
+
+        <Botao type="submit" class="enviar" data-enviar>
+          <span class="rotulos">
+            <span class="rotulo-botao pronto">{ME_AVISA_ENVIAR}</span>
+            <span class="rotulo-botao enviando">{ME_AVISA_ENVIANDO}</span>
+          </span>
+        </Botao>
+        <p class="aviso" role="status" data-aviso />
+      </form>
+
+      <div class="enviado" tabindex="-1" data-enviado>
+        <p class="ok ok-novo">
+          {ME_AVISA_OK} <span class="ok-email" data-ok-email />.
+        </p>
+        <p class="ok ok-antigo">{ME_AVISA_JA_PEDIU}</p>
+        <Botao variante="secundario" class="outro" data-outro>
+          {ME_AVISA_OUTRO}
+        </Botao>
+      </div>
+    </section>
+  )
+}
+
+<script>
+  // Com o flag desligado o formulário não existe: da ilha, só este teste chega ao navegador.
+  if (document.querySelector('[data-me-avisa]')) void import('./me-avisa.ts');
+</script>
+
+<style>
+  .me-avisa {
+    display: grid;
+    gap: var(--sp-2);
+    max-width: 36rem;
+    margin-bottom: var(--sp-5);
+    padding-top: var(--sp-2);
+    border-top: var(--stroke-2) solid var(--ink);
+  }
+
+  .titulo {
+    font-size: var(--fs-3);
+    font-stretch: 75%;
+    line-height: 1.1;
+    text-transform: uppercase;
+  }
+
+  .promessa {
+    line-height: 1.35;
+    text-wrap: balance;
+  }
+
+  .form {
+    display: grid;
+    gap: var(--sp-3);
+  }
+
+  .campo {
+    display: grid;
+    gap: var(--sp-1);
+  }
+
+  .rotulo {
+    font-family: var(--font-display);
+    font-size: var(--fs-1);
+    font-weight: 900;
+    line-height: 1.2;
+    letter-spacing: var(--track-caps);
+    text-transform: uppercase;
+    color: var(--ink-2);
+  }
+
+  /* O campo é irmão do letreiro da busca: filete de 3 px e raio 8; o texto é 500 e minúsculo (e-mail em caixa-alta não se lê). */
+  .entrada {
+    display: block;
+    width: 100%;
+    height: 56px;
+    padding: 0 var(--sp-2);
+    border: 3px solid var(--ink-2);
+    border-radius: var(--radius);
+    background: var(--bg);
+    font-size: var(--fs-2);
+    caret-color: var(--ink);
+    appearance: none;
+  }
+
+  .entrada::placeholder {
+    color: var(--ink-2);
+    opacity: 1;
+  }
+
+  /* Foco = filete mais grosso, para dentro, sempre em --ink (vermelho e azul são dos candidatos, e não há "vermelho de erro"). */
+  .entrada:focus {
+    border-color: var(--ink);
+    outline: 3px solid var(--ink);
+    outline-offset: -6px;
+  }
+
+  /* Erro sem depender de cor: filete tracejado em --ink e a mensagem com a placa "!" logo abaixo. */
+  .entrada[aria-invalid='true'] {
+    border-style: dashed;
+    border-color: var(--ink);
+  }
+
+  .consentimento {
+    display: grid;
+    grid-template-columns: auto minmax(0, 1fr);
+    gap: var(--sp-2);
+    align-items: start;
+    line-height: 1.4;
+    cursor: pointer;
+  }
+
+  /* Caixa própria: a nativa fica quase invisível no tema escuro. Mesmo filete de 3 px do campo; marcada, preenche em --ink com o
+     "certo" recortado em --bg. Em alto contraste do Windows volta a nativa. */
+  .caixa {
+    display: grid;
+    place-content: center;
+    width: var(--sp-4);
+    height: var(--sp-4);
+    margin: 0;
+    border: 3px solid var(--ink-2);
+    border-radius: var(--radius);
+    background: var(--bg);
+    cursor: pointer;
+    appearance: none;
+  }
+
+  .caixa::before {
+    content: '';
+    width: var(--sp-2);
+    height: var(--sp-2);
+    background: var(--bg);
+    clip-path: polygon(14% 44%, 0 65%, 50% 100%, 100% 16%, 80% 0, 43% 62%);
+    transform: scale(0);
+    transition: transform var(--dur-1) var(--ease);
+  }
+
+  .caixa:checked {
+    border-color: var(--ink);
+    background: var(--ink);
+  }
+
+  .caixa:checked::before {
+    transform: scale(1);
+  }
+
+  @media (forced-colors: active) {
+    .caixa {
+      appearance: auto;
+    }
+  }
+
+  .caixa[aria-invalid='true'] {
+    outline: var(--stroke-2) dashed var(--ink);
+    outline-offset: 2px;
+  }
+
+  .erro {
+    display: flex;
+    align-items: baseline;
+    gap: var(--sp-1);
+    line-height: 1.35;
+  }
+
+  .erro[hidden] {
+    display: none;
+  }
+
+  .erro::before {
+    content: '!';
+    content: '!' / '';
+    flex: none;
+    width: 1.4em;
+    background: var(--ink);
+    font-family: var(--font-display);
+    font-weight: 900;
+    text-align: center;
+    color: var(--bg);
+  }
+
+  .finalidade {
+    font-size: var(--fs-1);
+    line-height: 1.5;
+    color: var(--ink-2);
+  }
+
+  /* Isca: fora da tela, não a ocultar com display:none (robô de verdade pula o que está oculto). Fica fora do foco e da leitura. */
+  .isca {
+    position: absolute;
+    left: -9999px;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+  }
+
+  /* Os dois rótulos ocupam a mesma célula: o botão tem sempre a largura do mais longo, então "Enviando…" não mexe em nada. */
+  .rotulos {
+    display: grid;
+  }
+
+  .rotulo-botao {
+    grid-area: 1 / 1;
+  }
+
+  .me-avisa :global(.enviar) {
+    width: 100%;
+    min-height: 56px;
+    font-size: var(--fs-3);
+  }
+
+  .me-avisa[data-estado='enviando'] .pronto,
+  .me-avisa:not([data-estado='enviando']) .enviando {
+    visibility: hidden;
+  }
+
+  .aviso:not(:empty) {
+    padding: var(--sp-1) var(--sp-2);
+    border: var(--stroke-1) solid var(--ink-2);
+    line-height: 1.35;
+  }
+
+  /* Enviado e já pediu trocam o formulário por uma folha com filete grosso. */
+  .enviado {
+    display: none;
+    gap: var(--sp-2);
+    justify-items: start;
+    padding: var(--sp-3) var(--sp-2);
+    border: var(--stroke-2) solid var(--ink);
+  }
+
+  .me-avisa[data-estado='enviado'] .form,
+  .me-avisa[data-estado='ja-pediu'] .form {
+    display: none;
+  }
+
+  .me-avisa[data-estado='enviado'] .enviado,
+  .me-avisa[data-estado='ja-pediu'] .enviado {
+    display: grid;
+  }
+
+  .ok {
+    font-size: var(--fs-3);
+    line-height: 1.25;
+  }
+
+  .ok-email {
+    overflow-wrap: anywhere;
+    text-decoration: underline;
+    text-decoration-thickness: var(--stroke-1);
+    text-underline-offset: 0.2em;
+  }
+
+  .me-avisa:not([data-estado='enviado']) .ok-novo,
+  .me-avisa:not([data-estado='ja-pediu']) .ok-antigo {
+    display: none;
+  }
+
+  @media (min-width: 768px) {
+    .me-avisa :global(.enviar) {
+      width: auto;
+      padding-inline: var(--sp-5);
+    }
+  }
+</style>

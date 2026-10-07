@@ -1,0 +1,213 @@
+---
+// MINHAS CIDADES (BRIEF Fase 3; design/DIRECTION.md, Home, passo 6). Fica no localStorage, só neste aparelho; nada é enviado.
+// Na home vai entre o <main> e o rodapé, nunca dentro da grade do <main> (ver o .faixa abaixo).
+//   Com `cidade` (página da cidade): o botão ADICIONAR ÀS MINHAS CIDADES / REMOVER, um interruptor com aria-pressed.
+//   Sem `cidade` (home): a faixa MINHAS CIDADES com até 5 destinos, da mais recente para a mais antiga.
+// Os dois nascem escondidos (sem JS não há o que mostrar) e a ilha (minhas-cidades.ts) os revela. Zero CLS: aparecem depois de
+// tudo o que a primeira dobra mostra (a faixa fecha a home, o botão fecha a página da cidade), e o botão tem sempre a largura
+// do rótulo mais longo (os dois rótulos ocupam a mesma célula; o inativo fica invisível e fora da árvore de acessibilidade).
+// Linguagem DESTINO: cada cidade é uma linha de painel (bandeira intacta, nome em caixa-alta, sigla da UF numa placa).
+import Botao from './Botao.astro';
+import { rasterBandeira } from '../lib/bandeiras.ts';
+import { UFS } from '../lib/contratos.ts';
+import {
+  MINHAS_CIDADES_ADICIONAR,
+  MINHAS_CIDADES_GUARDADA,
+  MINHAS_CIDADES_GUARDADA_TROCA,
+  MINHAS_CIDADES_REMOVER,
+  MINHAS_CIDADES_REMOVIDA,
+  MINHAS_CIDADES_SEM_ARMAZENAMENTO,
+  MINHAS_CIDADES_TITULO,
+} from '../lib/copy.ts';
+import type { CidadeSalva } from '../lib/minhas-cidades.ts';
+
+interface Props {
+  cidade?: CidadeSalva;
+}
+
+const { cidade } = Astro.props;
+// A ilha monta as linhas no navegador e não conhece as URLs com hash das bandeiras: elas vão aqui, uma por UF (WebP de 100 px
+// para a caixa de 40: nítido em tela 2x, sem pesar nas outras).
+const bandeiras = cidade ? '' : JSON.stringify(Object.fromEntries(UFS.map((uf) => [uf, rasterBandeira(uf, 80).src])));
+---
+
+{
+  cidade ? (
+    <div
+      class="acao"
+      hidden
+      data-minhas-cidades-acao
+      data-slug={cidade.slug}
+      data-nome={cidade.nome}
+      data-uf={cidade.uf}
+      data-msg-guardada={MINHAS_CIDADES_GUARDADA}
+      data-msg-troca={MINHAS_CIDADES_GUARDADA_TROCA}
+      data-msg-removida={MINHAS_CIDADES_REMOVIDA}
+      data-msg-erro={MINHAS_CIDADES_SEM_ARMAZENAMENTO}
+    >
+      <Botao variante="secundario" class="alternar" aria-pressed="false" data-alternar>
+        <span class="rotulos">
+          <span class="rotulo adicionar">
+            <svg class="marca" viewBox="0 0 16 16" aria-hidden="true" focusable="false"><path d="M8 2v12M2 8h12" /></svg>
+            {MINHAS_CIDADES_ADICIONAR}
+          </span>
+          <span class="rotulo remover">
+            <svg class="marca" viewBox="0 0 16 16" aria-hidden="true" focusable="false"><path d="M3 3l10 10M13 3L3 13" /></svg>
+            {MINHAS_CIDADES_REMOVER}
+          </span>
+        </span>
+      </Botao>
+      <p class="estado" role="status" data-status />
+    </div>
+  ) : (
+    <section class="faixa" aria-label={MINHAS_CIDADES_TITULO} hidden data-minhas-cidades-faixa>
+      <h2 class="titulo">{MINHAS_CIDADES_TITULO}</h2>
+      <ul class="lista" role="list" data-lista />
+      <script type="application/json" data-bandeiras set:html={bandeiras} />
+    </section>
+  )
+}
+
+<script>
+  import './minhas-cidades.ts';
+</script>
+
+<style>
+  /* display: grid vence o [hidden] do navegador. */
+  .acao[hidden],
+  .faixa[hidden] {
+    display: none;
+  }
+
+  .acao {
+    display: grid;
+    justify-items: start;
+    gap: var(--sp-1);
+    margin-bottom: var(--sp-2);
+  }
+
+  .acao :global(.alternar) {
+    max-width: 100%;
+  }
+
+  /* Pressionado = a cidade está na lista: filete e fundo de superfície, sem cor nova (vermelho e azul são dos candidatos). */
+  .acao :global(.alternar[aria-pressed='true']) {
+    border-color: var(--ink);
+    background: var(--surface-1);
+  }
+
+  /* Condensado pelo eixo wdth da fonte (como o campo da busca), para o rótulo mais longo caber numa linha a 360 px. */
+  .rotulos {
+    display: grid;
+    font-stretch: 75%;
+    text-wrap: balance;
+  }
+
+  @media (max-width: 767px) {
+    .acao :global(.alternar) {
+      padding-inline: var(--sp-2);
+    }
+  }
+
+  .rotulo {
+    display: inline-flex;
+    grid-area: 1 / 1;
+    align-items: center;
+    justify-content: center;
+    gap: var(--sp-1);
+  }
+
+  .acao :global(.alternar[aria-pressed='false']) .remover,
+  .acao :global(.alternar[aria-pressed='true']) .adicionar {
+    visibility: hidden;
+  }
+
+  .marca {
+    flex: none;
+    width: var(--sp-2);
+    height: var(--sp-2);
+    fill: none;
+    stroke: currentcolor;
+    stroke-width: 3;
+  }
+
+  .estado {
+    font-size: var(--fs-1);
+    color: var(--ink-2);
+  }
+
+  /* A faixa fecha a home, entre o <main> e o rodapé. Fora da grade do <main> de propósito: o mapa sticky da home é clampado pelo
+     container da grade (não pela linha dele) e passaria por cima da faixa. */
+  .faixa {
+    display: grid;
+    gap: var(--sp-1);
+    margin-bottom: var(--sp-6);
+    padding-top: var(--sp-2);
+    border-top: var(--stroke-2) solid var(--ink);
+  }
+
+  .titulo {
+    font-size: var(--fs-3);
+    font-stretch: 75%;
+    line-height: 1.1;
+    text-transform: uppercase;
+  }
+
+  .lista {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(min(100%, 220px), 1fr));
+    column-gap: var(--sp-3);
+    margin: 0;
+    padding: 0;
+    list-style: none;
+  }
+
+  /* Linhas de destino (criadas por minhas-cidades.ts): bandeira, nome que quebra em vez de cortar, sigla numa placa. */
+  .lista :global(a) {
+    display: grid;
+    grid-template-columns: auto minmax(0, 1fr) auto;
+    align-items: center;
+    gap: var(--sp-2);
+    min-height: 56px;
+    padding-block: var(--sp-1);
+    border-top: var(--stroke-1) solid var(--surface-2);
+    text-decoration: none;
+  }
+
+  .lista :global(img) {
+    object-fit: contain;
+  }
+
+  .lista :global(.nome) {
+    font-family: var(--font-display);
+    font-size: var(--fs-2);
+    font-stretch: 75%;
+    font-weight: 900;
+    line-height: 1.05;
+    text-transform: uppercase;
+    text-wrap: balance;
+  }
+
+  .lista :global(.uf) {
+    display: grid;
+    place-items: center;
+    min-width: var(--sp-5);
+    min-height: var(--sp-3);
+    padding-inline: var(--sp-1);
+    border: var(--stroke-1) solid var(--ink-2);
+    font-family: var(--font-display);
+    font-size: var(--fs-1);
+    font-weight: 900;
+    letter-spacing: var(--track-caps);
+    color: var(--ink-2);
+  }
+
+  /* Hover tipográfico, como no botão: sublinhado grosso no nome, sem cor nova. */
+  @media (hover: hover) {
+    .lista :global(a:hover .nome) {
+      text-decoration: underline;
+      text-decoration-thickness: 3px;
+      text-underline-offset: 4px;
+    }
+  }
+</style>

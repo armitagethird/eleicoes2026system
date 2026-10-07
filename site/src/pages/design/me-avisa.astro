@@ -1,0 +1,324 @@
+---
+// Playground do Me avisa (só em dev; o build apaga /design), para aprovação do Romero. Aqui, e só aqui, o flag vai ligado:
+// em qualquer outra página vale lib/flags.ts (desligado, formulário nenhum). O endpoint é um placeholder que nunca resolve
+// (.invalid é reservado e jamais existe): enviar de verdade cai no erro, e nenhum e-mail sai do navegador.
+// Os estados de sucesso, envio, erro e "já pediu" não dá para provocar com o placeholder; por isso cada um tem o seu exemplo
+// já posto no estado, mexendo nos mesmos ganchos que a ilha usa (data-estado, data-erro-*).
+import statusFixture from '../../../../contracts/fixtures/status.json';
+import MeAvisa from '../../components/MeAvisa.astro';
+import Base from '../../layouts/Base.astro';
+import {
+  ME_AVISA_CAMPO,
+  ME_AVISA_ENVIANDO,
+  ME_AVISA_ENVIAR,
+  ME_AVISA_ERRO,
+  ME_AVISA_FALHA,
+  ME_AVISA_FINALIDADE,
+  ME_AVISA_JA_PEDIU,
+  ME_AVISA_OK,
+  ME_AVISA_OUTRO,
+  ME_AVISA_TITULO,
+  MINHAS_CIDADES_ADICIONAR,
+  MINHAS_CIDADES_GUARDADA,
+  MINHAS_CIDADES_GUARDADA_TROCA,
+  MINHAS_CIDADES_REMOVER,
+  MINHAS_CIDADES_REMOVIDA,
+  MINHAS_CIDADES_SEM_ARMAZENAMENTO,
+  MINHAS_CIDADES_TITULO,
+  meAvisaConsentimento,
+  meAvisaPromessa,
+} from '../../lib/copy.ts';
+import { ME_AVISA, type FlagMeAvisa } from '../../lib/flags.ts';
+import { SITE_NAME } from '../../lib/site.ts';
+
+const LIGADO: FlagMeAvisa = { ativo: true, endpoint: 'https://me-avisa.exemplo.invalid/pedido' };
+const cidade = { slug: 'sao-luis-ma', nome: 'São Luís', uf: 'MA' };
+const inicio = statusFixture.inicio;
+
+const estados = [
+  { forcar: 'erros', titulo: 'Erro de validação', nota: 'Enviar vazio ou com e-mail torto: mensagem logo abaixo do campo, filete tracejado e foco no primeiro erro.' },
+  { forcar: 'enviando', titulo: 'Enviando', nota: 'O botão trava no mesmo tamanho e troca o texto. Sem spinner.' },
+  { forcar: 'enviado', titulo: 'Enviado', nota: 'O formulário some e o foco vai para esta folha. O e-mail só aparece na tela: nunca no aparelho.' },
+  { forcar: 'ja-pediu', titulo: 'Já pediu neste aparelho', nota: 'Guarda só o slug da cidade, nunca o e-mail. "Usar outro e-mail" reabre o formulário.' },
+  { forcar: 'falhou', titulo: 'Falha de envio', nota: 'Sem rede, tempo esgotado ou erro do servidor. O formulário continua preenchido para tentar de novo.' },
+];
+
+const textos: Array<[string, string]> = [
+  ['Título', ME_AVISA_TITULO],
+  ['Promessa dos dois envios', meAvisaPromessa(inicio)],
+  ['Rótulo do campo', ME_AVISA_CAMPO],
+  ['Consentimento (caixa nunca pré-marcada)', meAvisaConsentimento(SITE_NAME, 'São Luís (MA)')],
+  ['Finalidade e saída', ME_AVISA_FINALIDADE],
+  ['Botão', ME_AVISA_ENVIAR],
+  ['Botão enviando', ME_AVISA_ENVIANDO],
+  ['Erro: e-mail vazio', ME_AVISA_ERRO.vazio],
+  ['Erro: e-mail inválido', ME_AVISA_ERRO.invalido],
+  ['Erro: sem consentimento', ME_AVISA_ERRO.consentimento],
+  ['Falha de envio', ME_AVISA_FALHA],
+  ['Sucesso (o e-mail digitado completa a frase)', `${ME_AVISA_OK} …`],
+  ['Já pediu', ME_AVISA_JA_PEDIU],
+  ['Reabrir o formulário', ME_AVISA_OUTRO],
+  ['Minhas cidades: título da faixa da home', MINHAS_CIDADES_TITULO],
+  ['Minhas cidades: botão (cidade fora da lista)', MINHAS_CIDADES_ADICIONAR],
+  ['Minhas cidades: botão (cidade na lista)', MINHAS_CIDADES_REMOVER],
+  ['Minhas cidades: após adicionar', MINHAS_CIDADES_GUARDADA],
+  ['Minhas cidades: após adicionar a 6ª (completa com o nome)', `${MINHAS_CIDADES_GUARDADA_TROCA} Natal.`],
+  ['Minhas cidades: após remover', MINHAS_CIDADES_REMOVIDA],
+  ['Minhas cidades: localStorage recusou gravar', MINHAS_CIDADES_SEM_ARMAZENAMENTO],
+];
+
+const pendencias = [
+  'Todo o texto acima é novo e PENDENTE de aprovação. O consentimento carrega um compromisso: apagar o e-mail depois do resultado final.',
+  'Não há política de privacidade no projeto. O consentimento só é informado de verdade com ela publicada (quem controla os dados, finalidade, base legal, por quanto tempo, direitos do titular e um canal de contato). Falta antes de ligar o flag.',
+  'Confirmação por e-mail (double opt-in) seria um terceiro envio, contra a promessa de dois. Sem ela, qualquer pessoa pode cadastrar o e-mail de outra. Decidir antes do servidor.',
+  'Sair antes do 1º envio: o texto só oferece o link de cancelar dos e-mails. Falta um canal de contato para quem quiser sair antes das 17h (site.ts não tem constante para isso).',
+  'O endpoint precisa ser https e liberar a origem do site (CORS). Com o flag ligado e o endpoint vazio ou inseguro, o formulário não renderiza.',
+];
+---
+
+<Base titulo="Playground do Me avisa" descricao="O formulário Me avisa ligado, com os estados e os textos (só em dev)." caminho="/design/me-avisa">
+  <div class="faixa" role="note">
+    <p class="faixa-titulo">Flag ligado só aqui</p>
+    <p class="faixa-texto">
+      Em /c/&lt;cidade&gt; o flag ME_AVISA está desligado e nada disto renderiza. Aqui ele é forçado para mostrar o formulário. O endpoint
+      é um placeholder que nunca responde: enviar de verdade cai no erro e nenhum e-mail sai do navegador.
+    </p>
+  </div>
+
+  <main class="playground">
+    <h1>Me avisa: playground</h1>
+
+    <section class="bloco" aria-labelledby="vivo">
+      <h2 class="secao" id="vivo">Ao vivo (teste à mão)</h2>
+      <p class="nota">
+        Tente enviar vazio, com e-mail torto, sem marcar a caixa, e depois com tudo certo (cai no erro: o endpoint não existe). Teclado
+        e leitor de tela valem.
+      </p>
+      <MeAvisa cidade={cidade} inicio={inicio} flag={LIGADO} id="me-avisa-vivo" />
+    </section>
+
+    <section class="bloco" aria-labelledby="estados">
+      <h2 class="secao" id="estados">Os estados</h2>
+      <div class="estados">
+        {
+          estados.map(({ forcar, titulo, nota }) => (
+            <div class="estado" data-forcar={forcar}>
+              <h3 class="estado-titulo">{titulo}</h3>
+              <p class="nota">{nota}</p>
+              <MeAvisa cidade={cidade} inicio={inicio} flag={LIGADO} id={`me-avisa-${forcar}`} />
+            </div>
+          ))
+        }
+      </div>
+    </section>
+
+    <section class="bloco" aria-labelledby="desligado">
+      <h2 class="secao" id="desligado">Flag desligado (o estado real hoje)</h2>
+      <p class="nota">
+        ME_AVISA = {JSON.stringify(ME_AVISA)}. Entre as duas linhas abaixo não há nada: nem título, nem formulário.
+      </p>
+      <hr />
+      <MeAvisa cidade={cidade} inicio={inicio} id="me-avisa-desligado" />
+      <hr />
+    </section>
+
+    <section class="bloco" aria-labelledby="textos">
+      <h2 class="secao" id="textos">Textos novos, para aprovar</h2>
+      <dl class="textos">
+        {
+          textos.map(([rotulo, texto]) => (
+            <div class="texto">
+              <dt>{rotulo}</dt>
+              <dd>{texto}</dd>
+            </div>
+          ))
+        }
+      </dl>
+    </section>
+
+    <section class="bloco" aria-labelledby="pendencias">
+      <h2 class="secao" id="pendencias">Pendências do Romero</h2>
+      <ol class="pendencias">
+        {pendencias.map((item) => <li>{item}</li>)}
+      </ol>
+    </section>
+  </main>
+
+  <script>
+    // Só no playground: põe cada exemplo no seu estado, pelos mesmos ganchos que a ilha usa (me-avisa.ts).
+    for (const caixa of document.querySelectorAll<HTMLElement>('[data-forcar]')) {
+      const raiz = caixa.querySelector<HTMLElement>('[data-me-avisa]');
+      if (!raiz) continue;
+      const email = raiz.querySelector<HTMLInputElement>('[data-email]');
+      const mostrar = (campo: Element | null, lugar: HTMLElement | null, texto?: string): void => {
+        if (!campo || !lugar) return;
+        lugar.textContent = texto ?? '';
+        lugar.hidden = false;
+        campo.setAttribute('aria-invalid', 'true');
+      };
+      switch (caixa.dataset.forcar) {
+        case 'erros':
+          if (email) email.value = 'maria@exemplo';
+          mostrar(email, raiz.querySelector('[data-erro-email]'), raiz.dataset.msgInvalido);
+          mostrar(raiz.querySelector('[data-consentimento]'), raiz.querySelector('[data-erro-consentimento]'), raiz.dataset.msgConsentimento);
+          break;
+        case 'enviando':
+          if (email) email.value = 'maria.silva@exemplo.com.br';
+          raiz.querySelector<HTMLInputElement>('[data-consentimento]')?.setAttribute('checked', '');
+          raiz.dataset.estado = 'enviando';
+          raiz.querySelector<HTMLButtonElement>('[data-enviar]')?.setAttribute('disabled', '');
+          break;
+        case 'enviado': {
+          const eco = raiz.querySelector('[data-ok-email]');
+          if (eco) eco.textContent = 'maria.silva@exemplo.com.br';
+          raiz.dataset.estado = 'enviado';
+          break;
+        }
+        case 'ja-pediu':
+          raiz.dataset.estado = 'ja-pediu';
+          break;
+        case 'falhou': {
+          if (email) email.value = 'maria.silva@exemplo.com.br';
+          const aviso = raiz.querySelector('[data-aviso]');
+          if (aviso) aviso.textContent = raiz.dataset.msgFalha ?? '';
+          raiz.dataset.estado = 'falhou';
+          break;
+        }
+      }
+    }
+  </script>
+</Base>
+
+<style>
+  .faixa {
+    display: grid;
+    gap: var(--sp-1);
+    padding: var(--sp-3) var(--sp-2);
+    background: var(--ink);
+    color: var(--bg);
+  }
+
+  .faixa-titulo {
+    font-family: var(--font-display);
+    font-size: var(--fs-5);
+    font-stretch: 75%;
+    font-weight: 900;
+    line-height: 0.95;
+    text-transform: uppercase;
+  }
+
+  .faixa-texto {
+    max-width: 62ch;
+    line-height: 1.35;
+  }
+
+  .playground {
+    display: grid;
+    gap: var(--sp-6);
+    max-width: 1440px;
+    margin-inline: auto;
+    padding: var(--sp-4) var(--sp-2) var(--sp-8);
+  }
+
+  h1 {
+    font-size: var(--fs-4);
+    font-stretch: 75%;
+    line-height: 1;
+    text-transform: uppercase;
+  }
+
+  .bloco {
+    display: grid;
+    align-content: start;
+    gap: var(--sp-2);
+  }
+
+  .secao {
+    font-size: var(--fs-3);
+    font-stretch: 87.5%;
+    text-transform: uppercase;
+  }
+
+  .nota {
+    max-width: 62ch;
+    color: var(--ink-2);
+  }
+
+  .estados {
+    display: grid;
+    gap: var(--sp-6);
+  }
+
+  .estado {
+    display: grid;
+    align-content: start;
+    gap: var(--sp-1);
+  }
+
+  .estado-titulo {
+    font-size: var(--fs-2);
+    letter-spacing: var(--track-caps);
+    text-transform: uppercase;
+  }
+
+  .bloco hr {
+    width: 100%;
+    margin: 0;
+    border: 0;
+    border-top: var(--stroke-1) dashed var(--ink-2);
+  }
+
+  .textos {
+    display: grid;
+    gap: var(--sp-2);
+    margin: 0;
+    max-width: 72ch;
+  }
+
+  .texto {
+    display: grid;
+    gap: 2px;
+    padding-top: var(--sp-1);
+    border-top: var(--stroke-1) solid var(--surface-2);
+  }
+
+  .texto dt {
+    font-family: var(--font-display);
+    font-size: var(--fs-1);
+    font-weight: 900;
+    letter-spacing: var(--track-caps);
+    text-transform: uppercase;
+    color: var(--ink-2);
+  }
+
+  .texto dd {
+    margin: 0;
+  }
+
+  .pendencias {
+    display: grid;
+    gap: var(--sp-1);
+    max-width: 72ch;
+    margin: 0;
+    padding-left: var(--sp-3);
+  }
+
+  @media (min-width: 768px) {
+    .faixa,
+    .playground {
+      padding-inline: var(--sp-4);
+    }
+  }
+
+  @media (min-width: 1024px) {
+    .faixa,
+    .playground {
+      padding-inline: var(--sp-6);
+    }
+
+    .estados {
+      grid-template-columns: repeat(auto-fill, minmax(min(100%, 36rem), 1fr));
+      column-gap: var(--sp-5);
+    }
+  }
+</style>
