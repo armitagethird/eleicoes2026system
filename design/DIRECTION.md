@@ -96,7 +96,7 @@ Regras de uso:
 - **Modos:**
   - `parcial`: comportamento padrão.
   - `final`: `FINAL · 100% DAS SEÇÕES`.
-  - `palpite`: as folhas viram contorno de 4 px (sem preenchimento), com o selo `SEU PALPITE`, sem "lidera", sem barra cheia e com o rodapé `PALPITE · NÃO É RESULTADO`.
+  - `palpite`: as folhas viram contorno de 4 px (sem preenchimento), com o selo `SEU PALPITE`, sem "lidera", sem barra cheia e com o rodapé `PALPITE · NÃO É RESULTADO`. Em final (`erroPalpite` definido), a zona C diz `VOCÊ ERROU POR 2,6 PONTOS` em `--ink`, sem seta, ou `VOCÊ ACERTOU O RESULTADO` (linha única no tamanho do número) quando o erro arredonda para 0,0.
   - `governador`: o cargo entra na linha meta; sem seta 2022, mostra a margem entre os dois.
 - Para o PNG sair idêntico, a fonte vai embutida como `@font-face` com `data:` base64 (subset). Esse subset só é carregado quando o botão Compartilhar for tocado; inline na página, o SVG usa a fonte já carregada.
 
@@ -176,6 +176,6 @@ Decisão do Romero em 06/10. Base legal: Res. TSE 23.600, art. 10.
 
 1. Fonte Archivo e tema Brasil leve: fundo esverdeado, faixa verde e amarela, selo amarelo-ouro. O playground compara o selo em ouro, verde e violeta (antigo).
 2. Tons dos candidatos: vermelho `#F2464B` e azul claro `#6CC4FF` (decidido o princípio; tom exato a aprovar).
-3. Placa do mapa com barra vermelho/azul. Estilo G1 (pintar a sigla ou a placa inteira com a cor de quem lidera na UF) fica como opção a aprovar. O agente do mapa testou a sigla colorida e a leitura de relance ficou bem mais rápida, mas a opção foi retirada porque a regra escrita veta cor escolhida por liderança. Reativar só com aprovação do Romero.
+3. APROVADO (06/10): placa do mapa com barra vermelho/azul e a sigla da UF na cor de quem tem mais votos ali ("lidera" em parcial); a placa não é pintada.
 4. Governador sem comparação com 2022 (mostra a margem); cidade em `final` sem rótulo de posição. Cores dos candidatos a governador: a definir com os candidatos reais. Por enquanto vale `lib/cores.ts`: os números 13 e 22 têm a cor do partido em qualquer cargo, e os demais ficam neutros (`--ink` / `--ink-2`). Nunca pintar um candidato com a cor de outro partido.
 5. Selos ainda sem texto final em `copy.ts`; "virada" nos selos de ranking vem do próprio brief, não é "virada confirmada".
