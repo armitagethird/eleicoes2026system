@@ -1,0 +1,651 @@
+---
+// /historico (decisão do Romero, 06/10): gráfico de linha comparando 2018, 2022 e 2026 (1º e 2º turno). O Brasil já vem
+// desenhado no HTML do build, pelas mesmas funções que a ilha usa depois (figura.ts, lib/grafico-linha.ts): a primeira
+// pintura não espera JS nem rede. A ilha (historico.ts) liga o filtro (Brasil, estado, cidade), a seleção de eleições (2018,
+// 2022, 2026, no hash da URL) e o 2º turno de 2026 ao vivo. Sem JS os controles ficam desabilitados e o Brasil continua
+// inteiro, com a tabela alternativa.
+import { NOME_UF, UFS } from '../../lib/contratos.ts';
+import {
+  BRASIL,
+  ELEICOES_DICA,
+  ELEICOES_ROTULO,
+  ELEICOES_TODAS,
+  FILTRO_CIDADE,
+  FILTRO_CIDADE_DICA,
+  FILTRO_ESTADO,
+  FILTRO_ESTADO_VAZIO,
+  FILTRO_ROTULO,
+  HISTORICO_EIXO,
+  HISTORICO_NOTA_2018,
+  HISTORICO_NOTA_BASE,
+  HISTORICO_TITULO,
+  VER_TABELA,
+} from '../../lib/copy.ts';
+import { ajustarDestino } from '../../lib/destino.ts';
+import { renderTabela } from '../../lib/grafico-linha.ts';
+import { ANOS, pontosDe, serieJsonBrasil } from '../../lib/serie-historica.ts';
+import type { Status } from '../../lib/status.ts';
+import { camadasHistoricas } from './camadas-build.ts';
+import { figuraHtml, linhaHistorico, mudouDeNumero, rotuloVazio } from './figura.ts';
+import './grafico.css';
+
+interface Props {
+  status: Status;
+  /** Só /design/historico: a ilha lê o modo de ?modo= em vez de /data/status.json. */
+  design?: boolean;
+}
+
+const { status, design = false } = Astro.props;
+
+// Brasil no build, com todas as eleições (decisão do Romero: o gráfico abre completo). Sem ao vivo (o ao vivo não existe no
+// build), então o 2º turno de 2026 sai como ponto vazio.
+const serie = serieJsonBrasil(camadasHistoricas());
+const pontos = pontosDe(serie) ?? [];
+const dados = {
+  pontos,
+  lugar: BRASIL,
+  vazio: rotuloVazio(status.modo, status.inicio),
+  nomes: serie.cand.flatMap((c) => [c.a.nome, c.b.nome]),
+};
+const figura = figuraHtml(dados, 'hist');
+const tabela = renderTabela(dados);
+const ufs = UFS.map((uf) => ({ uf, nome: NOME_UF[uf] })).sort((a, b) => a.nome.localeCompare(b.nome, 'pt-BR'));
+
+// DESTINO do título: ajustado no build numa largura de referência e escrito em cqi; no desktop um teto em px o segura.
+const REFERENCIA_TITULO = 1000;
+const [faixa] = ajustarDestino(HISTORICO_TITULO.toLocaleUpperCase('pt-BR'), { largura: REFERENCIA_TITULO, tamMax: 230, tamMin: 60, maxLinhas: 1 }).linhas;
+const estiloTitulo = `--t:${(faixa.tamanho / REFERENCIA_TITULO) * 100}cqi;--w:${faixa.wdth}%`;
+---
+
+<div class="hist" data-historico data-modo={status.modo} data-inicio={status.inicio ?? undefined} data-design={design ? '' : undefined}>
+  <!-- Link com hash (#2018,2026): o gráfico do build é o completo, então ele fica invisível até a ilha desenhar a seleção. Sem JS, um prazo no CSS o revela. -->
+  <script is:inline>
+    if (location.hash.length > 1) document.currentScript.parentElement.setAttribute('data-aguarda', '');
+  </script>
+  <script type="application/json" data-hist-serie set:html={JSON.stringify(serie)} />
+  <h1 class="hist-titulo"><span style={estiloTitulo}>{HISTORICO_TITULO}</span></h1>
+
+  <div class="hist-grade">
+    <div class="hist-filtro" role="group" aria-labelledby="hist-ver">
+      <p class="hist-rotulo" id="hist-ver">{FILTRO_ROTULO}</p>
+      <div class="hist-escopo">
+        <button type="button" class="hist-brasil" aria-pressed="true" disabled data-hist-brasil>{BRASIL}</button>
+        <div class="hist-caixa-uf">
+          <label class="sr-only" for="hist-uf">{FILTRO_ESTADO}</label>
+          <select class="hist-uf" id="hist-uf" disabled data-hist-uf>
+            <option value="">{FILTRO_ESTADO_VAZIO}</option>
+            {ufs.map(({ uf, nome }) => <option value={uf}>{nome}</option>)}
+          </select>
+        </div>
+      </div>
+      <div class="hist-cidade" role="search" data-hist-cidade>
+        <label class="sr-only" for="hist-campo">{FILTRO_CIDADE}</label>
+        <input
+          class="hist-campo"
+          id="hist-campo"
+          type="text"
+          role="combobox"
+          aria-autocomplete="list"
+          aria-expanded="false"
+          aria-controls="hist-lista"
+          autocomplete="off"
+          autocapitalize="words"
+          spellcheck="false"
+          enterkeyhint="go"
+          placeholder={FILTRO_CIDADE_DICA}
+          disabled
+          data-hist-campo
+        />
+        <div class="hist-gaveta" hidden data-hist-gaveta>
+          <ul class="hist-lista" id="hist-lista" role="listbox" aria-label={FILTRO_CIDADE} data-hist-lista></ul>
+          <p class="hist-cidade-aviso" hidden data-hist-cidade-aviso></p>
+        </div>
+        <p class="sr-only" role="status" data-hist-cidade-status></p>
+      </div>
+    </div>
+
+    <section class="hist-grafico" aria-labelledby="hist-lugar" data-hist-grafico>
+      <h2 class="hist-lugar" id="hist-lugar" data-hist-lugar>{BRASIL}</h2>
+      <p class="hist-eixo">{HISTORICO_EIXO}</p>
+      <div class="hist-eleicoes" role="group" aria-labelledby="hist-eleicoes-rotulo">
+        <p class="hist-rotulo hist-eleicoes-topo">
+          <span id="hist-eleicoes-rotulo">{ELEICOES_ROTULO}</span>
+          <span id="hist-dica" data-hist-dica>{ELEICOES_DICA}</span>
+        </p>
+        <div class="hist-anos">
+          {ANOS.map((ano) => <button type="button" class="hist-ano" aria-pressed="true" disabled data-hist-ano={ano}>{ano}</button>)}
+          <button type="button" class="hist-ano hist-todas" aria-pressed="true" disabled data-hist-todas>{ELEICOES_TODAS}</button>
+        </div>
+      </div>
+      <div class="gl-quadro hist-quadro" data-hist-quadro set:html={figura} />
+      <p class="hist-linha" data-hist-linha>{linhaHistorico(status.modo, status.inicio, null)}</p>
+      <p class="hist-aviso" role="status" hidden data-hist-aviso></p>
+      <p class="hist-nota">{HISTORICO_NOTA_BASE}</p>
+      <p class="hist-nota" hidden={!mudouDeNumero(pontos)} data-hist-nota-2018>{HISTORICO_NOTA_2018}</p>
+      <details class="hist-tabela">
+        <summary>{VER_TABELA}</summary>
+        <div class="hist-tabela-rolagem" data-hist-tabela set:html={tabela} />
+      </details>
+    </section>
+  </div>
+
+  <p class="sr-only" role="status" data-hist-anuncio></p>
+</div>
+
+<script>
+  import './historico.ts';
+</script>
+
+<style>
+  .hist {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+    gap: var(--sp-3);
+  }
+
+  /* ---------- título DESTINO ---------- */
+
+  .hist-titulo {
+    container-type: inline-size;
+    padding-top: var(--sp-1);
+    line-height: 0.9;
+    text-transform: uppercase;
+    overflow-x: clip;
+  }
+
+  .hist-titulo span {
+    display: block;
+    font-size: min(var(--t), 112px);
+    font-stretch: var(--w);
+    white-space: nowrap;
+  }
+
+  .hist-grade {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+    gap: var(--sp-4);
+  }
+
+  /* ---------- filtro: Brasil | estado, e a cidade embaixo; o que está valendo ganha o filete em --ink ---------- */
+
+  /* Toda grade daqui tem coluna explícita (minmax(0, 1fr)): a coluna implícita "auto" cresce com a tabela, que não quebra linha. */
+  .hist-filtro {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+    gap: var(--sp-2);
+    align-content: start;
+  }
+
+  .hist-rotulo,
+  .hist-eixo,
+  .hist-linha {
+    font-family: var(--font-display);
+    font-size: var(--fs-1);
+    font-weight: 900;
+    line-height: 1.15;
+    letter-spacing: var(--track-caps);
+    text-transform: uppercase;
+  }
+
+  .hist-rotulo,
+  .hist-eixo,
+  .hist-linha {
+    color: var(--ink-2);
+  }
+
+  .hist-escopo {
+    display: grid;
+    grid-template-columns: auto minmax(0, 1fr);
+    gap: var(--sp-1);
+  }
+
+  .hist-brasil,
+  .hist-uf,
+  .hist-campo {
+    height: 56px;
+    border: 3px solid var(--ink-2);
+    border-radius: var(--radius);
+    background: none;
+    font-family: var(--font-display);
+    font-size: var(--fs-3);
+    font-weight: 900;
+    font-stretch: 87.5%;
+    letter-spacing: var(--track-caps);
+    text-transform: uppercase;
+    transition:
+      background-color var(--dur-1) var(--ease),
+      border-color var(--dur-1) var(--ease),
+      color var(--dur-1) var(--ease),
+      transform var(--dur-1) var(--ease);
+  }
+
+  .hist-brasil {
+    padding: 0 var(--sp-2);
+    cursor: pointer;
+  }
+
+  .hist-brasil[aria-pressed='true'] {
+    border-color: var(--ink);
+    background: var(--ink);
+    color: var(--bg);
+  }
+
+  .hist-brasil:active {
+    transform: translateY(1px);
+  }
+
+  @media (hover: hover) {
+    .hist-brasil[aria-pressed='false']:not(:disabled):hover,
+    .hist-uf:not(:disabled):hover,
+    .hist-campo:not(:disabled):hover {
+      border-color: var(--ink);
+    }
+  }
+
+  .hist-caixa-uf {
+    position: relative;
+    min-width: 0;
+  }
+
+  /* A seta do seletor é um triângulo de borda (sem imagem, sem degradê), na cor do texto. */
+  .hist-caixa-uf::after {
+    content: '';
+    position: absolute;
+    top: 50%;
+    right: var(--sp-2);
+    border: 6px solid transparent;
+    border-top: 9px solid var(--ink);
+    transform: translateY(-25%);
+    pointer-events: none;
+  }
+
+  /* Nomes de estado são longos (Rio Grande do Norte): o seletor usa o tamanho de corpo e a largura condensada. */
+  .hist-uf {
+    width: 100%;
+    padding: 0 var(--sp-5) 0 var(--sp-2);
+    font-size: var(--fs-2);
+    font-stretch: 62%;
+    letter-spacing: 0;
+    appearance: none;
+    cursor: pointer;
+    text-overflow: ellipsis;
+  }
+
+  /* A lista aberta usa a fonte de texto, normal: os nomes têm minúsculas e o 900 só carrega o subset de caixa-alta. */
+  .hist-uf option {
+    background: var(--bg);
+    color: var(--ink);
+    font-family: var(--font-text);
+    font-weight: 500;
+    font-stretch: 100%;
+    text-transform: none;
+  }
+
+  .hist-brasil:disabled,
+  .hist-uf:disabled,
+  .hist-campo:disabled {
+    cursor: default;
+  }
+
+  .hist-uf[data-ativo],
+  .hist-cidade[data-ativo] .hist-campo {
+    border-color: var(--ink);
+  }
+
+  .hist-cidade {
+    position: relative;
+  }
+
+  .hist-campo {
+    display: block;
+    width: 100%;
+    padding: 0 var(--sp-2);
+    font-stretch: 75%;
+    caret-color: var(--ink);
+    appearance: none;
+  }
+
+  .hist-campo::placeholder {
+    color: var(--ink-2);
+    opacity: 1;
+  }
+
+  /* Foco = filete mais grosso, para dentro, sempre em --ink (nunca em cor de candidato). */
+  .hist-campo:focus {
+    border-color: var(--ink);
+    outline: 3px solid var(--ink);
+    outline-offset: -6px;
+  }
+
+  .hist-cidade:has(.hist-gaveta:not([hidden])) .hist-campo {
+    border-bottom-right-radius: 0;
+    border-bottom-left-radius: 0;
+  }
+
+  /* A gaveta cobre o que vem embaixo em vez de empurrar a página. */
+  .hist-gaveta {
+    position: absolute;
+    top: 100%;
+    right: 0;
+    left: 0;
+    z-index: 2;
+    max-height: min(50dvh, 360px);
+    overflow-y: auto;
+    border: 3px solid var(--ink);
+    border-top: 0;
+    border-radius: 0 0 var(--radius) var(--radius);
+    background: var(--bg);
+    overscroll-behavior: contain;
+  }
+
+  .hist-lista {
+    margin: 0;
+    padding: 0;
+    list-style: none;
+  }
+
+  .hist-lista :global([role='option']) {
+    position: relative;
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) var(--sp-6);
+    align-items: center;
+    gap: var(--sp-2);
+    min-height: 52px;
+    padding: var(--sp-1) var(--sp-2);
+    border-top: var(--stroke-1) solid var(--surface-2);
+    cursor: pointer;
+  }
+
+  .hist-lista :global([role='option']:first-child) {
+    border-top: 0;
+  }
+
+  .hist-lista :global([role='option'][aria-selected='true']),
+  .hist-lista :global([role='option']:hover) {
+    background: var(--surface-1);
+  }
+
+  .hist-lista :global([role='option'][aria-selected='true'])::before {
+    content: '';
+    position: absolute;
+    inset: 0 auto 0 0;
+    width: var(--stroke-2);
+    background: var(--ink);
+  }
+
+  .hist-lista :global(.nome) {
+    overflow: hidden;
+    font-family: var(--font-display);
+    font-size: var(--fs-3);
+    font-weight: 900;
+    font-stretch: 87.5%;
+    line-height: 1;
+    text-overflow: ellipsis;
+    text-transform: uppercase;
+    white-space: nowrap;
+  }
+
+  .hist-lista :global(.uf) {
+    display: grid;
+    place-items: center;
+    min-height: var(--sp-3);
+    border: var(--stroke-1) solid var(--ink-2);
+    font-family: var(--font-display);
+    font-size: var(--fs-1);
+    font-weight: 900;
+    letter-spacing: var(--track-caps);
+    color: var(--ink-2);
+  }
+
+  .hist-cidade-aviso {
+    padding: var(--sp-2);
+    font-family: var(--font-display);
+    font-size: var(--fs-1);
+    font-weight: 900;
+    letter-spacing: var(--track-caps);
+    text-transform: uppercase;
+    color: var(--ink-2);
+  }
+
+  /* ---------- gráfico ---------- */
+
+  .hist-grafico {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+    gap: var(--sp-2);
+    align-content: start;
+    min-width: 0;
+  }
+
+  .hist-lugar {
+    font-size: var(--fs-4);
+    font-stretch: 87.5%;
+    letter-spacing: var(--track-caps);
+    text-transform: uppercase;
+    text-wrap: balance;
+  }
+
+  /* ---------- seletor de eleições: liga e desliga, como o filtro; o que está valendo ganha o preenchimento em --ink ---------- */
+
+  /* No desktop o gráfico tem 860 px; os quatro botões não precisam esticar até lá. */
+  .hist-eleicoes {
+    display: grid;
+    gap: var(--sp-1);
+    max-width: 36rem;
+  }
+
+  .hist-eleicoes-topo {
+    display: flex;
+    justify-content: space-between;
+    gap: var(--sp-2);
+  }
+
+  .hist-anos {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr)) auto;
+    gap: var(--sp-1);
+  }
+
+  .hist-ano {
+    position: relative;
+    height: 56px;
+    padding: 0;
+    border: 3px solid var(--ink-2);
+    border-radius: var(--radius);
+    background: none;
+    font-family: var(--font-display);
+    font-size: var(--fs-3);
+    font-weight: 900;
+    font-stretch: 87.5%;
+    letter-spacing: var(--track-caps);
+    cursor: pointer;
+    transition:
+      background-color var(--dur-1) var(--ease),
+      border-color var(--dur-1) var(--ease),
+      color var(--dur-1) var(--ease),
+      transform var(--dur-1) var(--ease);
+  }
+
+  .hist-todas {
+    padding: 0 var(--sp-2);
+    font-size: var(--fs-2);
+    text-transform: uppercase;
+  }
+
+  .hist-ano[aria-pressed='true'] {
+    border-color: var(--ink);
+    background: var(--ink);
+    color: var(--bg);
+  }
+
+  .hist-ano:active:not(:disabled, [aria-disabled='true']) {
+    transform: translateY(1px);
+  }
+
+  @media (hover: hover) {
+    .hist-ano[aria-pressed='false']:not(:disabled):hover {
+      border-color: var(--ink);
+    }
+  }
+
+  .hist-ano:disabled {
+    cursor: default;
+  }
+
+  /* A única eleição ligada não desliga: o botão fica travado, com um cadeado de bordas (sem imagem) no canto. */
+  .hist-ano[aria-disabled='true'] {
+    cursor: not-allowed;
+  }
+
+  .hist-ano[aria-disabled='true']::before,
+  .hist-ano[aria-disabled='true']::after {
+    content: '';
+    position: absolute;
+  }
+
+  .hist-ano[aria-disabled='true']::before {
+    top: 0;
+    right: 7px;
+    width: 4px;
+    height: 3px;
+    border: 2px solid currentColor;
+    border-bottom: 0;
+    border-radius: 4px 4px 0 0;
+  }
+
+  .hist-ano[aria-disabled='true']::after {
+    top: 5px;
+    right: 6px;
+    width: 10px;
+    height: 6px;
+    background: currentColor;
+  }
+
+  /* Alto contraste do Windows: sem isto o preenchimento some e "ligado" não se distingue de "desligado". */
+  @media (forced-colors: active) {
+    .hist-ano[aria-pressed='true'] {
+      border-color: Highlight;
+      background: Highlight;
+      color: HighlightText;
+    }
+  }
+
+  .hist-quadro {
+    transition: opacity var(--dur-1) var(--ease);
+  }
+
+  /* Trocando de lugar, o desenho anterior fica (sem salto) um pouco apagado até o novo chegar. */
+  .hist-grafico[aria-busy='true'] .hist-quadro {
+    opacity: 0.5;
+  }
+
+  /* Link com hash: espera a ilha desenhar a seleção. Se a ilha não vier, em 2 s o gráfico completo aparece. */
+  .hist[data-aguarda] .hist-quadro {
+    opacity: 0;
+    animation: hist-revelar 0s 2s forwards;
+  }
+
+  @keyframes hist-revelar {
+    to {
+      opacity: 1;
+    }
+  }
+
+  .hist-linha {
+    min-height: 1.15em;
+  }
+
+  .hist-aviso {
+    padding: var(--sp-1) var(--sp-2);
+    border: var(--stroke-1) solid var(--ink-2);
+    font-family: var(--font-display);
+    font-size: var(--fs-1);
+    font-weight: 900;
+    letter-spacing: var(--track-caps);
+    text-transform: uppercase;
+    text-wrap: balance;
+  }
+
+  .hist-aviso :global(button) {
+    margin-left: var(--sp-1);
+    padding: 0;
+    border: 0;
+    background: none;
+    font: inherit;
+    letter-spacing: inherit;
+    text-transform: inherit;
+    text-decoration: underline;
+    text-decoration-thickness: var(--stroke-1);
+    text-underline-offset: 3px;
+    cursor: pointer;
+  }
+
+  .hist-nota {
+    max-width: 60ch;
+    font-size: var(--fs-1);
+    color: var(--ink-2);
+  }
+
+  .hist-nota[hidden] {
+    display: none;
+  }
+
+  /* ---------- tabela alternativa ---------- */
+
+  .hist-tabela {
+    max-width: 860px;
+    border-top: var(--stroke-2) solid var(--ink);
+  }
+
+  .hist-tabela summary {
+    display: flex;
+    align-items: center;
+    gap: var(--sp-1);
+    min-height: 56px;
+    font-family: var(--font-display);
+    font-size: var(--fs-3);
+    font-weight: 900;
+    font-stretch: 87.5%;
+    letter-spacing: var(--track-caps);
+    text-transform: uppercase;
+    list-style: none;
+    cursor: pointer;
+  }
+
+  .hist-tabela summary::-webkit-details-marker {
+    display: none;
+  }
+
+  .hist-tabela summary::after {
+    content: '';
+    width: 0;
+    height: 0;
+    border-block: 6px solid transparent;
+    border-left: 10px solid currentColor;
+    transition: transform var(--dur-1) var(--ease);
+  }
+
+  .hist-tabela[open] summary::after {
+    transform: rotate(90deg);
+  }
+
+  .hist-tabela-rolagem {
+    overflow-x: auto;
+    padding-bottom: var(--sp-3);
+  }
+
+  /* ---------- desktop: filtro à esquerda (preso ao rolar), gráfico à direita ---------- */
+
+  @media (min-width: 1024px) {
+    .hist-grade {
+      grid-template-columns: minmax(300px, 4fr) minmax(0, 8fr);
+      gap: var(--sp-6);
+      align-items: start;
+    }
+
+    .hist-filtro {
+      position: sticky;
+      top: var(--sp-3);
+    }
+  }
+</style>

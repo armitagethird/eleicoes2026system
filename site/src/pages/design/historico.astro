@@ -1,0 +1,344 @@
+---
+// Playground de /historico (só em dev; o build apaga /design), para aprovação do Romero: a página real nos três modos e
+// uma grade de variantes do gráfico. O modo vem de ?modo= (pre, live ou final) e não de /data/status.json, então dá para
+// ver o ao vivo antes do dia 25:
+//   pre:   o 2º turno de 2026 é o ponto vazio com a data;
+//   live:  o ponto entra vazado (parcial), com o ao vivo de /data/br.json, uf/{uf}.json ou c/{slug}.json (fixtures FICTÍCIAS);
+//   final: o ponto entra cheio.
+// As variantes abaixo usam os dados históricos reais (camadas de public/mapa); só o 2º turno de 2026 é fictício (fixture).
+import brFixture from '../../../../contracts/fixtures/br.json';
+import statusPre from '../../../../contracts/fixtures/status.json';
+import Cabecalho from '../../components/Cabecalho.astro';
+import { camadasHistoricas } from '../../components/historico/camadas-build.ts';
+import { figuraHtml, rotuloVazio } from '../../components/historico/figura.ts';
+import '../../components/historico/grafico.css';
+import Historico from '../../components/historico/Historico.astro';
+import Rodape from '../../components/Rodape.astro';
+import Base from '../../layouts/Base.astro';
+import { AVISO_FICTICIO } from '../../lib/copy.ts';
+import type { Municipio, UF } from '../../lib/contratos.ts';
+import { comAoVivo, lerAoVivo, pontosDe, serieJsonBrasil, serieJsonUf, type Ano, type Ponto } from '../../lib/serie-historica.ts';
+import { parseStatus } from '../../lib/status.ts';
+import municipiosJson from '../../data/municipios.json';
+
+const status = parseStatus(statusPre);
+const camadas = camadasHistoricas();
+const municipios = municipiosJson as Municipio[];
+const brasil = serieJsonBrasil(camadas);
+const nomes = brasil.cand.flatMap((c) => [c.a.nome, c.b.nome]);
+
+const modos = [
+  { modo: 'pre', rotulo: 'Pre', nota: 'antes do dia 25' },
+  { modo: 'live', rotulo: 'Live', nota: 'ao vivo, fixture' },
+  { modo: 'final', rotulo: 'Final', nota: 'apuração encerrada, fixture' },
+];
+
+// Ao vivo fictício: br.json da fixture (67% das seções) e variações dele. Nunca é dado de produção.
+const vivo = (a: number, b: number, modo: 'live' | 'final' = 'live', secoes = 67) =>
+  lerAoVivo(
+    {
+      ...brFixture,
+      secoes_pct: secoes,
+      presidente: {
+        ...brFixture.presidente,
+        cand: brFixture.presidente.cand.map((c) => ({ ...c, pct: c.n === 13 ? a : b })),
+      },
+    },
+    modo,
+  );
+
+const doBrasil = pontosDe(brasil) as Ponto[];
+const doEstado = (uf: UF) => serieJsonUf(camadas, municipios, uf);
+const cidade = (uf: UF, slug: string) => pontosDe(doEstado(uf), slug) as Ponto[];
+const aoVivoBr = vivo(brFixture.presidente.cand[0].pct, brFixture.presidente.cand[1].pct);
+
+interface Variante {
+  titulo: string;
+  nota: string;
+  lugar: string;
+  pontos: Ponto[];
+  modo: 'pre' | 'live' | 'final';
+  /** Eleições à vista (padrão: todas). */
+  anos?: Ano[];
+  largura?: number;
+}
+
+const variantes: Variante[] = [
+  { titulo: 'Brasil, antes do dia 25', nota: 'ponto vazio com a data; "outros" nos três 1º turnos; marca de 50% nos três 2º turnos', lugar: 'Brasil', pontos: doBrasil, modo: 'pre' },
+  { titulo: 'Brasil, ao vivo (parcial)', nota: 'os dois pontos entram vazados; as linhas chegam a eles; o rótulo do fim vai para a direita', lugar: 'Brasil', pontos: comAoVivo(doBrasil, aoVivoBr), modo: 'live' },
+  { titulo: 'Brasil, final', nota: 'pontos cheios; sem rótulo de posição', lugar: 'Brasil', pontos: comAoVivo(doBrasil, vivo(50.2, 49.8, 'final', 100)), modo: 'final' },
+  { titulo: 'Empate no ao vivo (fictício: 50,0 e 50,0)', nota: 'as plaquinhas ficam uma acima, outra abaixo; os rótulos do fim se afastam e ligam ao ponto', lugar: 'Brasil', pontos: comAoVivo(doBrasil, vivo(50, 50)), modo: 'live' },
+  { titulo: 'Ceará: em 2018 outro candidato lidera', nota: 'a coluna de "outros" passa dos dois (Ciro Gomes, 45,1%) e o eixo cresce até 80%', lugar: 'Ceará', pontos: pontosDe(doEstado('CE')) as Ponto[], modo: 'pre' },
+  { titulo: 'Boa Esperança do Norte (MT): só 2026', nota: 'município criado depois de 2022: 2018 e 2022 dizem "sem dado" e as linhas não se ligam', lugar: 'Boa Esperança do Norte (MT)', pontos: cidade('MT', 'boa-esperanca-do-norte-mt'), modo: 'pre' },
+  { titulo: 'São Paulo (SP): uma cidade', nota: 'mesma função, dados da cidade (arquivo /historico/sp.json)', lugar: 'São Paulo (SP)', pontos: comAoVivo(cidade('SP', 'sao-paulo-sp'), vivo(45.1, 54.9)), modo: 'live' },
+  { titulo: 'Piauí: lado alto, lado baixo', nota: 'o eixo vai a 80% e a grade anda de 20 em 20, com o 50% sempre marcado', lugar: 'Piauí', pontos: comAoVivo(pontosDe(doEstado('PI')) as Ponto[], vivo(73.52, 26.48)), modo: 'live' },
+  { titulo: 'Só 2018', nota: 'uma eleição: o 1º turno liga ao 2º, uma linha de dois pontos por candidato; marca de 50% no 2º turno; "1º TURNO" por extenso, porque há espaço', lugar: 'Brasil', pontos: doBrasil, modo: 'pre', anos: [2018] },
+  { titulo: 'Só 2026, antes do dia 25', nota: 'os dois pontos do 1º turno e o dia do 2º turno; nenhuma linha de um ponto só e nenhuma projeção', lugar: 'Brasil', pontos: doBrasil, modo: 'pre', anos: [2026] },
+  { titulo: 'Só 2026, ao vivo', nota: 'o 1º turno liga ao ponto ao vivo (vazado enquanto é parcial)', lugar: 'Brasil', pontos: comAoVivo(doBrasil, aoVivoBr), modo: 'live', anos: [2026] },
+  { titulo: '2018 e 2026', nota: 'o eixo mostra só os quatro turnos; a escala e a altura de cada valor são as do gráfico completo', lugar: 'Brasil', pontos: comAoVivo(doBrasil, aoVivoBr), modo: 'live', anos: [2018, 2026] },
+  { titulo: 'Piauí, só 2018: a escala fica em 80%', nota: 'o 2º turno de 2022 passa de 70% no Piauí e a escala vem de todas as eleições do lugar: desligar uma eleição não encolhe o eixo nem mexe na altura de nenhum valor', lugar: 'Piauí', pontos: comAoVivo(pontosDe(doEstado('PI')) as Ponto[], vivo(73.52, 26.48)), modo: 'live', anos: [2018] },
+];
+
+const larguras = [
+  { largura: 328, nota: 'celular estreito (360 px de tela): layout compacto, 1º e 2º como "1º" e "2º"' },
+  { largura: 520, nota: 'a partir de 520 px: layout médio, mesmo texto, letras mais largas' },
+  { largura: 760, nota: 'a partir de 760 px: layout largo, "1º TURNO" por extenso e o número de urna junto do nome (JAIR 17)' },
+];
+
+const renderizadas = variantes.map((v, i) => ({ ...v, html: figuraHtml({ pontos: v.pontos, anos: v.anos, lugar: v.lugar, vazio: rotuloVazio(v.modo, statusPre.inicio), nomes }, `v${i}`) }));
+const porLargura = larguras.map((l, i) => ({
+  ...l,
+  html: figuraHtml({ pontos: comAoVivo(doBrasil, aoVivoBr), lugar: 'Brasil', vazio: rotuloVazio('live', statusPre.inicio), nomes }, `l${i}`),
+}));
+
+const olhar = [
+  'Ordem PT (13) antes de Bolsonaro em tudo: pontos, descrição, rótulos do fim, tabela. A cor vem do campo "cor" da camada: em 2018 o 17 veste o azul claro.',
+  'Cada ponto é uma plaquinha com o valor e o nome de quem era candidato naquela eleição; quem tem mais votos na coluna leva a plaquinha para cima, o outro para baixo.',
+  'Sem legenda: o rótulo direto do fim das linhas ("13 LULA", "22 FLÁVIO") e o nome em cada ponto dizem quem é quem.',
+  'Ao vivo, o ponto de 2026 entra vazado (contorno) enquanto é parcial e cheio no final. Antes do dia 25 é o ponto vazio com a data, e nenhuma linha avança além do último dado.',
+  'Busca por cidade e seletor de estado trocam o gráfico sem recarregar a página; cada UF é um arquivo (/historico/{uf}.json) baixado só quando escolhida.',
+  'O gráfico abre completo. Os botões 2018, 2022 e 2026 ligam e desligam cada eleição (aria-pressed); TODAS religa todas. Desligar a última ligada não é permitido: o botão fica travado (cadeado, aria-disabled) e a dica ao lado diz por quê.',
+  'A seleção vai para a URL como hash (#2018,2026), sem query string: a canonical não muda. Com todas as eleições a URL fica limpa. Abrir um link com hash já mostra a seleção aplicada.',
+  'A escala Y não se ajusta ao que está visível: ela vem de todas as eleições do lugar. Assim a altura de um valor é a mesma em qualquer seleção e dois recortes lado a lado são comparáveis (veja "Piauí, só 2018").',
+];
+
+const pendencias = [
+  'Cor do 17 de 2018: azul claro, como o campo "cor" da camada diz (decisão do brief, a aprovar). A nota "Em 2018 o candidato de Bolsonaro era o 17, do PSL" é texto novo em copy.ts.',
+  'Textos novos em copy.ts (título e descrição da página, filtro, cabeçalho da tabela, "ao vivo", "em breve", notas de rodapé do gráfico) e os do seletor de eleições: "Eleições", "Todas", "Ligue para comparar", "Uma fica sempre ligada", "Mostrando 2018 e 2026.".',
+  'Nomes curtos nos pontos (Haddad, Lula, Jair, Flávio): sobrenome, ou o primeiro nome quando dois candidatos dividem o sobrenome. O layout largo acrescenta o número (JAIR 17).',
+  'Sem bandeiras no cabeçalho do gráfico: o título é só o nome do lugar. Se quiser a bandeira da UF, é um acréscimo pequeno.',
+];
+---
+
+<Base titulo="Playground do histórico" descricao="/historico nos modos pre, live e final, e variantes do gráfico, para aprovação." caminho="/design/historico">
+  <div class="pagina">
+    <Cabecalho modo="pre" />
+
+    <div class="faixa">
+      <nav class="modos" aria-label="Modo do site">
+        {
+          modos.map(({ modo, rotulo, nota }) => (
+            <a class="modo" href={`?modo=${modo}`} data-modo={modo}>
+              <span class="modo-nome">{rotulo}</span>
+              <span class="modo-nota">{nota}</span>
+            </a>
+          ))
+        }
+      </nav>
+      <p class="aviso">{AVISO_FICTICIO}</p>
+    </div>
+
+    <main>
+      <Historico status={status} design />
+
+      <section class="bloco" aria-labelledby="variantes">
+        <h2 class="bloco-titulo" id="variantes">Variantes</h2>
+        <div class="grade">
+          {
+            renderizadas.map((v) => (
+              <article class="variante">
+                <h3 class="variante-titulo">{v.titulo}</h3>
+                <p class="variante-nota">{v.nota}</p>
+                <div class="gl-quadro" set:html={v.html} />
+              </article>
+            ))
+          }
+        </div>
+      </section>
+
+      <section class="bloco" aria-labelledby="larguras">
+        <h2 class="bloco-titulo" id="larguras">Os três layouts</h2>
+        <div class="larguras">
+          {
+            porLargura.map((l) => (
+              <article class="variante">
+                <h3 class="variante-titulo">{l.largura} px</h3>
+                <p class="variante-nota">{l.nota}</p>
+                <div class="gl-quadro" style={`--w:${l.largura}px`} set:html={l.html} />
+              </article>
+            ))
+          }
+        </div>
+      </section>
+
+      <section class="aprovar" aria-labelledby="aprovar">
+        <h2 class="bloco-titulo" id="aprovar">Para aprovar</h2>
+        <div class="colunas">
+          <div>
+            <h3 class="subtitulo">O que olhar</h3>
+            <ul class="lista">{olhar.map((item) => <li>{item}</li>)}</ul>
+          </div>
+          <div>
+            <h3 class="subtitulo">Pendências do Romero</h3>
+            <ol class="lista">{pendencias.map((item) => <li>{item}</li>)}</ol>
+          </div>
+        </div>
+      </section>
+    </main>
+
+    <Rodape />
+  </div>
+</Base>
+
+<script>
+  // Marca o modo em uso (a página é estática; o modo vem da query string).
+  const atual = new URL(location.href).searchParams.get('modo') ?? 'pre';
+  document.querySelector(`[data-modo="${atual}"]`)?.setAttribute('aria-current', 'page');
+</script>
+
+<style>
+  .pagina {
+    max-width: 1440px;
+    margin-inline: auto;
+    padding-inline: var(--sp-2);
+  }
+
+  main {
+    display: grid;
+    gap: var(--sp-7);
+    padding-bottom: var(--sp-6);
+  }
+
+  .faixa {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--sp-2);
+    margin-bottom: var(--sp-2);
+    padding-block: var(--sp-1);
+    border-block: var(--stroke-1) solid var(--surface-2);
+  }
+
+  .modos {
+    display: flex;
+    gap: var(--sp-1);
+  }
+
+  .modo {
+    display: grid;
+    min-height: 48px;
+    padding: 4px var(--sp-2);
+    border: var(--stroke-1) solid var(--ink-2);
+    border-radius: var(--radius);
+    text-decoration: none;
+  }
+
+  .modo[aria-current='page'] {
+    border-color: var(--ink);
+    background: var(--ink);
+    color: var(--bg);
+  }
+
+  .modo-nome {
+    font-family: var(--font-display);
+    font-weight: 900;
+    letter-spacing: var(--track-caps);
+    text-transform: uppercase;
+  }
+
+  .modo-nota {
+    font-size: var(--fs-1);
+  }
+
+  .aviso {
+    padding: var(--sp-1) var(--sp-2);
+    border: var(--stroke-1) solid var(--ink-2);
+    font-size: var(--fs-1);
+  }
+
+  .bloco,
+  .aprovar {
+    display: grid;
+    gap: var(--sp-3);
+    padding-top: var(--sp-2);
+    border-top: var(--stroke-2) solid var(--ink);
+  }
+
+  .bloco-titulo {
+    font-size: var(--fs-4);
+    text-transform: uppercase;
+  }
+
+  .grade {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+    gap: var(--sp-5);
+  }
+
+  .larguras {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: start;
+    gap: var(--sp-5);
+  }
+
+  /* Cada quadro com a largura que o layout pede, mas nunca mais larga que a tela. */
+  .larguras .variante {
+    max-width: 100%;
+  }
+
+  .larguras .gl-quadro {
+    width: min(var(--w), 100%);
+  }
+
+  .variante {
+    display: grid;
+    gap: var(--sp-1);
+    align-content: start;
+    min-width: 0;
+  }
+
+  .variante-titulo {
+    font-size: var(--fs-3);
+    font-stretch: 87.5%;
+    text-transform: uppercase;
+  }
+
+  .variante-nota {
+    max-width: 65ch;
+    font-size: var(--fs-1);
+    color: var(--ink-2);
+  }
+
+  .colunas {
+    display: grid;
+    gap: var(--sp-4);
+  }
+
+  .subtitulo {
+    margin-bottom: var(--sp-1);
+    font-size: var(--fs-2);
+    letter-spacing: var(--track-caps);
+    text-transform: uppercase;
+    color: var(--ink-2);
+  }
+
+  .lista {
+    display: grid;
+    gap: var(--sp-1);
+    max-width: 65ch;
+    margin: 0;
+    padding-left: var(--sp-3);
+  }
+
+  @media (min-width: 768px) {
+    .pagina {
+      padding-inline: var(--sp-4);
+    }
+
+    .colunas {
+      grid-template-columns: 1fr 1fr;
+    }
+
+    .grade {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+  }
+
+  @media (min-width: 1024px) {
+    .pagina {
+      padding-inline: var(--sp-6);
+    }
+  }
+</style>

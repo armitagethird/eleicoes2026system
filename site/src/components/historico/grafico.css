@@ -1,0 +1,92 @@
+/* Quadro do gráfico de /historico, comum à página e ao playground. O quadro é um container: dentro dele há um SVG por largura
+ * de layout (lib/grafico-linha.ts, LAYOUTS) e a container query mostra o que cabe, para o texto nunca ficar menor que 13 px
+ * nem passar de ~1,5x o tamanho desenhado. Zero JS: vale para o HTML do build e para o que a ilha redesenha. */
+.gl-quadro {
+  container-type: inline-size;
+  max-width: 860px;
+}
+
+.gl-v {
+  display: none;
+}
+
+.gl-v-compacto {
+  display: block;
+}
+
+@container (min-width: 520px) {
+  .gl-v-compacto {
+    display: none;
+  }
+
+  .gl-v-medio {
+    display: block;
+  }
+}
+
+@container (min-width: 760px) {
+  .gl-v-medio {
+    display: none;
+  }
+
+  .gl-v-largo {
+    display: block;
+  }
+}
+
+/* A altura vem do viewBox. Overflow visível: o halo e o traço das bordas não são cortados. */
+.gl-quadro svg.gl {
+  display: block;
+  width: 100%;
+  height: auto;
+  overflow: visible;
+}
+
+/* Tabela alternativa ao gráfico (os mesmos números, para quem não vê o SVG). */
+.gl-tabela {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+/* Percentual em cima e nome embaixo: cada coluna é estreita e a tabela cabe no celular sem rolar de lado. */
+.gl-tabela th,
+.gl-tabela td {
+  padding: var(--sp-1) var(--sp-1) var(--sp-1) 0;
+  border-bottom: var(--stroke-1) solid var(--surface-2);
+  text-align: left;
+  vertical-align: top;
+}
+
+.gl-tabela thead th {
+  font-family: var(--font-display);
+  font-size: var(--fs-1);
+  font-weight: 900;
+  letter-spacing: var(--track-caps);
+  text-transform: uppercase;
+  color: var(--ink-2);
+}
+
+.gl-tabela tbody th {
+  font-weight: 500;
+}
+
+.gl-tabela strong {
+  display: block;
+  font-family: var(--font-display);
+  font-size: var(--fs-2);
+  font-weight: 900;
+  line-height: 1.2;
+}
+
+.gl-tabela td span {
+  display: block;
+  font-size: var(--fs-1);
+  line-height: 1.25;
+  color: var(--ink-2);
+}
+
+.gl-fase {
+  display: block;
+  font-size: var(--fs-1);
+  color: var(--ink-2);
+}
