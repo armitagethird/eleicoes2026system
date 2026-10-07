@@ -1,5 +1,5 @@
 // Identidade do site (brief, seção 0). Nunca escrever estes valores direto em componente ou template.
-export const SITE_NAME = 'Placar 2026'; // placeholder
+export const SITE_NAME = 'Placar 2026';
 export const SITE_URL = 'https://placar26.com.br';
 export const X_HANDLE = '@romerosaraiva4';
 
