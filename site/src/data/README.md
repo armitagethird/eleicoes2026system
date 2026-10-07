@@ -9,7 +9,7 @@ Tudo aqui, e em `public/mapa/`, é **REAL**: vem do TSE e do IBGE por scripts de
 | `hist-uf/{uf}.json` (27), `hist-br.json` | o mesmo, por UF e para o Brasil | TSE |
 | `../../public/mapa/{2018-t1,2018-t2,2022-t1,2022-t2,2026-t1}.json` | camadas do mapa e do gráfico histórico, uma por eleição e turno | TSE |
 | `fontes.json` | procedência: URL, tamanho, SHA-256, ETag e Last-Modified de cada arquivo lido | gerado por `baixar` |
-| `pesquisas.json` | pesquisas registradas no TSE (hoje `[]`) | manual, ver o fim deste arquivo |
+| `pesquisas.json` | pesquisas registradas no TSE (hoje 3: Gerp, Quaest e PoderData) | manual, ver o fim deste arquivo |
 
 ## Como regenerar
 
@@ -106,7 +106,7 @@ Os testes (`tests/etl-dados.test.ts`) guardam os itens 1 a 3; os itens 4 e 5 for
 
 ## pesquisas.json (pesquisas reais, registradas no TSE)
 
-Alimenta o bloco "Pesquisas registradas no TSE" da home (só no modo `pre`). Hoje é `[]`: sem pesquisa real, o bloco não aparece. Contrato em `contracts/schemas/pesquisas.schema.json`; `npm test` valida o arquivo (schema, ids e registros únicos, fim da coleta depois do início, sem `ficticio`).
+Alimenta o bloco "Pesquisas registradas no TSE" da home (só no modo `pre`). Hoje tem 3 pesquisas reais, a mais recente de cada instituto do critério aprovado em 06/10 (Gerp, Quaest e PoderData, os que mais se aproximaram do 1º turno de 2026), cada uma com a `fonte_url` da reportagem que traz os números; sem nenhuma pesquisa real, o bloco não aparece. Antes do lançamento, reconfira no PesqEle se saiu pesquisa mais recente desses institutos e se o `contratante` de cada uma é o texto do registro. Contrato em `contracts/schemas/pesquisas.schema.json`; `npm test` valida o arquivo (schema, ids e registros únicos, fim da coleta depois do início, sem `ficticio`).
 
 **Só entra pesquisa REAL, com registro no PesqEle.** Pesquisa fictícia nunca entra neste arquivo: divulgar pesquisa falsa é crime. Os exemplos fictícios ficam em `contracts/fixtures/pesquisas.exemplo.json` (todos com `"ficticio": true`) e só aparecem em `/design/pesquisas`, que o build remove do deploy. O teste falha se algum item daqui tiver `ficticio: true`, e o componente descarta qualquer um que tenha.
 

@@ -535,14 +535,18 @@ const comFotos = numerosFoto.some((n) => fotoCandidato(n));
     column-gap: var(--sp-1);
   }
 
+  /* A caixa da foto fica na altura da foto: sem align-self ela esticaria até as duas linhas de identidade (mais altas quando o
+     nome quebra) e mostraria o fundo da caixa sob a imagem. */
   .com-foto .coluna.esq > :global(.foto) {
     grid-column: 1;
     grid-row: 1 / span 2;
+    align-self: center;
   }
 
   .com-foto .coluna.dir > :global(.foto) {
     grid-column: 4;
     grid-row: 1 / span 2;
+    align-self: center;
   }
 
   .com-foto .coluna.esq > .quem,

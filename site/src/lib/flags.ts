@@ -11,3 +11,9 @@ export interface FlagMeAvisa {
  * Antes de ligar: endpoint real, política de privacidade publicada e os textos de consentimento aprovados pelo Romero.
  */
 export const ME_AVISA: FlagMeAvisa = { ativo: false, endpoint: '' };
+
+/**
+ * og:image própria de cada cidade (/og/{slug}.png). Desligado, as cidades usam /og/fallback.png: os PNGs por cidade só existem
+ * com o renderizador (Fase 4, SVG -> PNG), e apontar para um arquivo que não existe deixa o preview do link no X sem imagem (404).
+ */
+export const OG_POR_CIDADE = false;

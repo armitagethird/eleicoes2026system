@@ -284,9 +284,12 @@ const meio = (p: (typeof itens)[number]) => segmentosPesquisa(p).filter((s) => s
     display: inline-block;
   }
 
+  /* Alvo de toque de 44 px, como os links do cabeçalho, sem aumentar a letra. */
   .fonte {
     justify-self: start;
-    padding-block: var(--sp-1);
+    display: inline-flex;
+    align-items: center;
+    min-height: 44px;
     text-decoration: underline;
     text-decoration-thickness: var(--stroke-1);
     text-underline-offset: 0.25em;

@@ -18,6 +18,7 @@ interface Props {
 const { titulo, descricao, caminho, og = '/og/fallback.png', modificado } = Astro.props;
 const canonica = new URL(caminho, SITE_URL).href;
 const imagem = new URL(og, SITE_URL).href;
+// "<" fora do JSON: um "</script>" no título não fecha o bloco (o mesmo escape de CidadeAoVivo e Palpite).
 const jsonLd = JSON.stringify({
   '@context': 'https://schema.org',
   '@type': 'WebPage',
@@ -25,7 +26,7 @@ const jsonLd = JSON.stringify({
   description: descricao,
   url: canonica,
   ...(modificado ? { dateModified: modificado } : {}),
-});
+}).replace(/</g, '\\u003c');
 ---
 
 <!doctype html>

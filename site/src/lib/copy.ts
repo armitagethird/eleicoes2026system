@@ -31,6 +31,14 @@ export function semConexao(atualizado: string | null | undefined): string {
   return `Sem conexão, mostrando a última atualização às ${hora(atualizado)}.`;
 }
 
+// Compartilhar o card (components/compartilhar-png.ts): o card da cidade, o do estado e o do palpite dizem as mesmas frases.
+export const CARD_GERANDO = 'Gerando o card…';
+export const CARD_PNG_BAIXADO_E_COPIADO = 'PNG baixado e texto copiado. É só postar.';
+export const cardPngBaixado = (texto: string): string => `PNG baixado. Copie o texto: ${texto}`;
+export const CARD_TOQUE_DE_NOVO = 'Card pronto. Toque de novo para compartilhar.';
+/** O detalhe técnico vai para o console; a tela só diz o que a pessoa pode fazer. */
+export const CARD_FALHOU = 'Não deu para gerar o card. Toque de novo para tentar outra vez.';
+
 // Home e placar (design/DIRECTION.md, Home). PENDENTE de aprovação do Romero.
 
 /**
@@ -170,7 +178,7 @@ export function esperaDoCard(horaInicio: string, dia: string, quem = 'a cidade')
   return `${AGUARDANDO_SECOES[0].toLocaleUpperCase('pt-BR')}${AGUARDANDO_SECOES.slice(1)}. A apuração do 2º turno começa às ${horaInicio} de ${dia} e este card passa a mostrar ${quem} ao vivo.`;
 }
 
-export interface DadosTexto {
+interface DadosTexto {
   local: string;
   /** Qualquer ordem: o texto sai sempre com o menor número de urna primeiro. */
   cand: ReadonlyArray<{ n: number; nome: string; pct: number }>;
@@ -253,9 +261,14 @@ export const rotuloAba = (id: string, aoVivo: boolean): string => (id === 'ao-vi
 /** Os dois modos de cor do mapa. */
 export const MODO_MAPA = { resultado: 'resultado', variacao: 'comparar' } as const;
 
-/** A mesma frase de variacao2022, para qualquer ano de referência ("... em relação a 2018"). */
-export function variacaoDesde(nome: string, pts: number, ano: string): string {
-  return `${pontos(pts)} para ${nome} em relação a ${ano}`;
+/**
+ * A mesma frase de variacao2022, para a camada de referência do mapa ("... em relação a 2018"). Contra o 2º turno só o ano
+ * entra (é a frase da cidade e do card); contra um 1º turno ele também entra ("... em relação ao 1º turno de 2022"), porque
+ * o painel da apuração compara 1º com 1º e a cidade compara com o 2º turno de 2022. PENDENTE de aprovação do Romero.
+ */
+export function variacaoDesdeCamada(nome: string, pts: number, idReferencia: string): string {
+  const ano = idReferencia.slice(0, 4);
+  return `${pontos(pts)} para ${nome} em relação ${idReferencia.endsWith('t1') ? `ao 1º turno de ${ano}` : `a ${ano}`}`;
 }
 
 /** Legenda do mapa: o que a cor diz em cada modo. "lidera" só durante a apuração. */
@@ -279,7 +292,7 @@ export const verCidade = (nome: string): string => `ver o card de ${nome}`;
 export const verEstado = (nome: string): string => `ver o card de ${nome}`;
 export const ERRO_CAMADA = 'Não deu para carregar este mapa.';
 export const TENTAR_DE_NOVO = 'tentar de novo';
-export const rotuloMapa = (turno: string): string => `Mapa por município, ${turno}. A mesma informação está na tabela abaixo do mapa.`;
+const rotuloMapa = (turno: string): string => `Mapa por município, ${turno}. A mesma informação está na tabela abaixo do mapa.`;
 
 /** /apuracao no modo pre: quando o mapa passa a ser ao vivo. Sem início conhecido, não inventa hora. PENDENTE de aprovação do Romero. */
 export function aoVivoAPartir(inicio: string | null | undefined): string {

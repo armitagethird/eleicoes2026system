@@ -44,7 +44,6 @@ function opcao(r: ResultadoBusca, id: string): HTMLLIElement {
   li.id = id;
   li.setAttribute('role', 'option');
   li.setAttribute('aria-selected', 'false');
-  li.setAttribute('aria-label', `${r.nome} (${r.uf})`);
   li.dataset.slug = r.slug;
   const nome = document.createElement('span');
   nome.className = 'nome';

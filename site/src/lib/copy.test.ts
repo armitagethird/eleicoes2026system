@@ -22,7 +22,7 @@ import {
   semVirada,
   tituloApuracao,
   turnoDaCamada,
-  variacaoDesde,
+  variacaoDesdeCamada,
   BRASIL,
   MAPA_TECLAS,
   rotuloMotor,
@@ -139,9 +139,14 @@ describe('copy da apuração', () => {
     expect(rotuloAba('2026-t1', true)).toBe('1º turno 2026');
   });
 
-  it('a variação contra 2022 é exatamente a frase de sempre; contra outro ano, só troca o ano', () => {
-    expect(variacaoDesde('Lula', 3.4, '2022')).toBe(variacao2022('Lula', 3.4));
-    expect(variacaoDesde('Lula', 1, '2018')).toBe('+1,0 ponto para Lula em relação a 2018');
+  it('a variação contra o 2º turno de 2022 é exatamente a frase de sempre; contra outro ano, só troca o ano', () => {
+    expect(variacaoDesdeCamada('Lula', 3.4, '2022-t2')).toBe(variacao2022('Lula', 3.4));
+    expect(variacaoDesdeCamada('Lula', 1, '2018-t2')).toBe('+1,0 ponto para Lula em relação a 2018');
+  });
+
+  it('contra um 1º turno, a frase diz o turno (a cidade e o card comparam com o 2º turno de 2022)', () => {
+    expect(variacaoDesdeCamada('Flávio Bolsonaro', 5.1, '2022-t1')).toBe('+5,1 pontos para Flávio Bolsonaro em relação ao 1º turno de 2022');
+    expect(variacaoDesdeCamada('Lula', 1, '2018-t1')).toBe('+1,0 ponto para Lula em relação ao 1º turno de 2018');
   });
 
   it('"lidera" na legenda só durante a apuração', () => {

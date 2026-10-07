@@ -4,7 +4,8 @@
  *   500 = texto, largura normal.
  * O 900 vem em duas partes, e o navegador só baixa a parte cujo unicode-range aparece na página:
  *   caps = o que a interface escreve em 900 (tudo em caixa-alta por CSS), 15 KB, sempre usada;
- *   completo = o Latin-1 inteiro (29 KB), rede de segurança para minúscula ou símbolo raro em 900; hoje nunca é baixado.
+ *   completo = o Latin-1 inteiro (29 KB), rede de segurança para minúscula ou símbolo raro em 900; só baixa
+ *     se algum texto em 900 usar glifo fora de caps (hoje, em /apuracao, o separador "›" da trilha ao abrir um estado).
  * Os dois ranges são complementares e o de caps é IGUAL a `caixaAlta` de scripts/build-fonts.ts.
  */
 @font-face {
