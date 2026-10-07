@@ -62,7 +62,7 @@ Crie `src/styles/tokens.css` com: 3 cores (`--bg`, `--ink`, `--ink-2`) + `--acce
 - Candidatos sempre na **mesma ordem: número de urna** (13 antes de 22), em todo lugar, independentemente de quem lidera.
 - Vocabulário fixo, em `src/lib/copy.ts`: `lidera` em parcial; `eleito(a)` **somente** quando o JSON marcar `eleito: true`; nunca "venceu", "virada confirmada", "projeção". Todo card traz `parcial · X% das seções · Fonte: TSE · HH:MM`.
 - Cores fixas por candidato (13 vermelho, 22 azul claro; seção 3), iguais em todo o site. Nenhum rótulo ideológico. Pesquisa eleitoral só as registradas no TSE, com os dados do art. 10 da Res. 23.600 (seção 2); nunca enquete, média ou odds de apostas.
-- **Sem fotos de candidatos.** Só nome, número e partido em texto. Foto pesa, envelhece a página e muda a leitura emocional do card.
+- **Fotos de candidatos (decisão do Romero, 06/10/2026): no site sim, no card não.** Só as fotos oficiais de candidatura publicadas pelo TSE, com o mesmo recorte, tamanho e tratamento para os dois, pequenas, nos placares do site (home, cidade, UF, painel da apuração) e com crédito "Foto: TSE". O card compartilhado continua só tipográfico (nome, número e partido): a 350 px um rosto vira borrão e rouba espaço dos números.
 - **Palpite é local**: fica em `localStorage`, nunca é enviado a servidor nenhum, nunca vira agregado. Não crie endpoint para isso. (Enquete é proibida no período eleitoral; coletar palpites já seria uma.)
 - Formulário "me avisa": consentimento explícito em texto, um envio prometido ("às 17h do dia 25, com o link da sua cidade") e um de resultado final. Nesta fase o `POST` vai para um endpoint placeholder atrás de feature flag.
 
