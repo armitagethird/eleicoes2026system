@@ -1,0 +1,472 @@
+---
+// Bancada do motor do mapa de /apuracao (só em dev; o build apaga /design). Usa as camadas reais de public/mapa/*.json;
+// sem elas, gera camadas SINTÉTICAS estáveis a partir da lista de municípios da geometria, marcadas como tal na tela.
+// Mostra os dois modos de cor, o drill-down, o zoom, a seleção e as medidas do motor (quadro, recoloração, FPS).
+import Base from '../../layouts/Base.astro';
+import { NOME_UF, UFS } from '../../lib/contratos.ts';
+import { DEGRAUS, ESTAVEL, LIMIARES } from '../../lib/cores-mapa.ts';
+
+const faixas = (limiares: readonly number[]) =>
+  [0, ...limiares].map((de, i) => (i < limiares.length ? `${de}–${limiares[i]}` : `${de}+`));
+const legenda = [
+  { titulo: 'resultado · margem |A − B| em pontos', faixas: faixas(LIMIARES.resultado), degraus: DEGRAUS.resultado },
+  { titulo: 'variação · pontos ganhos entre os dois', faixas: faixas(LIMIARES.variacao).slice(1), degraus: DEGRAUS.variacao },
+];
+---
+
+<Base titulo="Bancada do motor do mapa" descricao="Motor do mapa municipal de /apuracao (só em dev)." caminho="/design/apuracao-motor">
+  <main class="bancada">
+    <header class="topo">
+      <h1>Motor do mapa</h1>
+      <p class="sintetico" data-sintetico hidden>Sintético · não são resultados</p>
+    </header>
+
+    <form class="controles" data-controles>
+      <label>
+        <span>camada</span>
+        <select name="camada"></select>
+      </label>
+      <label>
+        <span>referência</span>
+        <select name="referencia"></select>
+      </label>
+      <fieldset>
+        <legend>cor</legend>
+        <label><input type="radio" name="modo" value="resultado" checked /> resultado</label>
+        <label><input type="radio" name="modo" value="variacao" /> variação</label>
+      </fieldset>
+      <label>
+        <span>foco</span>
+        <select name="uf">
+          <option value="">Brasil</option>
+          {UFS.map((uf) => <option value={uf}>{NOME_UF[uf]}</option>)}
+        </select>
+      </label>
+      <div class="botoes">
+        <button type="button" data-ir="2111300:MA">São Luís</button>
+        <button type="button" data-ir="5101837:MT">Boa Esperança do Norte</button>
+        <button type="button" data-ir="3304557:RJ">Rio de Janeiro</button>
+        <button type="button" data-medir>medir recoloração</button>
+        <button type="button" data-gravar aria-pressed="false">gravar gesto</button>
+        <button type="button" data-voos>medir voos</button>
+      </div>
+    </form>
+
+    <div class="palco">
+      <div class="mapa" data-mapa></div>
+      <aside class="leituras">
+        <dl>
+          <div><dt>passando</dt><dd data-l="passando">—</dd></div>
+          <div><dt>seleção</dt><dd data-l="selecao">—</dd></div>
+          <div><dt>foco</dt><dd data-l="foco">Brasil</dd></div>
+          <div><dt>quadro</dt><dd data-l="quadro">—</dd></div>
+          <div><dt>recoloração</dt><dd data-l="recolorir">—</dd></div>
+          <div><dt>quadros/s</dt><dd data-l="fps">—</dd></div>
+          <div><dt>recoloração + quadro (30×)</dt><dd data-l="troca">—</dd></div>
+          <div><dt>gesto gravado</dt><dd data-l="gesto">—</dd></div>
+          <div><dt>voos (só durante o voo)</dt><dd data-l="voos">—</dd></div>
+          <div><dt>erro</dt><dd data-l="erro">—</dd></div>
+        </dl>
+        {
+          legenda.map((l) => (
+            <section class="legenda">
+              <h2>{l.titulo}</h2>
+              {(['13', '22'] as const).map((lado) => (
+                <ol class="degraus">
+                  {l.degraus[lado].map((cor, i) => (
+                    <li>
+                      <i style={`background:${cor}`} />
+                      <span>{l.faixas[i]}</span>
+                    </li>
+                  ))}
+                </ol>
+              ))}
+            </section>
+          ))
+        }
+        <p class="neutros">
+          <span><i style={`background:${ESTAVEL}`} />estável / empate</span>
+          <span><i style="background:var(--ink-2)" />outro lidera</span>
+          <span><i style="background:var(--surface-2)" />sem dado</span>
+        </p>
+      </aside>
+    </div>
+  </main>
+</Base>
+
+<script>
+  import { lerCamada, type Camada, type Valor } from '../../lib/camada-mapa.ts';
+  import { NOME_UF, type UF } from '../../lib/contratos.ts';
+  import { lerMalha, type MalhaJson } from '../../lib/geo-mapa.ts';
+  import { medidas, montarMapa, type ModoCor, type Selecao } from '../../components/apuracao/motor.ts';
+
+  const IDS = ['2018-t1', '2018-t2', '2022-t1', '2022-t2', '2026-t1'];
+  const CANDIDATOS: Camada['candidatos'] = [
+    { n: 13, nome: 'Lula', partido: 'PT', cor: '13' },
+    { n: 22, nome: 'Flávio Bolsonaro', partido: 'PL', cor: '22' },
+  ];
+
+  const $ = <T extends Element>(s: string) => document.querySelector(s) as T;
+  const leitura = (nome: string, texto: string) => ($<HTMLElement>(`[data-l="${nome}"]`).textContent = texto);
+  const form = $<HTMLFormElement>('[data-controles]');
+  const campo = (nome: string) => form.elements.namedItem(nome) as HTMLSelectElement;
+
+  async function camadaReal(id: string): Promise<Camada | null> {
+    const r = await fetch(`/mapa/${id}.json`);
+    return r.ok ? lerCamada(await r.json()) : null;
+  }
+
+  /** Camadas estáveis (mesmo resultado a cada carga) a partir dos municípios da geometria. NÃO são resultados. */
+  async function sinteticas(): Promise<Camada[]> {
+    const malha = lerMalha((await (await fetch('/geo/municipios.json')).json()) as MalhaJson);
+    const ruido = (n: number, semente: number) => ((Math.imul(n ^ semente, 2654435761) >>> 0) / 2 ** 32 - 0.5) * 2;
+    const gerar = (id: string, rotulo: string, deslocamento: number, comOutros: boolean): Camada => {
+      const municipios = new Map<number, Valor>();
+      const somas = new Map<UF, { a: number; b: number; o: number; n: number }>();
+      for (const f of malha.feicoes) {
+        const x = (f.caixa[0] + f.caixa[2]) / 2 / malha.largura;
+        const y = (f.caixa[1] + f.caixa[3]) / 2 / malha.altura;
+        const lado = 50 + 70 * (0.5 - y) + 18 * (x - 0.55) + 14 * ruido(f.codigo, 7) + deslocamento;
+        const outros = comOutros ? 6 + 10 * (ruido(f.codigo, 11) + 1) : 0;
+        const a = Math.min(97, Math.max(2, lado)) * (1 - outros / 100);
+        const b = 100 - outros - a;
+        const liderOutro = comOutros && ruido(f.codigo, 13) > 0.97 ? 12 : null;
+        municipios.set(f.codigo, { a, b, outros, liderOutro, secoes: 100 });
+        const s = somas.get(f.uf) ?? { a: 0, b: 0, o: 0, n: 0 };
+        somas.set(f.uf, { a: s.a + a, b: s.b + b, o: s.o + outros, n: s.n + 1 });
+      }
+      const ufs = new Map(
+        [...somas].map(([uf, s]) => [uf, { a: s.a / s.n, b: s.b / s.n, outros: s.o / s.n, liderOutro: null, secoes: 100 }]),
+      );
+      return { id, rotulo, atualizado: '', candidatos: CANDIDATOS, br: null, ufs, municipios };
+    };
+    return [gerar('2018-t1', 'sintético 1º turno', -4, true), gerar('2018-t2', 'sintético A', -6, false), gerar('2022-t2', 'sintético B', 4, false)];
+  }
+
+  const el = $<HTMLElement>('[data-mapa]');
+  const nomeSel = (s: Selecao | null) => (!s ? '—' : s.tipo === 'uf' ? NOME_UF[s.uf] : `${s.ibge} (${s.uf})`);
+  const motor = montarMapa(el, {
+    aoPassar: (s) => leitura('passando', nomeSel(s)),
+    aoSelecionar: (s) => leitura('selecao', nomeSel(s)),
+    aoMudarFoco: (uf) => {
+      campo('uf').value = uf ?? '';
+      leitura('foco', uf ? NOME_UF[uf] : 'Brasil');
+    },
+    aoErro: (e) => leitura('erro', e.message),
+  });
+
+  let camadas: Camada[] = [];
+  const porId = (id: string) => camadas.find((c) => c.id === id) as Camada;
+  const aplicar = () => {
+    motor.definirModo((new FormData(form).get('modo') as ModoCor) ?? 'resultado');
+    motor.definirCamada(porId(campo('camada').value), porId(campo('referencia').value));
+  };
+
+  async function iniciar(): Promise<void> {
+    const reais = (await Promise.all(IDS.map(camadaReal))).filter((c): c is Camada => c !== null);
+    camadas = reais.length ? reais : await sinteticas();
+    $<HTMLElement>('[data-sintetico]').hidden = reais.length > 0;
+    for (const nome of ['camada', 'referencia']) campo(nome).append(...camadas.map((c) => new Option(c.rotulo, c.id)));
+    campo('camada').value = camadas[camadas.length - 1].id;
+    campo('referencia').value = camadas[Math.max(0, camadas.length - 2)].id;
+    aplicar();
+  }
+  iniciar().catch((e: unknown) => leitura('erro', String(e)));
+  form.addEventListener('change', (e) => {
+    if ((e.target as HTMLElement).getAttribute('name') === 'uf') {
+      const uf = campo('uf').value as UF | '';
+      void motor.focarUf(uf || null);
+      leitura('foco', uf ? NOME_UF[uf] : 'Brasil');
+    } else aplicar();
+  });
+
+  for (const botao of document.querySelectorAll<HTMLButtonElement>('[data-ir]')) {
+    botao.addEventListener('click', () => {
+      const [ibge, uf] = (botao.dataset.ir as string).split(':');
+      leitura('selecao', `${ibge} (${uf})`);
+      leitura('foco', NOME_UF[uf as UF]);
+      campo('uf').value = uf;
+      void motor.selecionar({ tipo: 'municipio', ibge: Number(ibge), uf: uf as UF });
+    });
+  }
+
+  // Recoloração + o quadro seguinte, 30 trocas alternando camadas: mediana e pior caso.
+  $<HTMLButtonElement>('[data-medir]').addEventListener('click', async () => {
+    const tempos: number[] = [];
+    for (let i = 0; i < 30; i++) {
+      motor.definirCamada(camadas[i % camadas.length], camadas[(i + 1) % camadas.length]);
+      const recolorir = medidas.recolorir;
+      await new Promise(requestAnimationFrame);
+      tempos.push(recolorir + medidas.quadro);
+    }
+    aplicar();
+    tempos.sort((a, b) => a - b);
+    leitura('troca', `mediana ${tempos[15].toFixed(1)} ms · pior ${tempos[29].toFixed(1)} ms`);
+  });
+
+  const percentil = (xs: number[], q: number) => [...xs].sort((a, b) => a - b)[Math.min(xs.length - 1, Math.floor(q * xs.length))] ?? 0;
+
+  // Voos de câmera (drill-down) em sequência; mede só os quadros de dentro de cada voo. Entre um voo e outro, uma pausa
+  // deixa o motor montar o detalhe da UF fora da medida (ele espera a câmera parar para isso).
+  $<HTMLButtonElement>('[data-voos]').addEventListener('click', async () => {
+    const intervalos: number[] = [];
+    let ultimo = 0;
+    let voando = false;
+    const laco = (agora: number) => {
+      if (!voando) return;
+      if (ultimo) intervalos.push(agora - ultimo);
+      ultimo = agora;
+      requestAnimationFrame(laco);
+    };
+    for (const uf of ['SP', 'RR', 'RS', 'PE', 'MG', null] as const) {
+      voando = true;
+      ultimo = 0;
+      requestAnimationFrame(laco);
+      await motor.focarUf(uf);
+      voando = false;
+      await new Promise((r) => setTimeout(r, 500));
+    }
+    const media = intervalos.reduce((a, b) => a + b, 0) / intervalos.length;
+    leitura('voos', `${Math.round(1000 / media)} q/s · intervalo p50 ${percentil(intervalos, 0.5).toFixed(1)} / p95 ${percentil(intervalos, 0.95).toFixed(1)} / máx ${Math.max(...intervalos).toFixed(1)} ms`);
+  });
+
+  // Gravação de um gesto (arrastar, pinça, roda): intervalo entre quadros e duração do desenho de cada quadro.
+  const gravar = $<HTMLButtonElement>('[data-gravar]');
+  let gravacao: { intervalos: number[]; desenhos: number[]; ultimo: number } | null = null;
+  gravar.addEventListener('click', () => {
+    if (!gravacao) {
+      gravacao = { intervalos: [], desenhos: [], ultimo: performance.now() };
+      gravar.setAttribute('aria-pressed', 'true');
+      return;
+    }
+    const { intervalos, desenhos } = gravacao;
+    gravacao = null;
+    gravar.setAttribute('aria-pressed', 'false');
+    const p = percentil;
+    const total = intervalos.reduce((a, b) => a + b, 0);
+    leitura(
+      'gesto',
+      `${desenhos.length} desenhos · ${Math.round((intervalos.length * 1000) / total)} q/s · intervalo p95 ${p(intervalos, 0.95).toFixed(1)} ms · desenho p50 ${p(desenhos, 0.5).toFixed(1)} / p95 ${p(desenhos, 0.95).toFixed(1)} ms`,
+    );
+  });
+
+  // Quadros por segundo (janela de 1 s) e a duração do último quadro desenhado.
+  let quadros = 0;
+  let marco = performance.now();
+  let ultimoQuadro = medidas.quadro;
+  const medir = (agora: number) => {
+    if (gravacao) {
+      gravacao.intervalos.push(agora - gravacao.ultimo);
+      gravacao.ultimo = agora;
+      // Só conta quadro em que o motor desenhou (o valor muda a cada desenho).
+      if (medidas.quadro !== ultimoQuadro) gravacao.desenhos.push(medidas.quadro);
+    }
+    ultimoQuadro = medidas.quadro;
+    quadros++;
+    if (agora - marco >= 1000) {
+      leitura('fps', String(Math.round((quadros * 1000) / (agora - marco))));
+      leitura('quadro', `${medidas.quadro.toFixed(1)} ms`);
+      leitura('recolorir', `${medidas.recolorir.toFixed(1)} ms`);
+      quadros = 0;
+      marco = agora;
+    }
+    requestAnimationFrame(medir);
+  };
+  requestAnimationFrame(medir);
+</script>
+
+<style>
+  .bancada {
+    display: grid;
+    gap: var(--sp-3);
+    padding: var(--sp-3) var(--sp-2) var(--sp-6);
+  }
+
+  .topo {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: baseline;
+    gap: var(--sp-1) var(--sp-3);
+  }
+
+  h1 {
+    font-size: var(--fs-4);
+    text-transform: uppercase;
+  }
+
+  .sintetico {
+    padding: 2px var(--sp-1);
+    border: var(--stroke-1) solid var(--ink);
+    font-family: var(--font-display);
+    font-weight: 900;
+    font-size: var(--fs-1);
+    letter-spacing: var(--track-caps);
+    text-transform: uppercase;
+  }
+
+  .controles {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: end;
+    gap: var(--sp-2);
+  }
+
+  .controles label,
+  fieldset {
+    display: grid;
+    gap: 4px;
+    font-size: var(--fs-1);
+    letter-spacing: var(--track-caps);
+    text-transform: uppercase;
+    color: var(--ink-2);
+  }
+
+  fieldset {
+    grid-auto-flow: column;
+    gap: var(--sp-2);
+    margin: 0;
+    padding: 0;
+    border: 0;
+  }
+
+  fieldset label {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    color: var(--ink);
+  }
+
+  legend {
+    padding: 0;
+    margin-bottom: 4px;
+  }
+
+  select,
+  button {
+    min-height: 40px;
+    padding: 0 var(--sp-1);
+    border: var(--stroke-1) solid var(--surface-2);
+    border-radius: var(--radius);
+    background: var(--surface-1);
+    color: var(--ink);
+    font-size: var(--fs-2);
+  }
+
+  button {
+    font-family: var(--font-display);
+    font-weight: 900;
+    font-size: var(--fs-1);
+    letter-spacing: var(--track-caps);
+    text-transform: uppercase;
+    cursor: pointer;
+  }
+
+  .botoes {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--sp-1);
+  }
+
+  .palco {
+    display: grid;
+    gap: var(--sp-3);
+  }
+
+  /* Celular: o mapa ocupa a largura e tem a proporção do Brasil; desktop: coluna larga ao lado das leituras. */
+  .mapa {
+    width: 100%;
+    aspect-ratio: 1 / 0.95;
+    background: var(--bg);
+    overflow: hidden;
+  }
+
+  @media (min-width: 900px) {
+    .palco {
+      grid-template-columns: minmax(0, 1fr) 320px;
+      align-items: start;
+    }
+
+    .mapa {
+      aspect-ratio: auto;
+      height: min(82vh, 860px);
+    }
+  }
+
+  dl {
+    display: grid;
+    gap: var(--sp-1);
+    margin: 0;
+  }
+
+  dl > div {
+    display: flex;
+    justify-content: space-between;
+    gap: var(--sp-2);
+    padding-bottom: 4px;
+    border-bottom: 1px solid var(--surface-2);
+  }
+
+  dt {
+    font-size: var(--fs-1);
+    letter-spacing: var(--track-caps);
+    text-transform: uppercase;
+    color: var(--ink-2);
+  }
+
+  dd {
+    margin: 0;
+    text-align: right;
+  }
+
+  .legenda {
+    margin-top: var(--sp-3);
+  }
+
+  .legenda h2,
+  .neutros {
+    font-family: var(--font-text);
+    font-weight: 500;
+    font-size: var(--fs-1);
+    letter-spacing: var(--track-caps);
+    text-transform: uppercase;
+    color: var(--ink-2);
+  }
+
+  .degraus {
+    display: grid;
+    grid-auto-flow: column;
+    grid-auto-columns: 1fr;
+    gap: 2px;
+    margin: var(--sp-1) 0 0;
+    padding: 0;
+    list-style: none;
+  }
+
+  .degraus i,
+  .neutros i {
+    display: block;
+    height: 16px;
+  }
+
+  .degraus span {
+    font-size: 11px;
+    color: var(--ink-2);
+  }
+
+  .neutros {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--sp-1) var(--sp-2);
+    margin-top: var(--sp-3);
+  }
+
+  .neutros span {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+
+  .neutros i {
+    width: 16px;
+  }
+</style>
