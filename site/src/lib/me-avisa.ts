@@ -1,8 +1,8 @@
 // Lógica pura do "Me avisa" (ilha: components/me-avisa.ts). O e-mail é dado pessoal (LGPD): coleta mínima, nada em query string,
 // e o aparelho guarda só "já pedi aviso para esta cidade" (o slug), nunca o e-mail. A validação daqui é conforto de quem digita;
 // o servidor valida de novo, porque nada vindo do navegador é confiável.
+import type { Armazenamento } from './armazenamento.ts';
 import type { FlagMeAvisa } from './flags.ts';
-import type { Armazenamento } from './minhas-cidades.ts';
 
 export type MotivoEmail = 'vazio' | 'invalido';
 

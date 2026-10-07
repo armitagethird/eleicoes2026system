@@ -1,7 +1,8 @@
 ---
 // MINHAS CIDADES (BRIEF Fase 3; design/DIRECTION.md, Home, passo 6). Fica no localStorage, só neste aparelho; nada é enviado.
 // Na home vai entre o <main> e o rodapé, nunca dentro da grade do <main> (ver o .faixa abaixo).
-//   Com `cidade` (página da cidade): o botão ADICIONAR ÀS MINHAS CIDADES / REMOVER, um interruptor com aria-pressed.
+//   Com `cidade` (página da cidade): o botão ADICIONAR ÀS MINHAS CIDADES / REMOVER. O rótulo diz a ação e troca com o estado
+//   (data-salva); sem aria-pressed, que com rótulo trocando o leitor de tela leria "remover, pressionado".
 //   Sem `cidade` (home): a faixa MINHAS CIDADES com até 5 destinos, da mais recente para a mais antiga.
 // Os dois nascem escondidos (sem JS não há o que mostrar) e a ilha (minhas-cidades.ts) os revela. Zero CLS: aparecem depois de
 // tudo o que a primeira dobra mostra (a faixa fecha a home, o botão fecha a página da cidade), e o botão tem sempre a largura
@@ -45,7 +46,7 @@ const bandeiras = cidade ? '' : JSON.stringify(Object.fromEntries(UFS.map((uf) =
       data-msg-removida={MINHAS_CIDADES_REMOVIDA}
       data-msg-erro={MINHAS_CIDADES_SEM_ARMAZENAMENTO}
     >
-      <Botao variante="secundario" class="alternar" aria-pressed="false" data-alternar>
+      <Botao variante="secundario" class="alternar" data-alternar>
         <span class="rotulos">
           <span class="rotulo adicionar">
             <svg class="marca" viewBox="0 0 16 16" aria-hidden="true" focusable="false"><path d="M8 2v12M2 8h12" /></svg>
@@ -90,8 +91,8 @@ const bandeiras = cidade ? '' : JSON.stringify(Object.fromEntries(UFS.map((uf) =
     max-width: 100%;
   }
 
-  /* Pressionado = a cidade está na lista: filete e fundo de superfície, sem cor nova (vermelho e azul são dos candidatos). */
-  .acao :global(.alternar[aria-pressed='true']) {
+  /* Salva = a cidade está na lista: filete e fundo de superfície, sem cor nova (vermelho e azul são dos candidatos). */
+  .acao :global(.alternar[data-salva]) {
     border-color: var(--ink);
     background: var(--surface-1);
   }
@@ -117,8 +118,8 @@ const bandeiras = cidade ? '' : JSON.stringify(Object.fromEntries(UFS.map((uf) =
     gap: var(--sp-1);
   }
 
-  .acao :global(.alternar[aria-pressed='false']) .remover,
-  .acao :global(.alternar[aria-pressed='true']) .adicionar {
+  .acao :global(.alternar:not([data-salva])) .remover,
+  .acao :global(.alternar[data-salva]) .adicionar {
     visibility: hidden;
   }
 
@@ -155,7 +156,7 @@ const bandeiras = cidade ? '' : JSON.stringify(Object.fromEntries(UFS.map((uf) =
 
   .lista {
     display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(min(100%, 220px), 1fr));
+    grid-template-columns: repeat(auto-fill, minmax(min(100%, 320px), 1fr));
     column-gap: var(--sp-3);
     margin: 0;
     padding: 0;
@@ -178,14 +179,20 @@ const bandeiras = cidade ? '' : JSON.stringify(Object.fromEntries(UFS.map((uf) =
     object-fit: contain;
   }
 
+  /* A caixa do nome é o container do ajuste (components/rankings.ts, como a lista de cidades do estado): o font-size em cqi vem
+     dela, e o wdth da fonte faz o nome encostar na coluna. */
+  .lista :global(.caixa) {
+    container-type: inline-size;
+    min-width: 0;
+  }
+
   .lista :global(.nome) {
+    display: block;
     font-family: var(--font-display);
-    font-size: var(--fs-2);
-    font-stretch: 75%;
     font-weight: 900;
-    line-height: 1.05;
+    line-height: 1;
     text-transform: uppercase;
-    text-wrap: balance;
+    white-space: nowrap;
   }
 
   .lista :global(.uf) {

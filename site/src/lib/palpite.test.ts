@@ -2,6 +2,7 @@ import { readFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
 import { desenharCard } from '../components/palpite-card.ts';
 import type { CardData } from '../components/Card.ts';
+import type { Armazenamento } from './armazenamento.ts';
 import { PALAVRAS_PROIBIDAS, PALPITE_LOCAL, PALPITE_NAO_E_ENQUETE, erroDoPalpite, erroPalpiteCard, palpiteFalado, palpitePergunta, textoPalpite } from './copy.ts';
 import {
   PALPITE_INICIAL,
@@ -13,7 +14,6 @@ import {
   gravarPalpite,
   lerPalpite,
   limitarPalpite,
-  type Armazenamento,
 } from './palpite.ts';
 
 /** Armazenamento de verdade em memória: o mesmo contrato de getItem/setItem do localStorage. */

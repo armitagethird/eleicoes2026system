@@ -2,6 +2,10 @@
 // Os dois nascem escondidos no HTML do build; só aparecem aqui, se o localStorage funciona (e, na faixa, se há cidade guardada).
 // Tudo que vem do localStorage já passou por lerCidades; o DOM é montado com textContent e createElement, nunca com innerHTML.
 import { adicionarCidade, estaSalva, guardarCidades, lerCidades, removerCidade, type CidadeSalva } from '../lib/minhas-cidades.ts';
+import { estiloNome } from './rankings.ts';
+
+// Mesmo teto de tamanho da lista de cidades do estado (pages/uf/[uf].astro): o nome encosta na coluna pelo eixo wdth.
+const NOME_MAX = 28;
 
 const armazenamento = (): Storage | null => {
   try {
@@ -18,7 +22,9 @@ function iniciarBotao(raiz: HTMLElement): void {
   if (!botao || !estado || !armazenamento()) return;
 
   const cidade = { slug, nome, uf } as CidadeSalva;
-  const pintar = (lista: CidadeSalva[]): void => botao.setAttribute('aria-pressed', String(estaSalva(lista, slug)));
+  const pintar = (lista: CidadeSalva[]): void => {
+    botao.toggleAttribute('data-salva', estaSalva(lista, slug));
+  };
   pintar(lerCidades(armazenamento()));
   raiz.hidden = false;
 
@@ -46,12 +52,16 @@ function destino({ slug, nome, uf }: CidadeSalva, bandeiras: Record<string, stri
   const rotulo = document.createElement('span');
   rotulo.className = 'nome';
   rotulo.textContent = nome;
+  rotulo.style.cssText = estiloNome(nome, NOME_MAX);
+  const caixa = document.createElement('span');
+  caixa.className = 'caixa';
+  caixa.append(rotulo);
   const sigla = document.createElement('span');
   sigla.className = 'uf';
   sigla.textContent = uf;
   const link = document.createElement('a');
   link.href = `/c/${slug}`;
-  link.append(bandeira, rotulo, sigla);
+  link.append(bandeira, caixa, sigla);
   const item = document.createElement('li');
   item.append(link);
   return item;

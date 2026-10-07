@@ -1,17 +1,10 @@
 // Ilha do formulário Me avisa (MeAvisa.astro). Só é carregada quando o formulário existe (flag ligado).
 // O e-mail é dado pessoal: sai do navegador uma única vez, no corpo de um POST (nunca em query string), sem cookies, e depois do
 // envio some do campo. O aparelho guarda só "já pedi aviso para esta cidade" (o slug). Os textos vêm prontos do HTML (data-msg-*).
-import { interpretarFormulario, jaPediuAviso, registrarPedido } from '../lib/me-avisa.ts';
+import { armazenamentoLocal } from '../lib/armazenamento.ts';
+import { interpretarFormulario, jaPediuAviso, registrarPedido, validarEmail } from '../lib/me-avisa.ts';
 
 const TEMPO_LIMITE_MS = 10_000;
-
-const armazenamento = (): Storage | null => {
-  try {
-    return localStorage;
-  } catch {
-    return null;
-  }
-};
 
 /** Falha cedo e dizendo o quê: o HTML é nosso, então um gancho ausente é bug de componente, não caso de uso. */
 function achar<T extends HTMLElement>(raiz: ParentNode, seletor: string): T {
@@ -38,9 +31,12 @@ function iniciar(raiz: HTMLElement): void {
   // Com JS a validação é nossa (mensagens no lugar certo); sem JS vale a nativa dos atributos required e type=email.
   form.noValidate = true;
 
+  // aria-disabled, não disabled: um botão desabilitado perde o foco, e na falha o teclado ficaria sem lugar. O toque repetido
+  // durante o envio morre no submit (estado "enviando").
   const estado = (novo: 'pronto' | 'enviando' | 'enviado' | 'falhou' | 'ja-pediu'): void => {
     raiz.dataset.estado = novo;
-    enviar.disabled = novo === 'enviando';
+    if (novo === 'enviando') enviar.setAttribute('aria-disabled', 'true');
+    else enviar.removeAttribute('aria-disabled');
     form.toggleAttribute('aria-busy', novo === 'enviando');
   };
 
@@ -58,11 +54,19 @@ function iniciar(raiz: HTMLElement): void {
     enviado.focus();
   };
 
-  if (jaPediuAviso(armazenamento(), cidade)) estado('ja-pediu');
+  if (jaPediuAviso(armazenamentoLocal(), cidade)) estado('ja-pediu');
 
   outro.addEventListener('click', () => {
     estado('pronto');
     email.focus();
+  });
+
+  // O erro some assim que o campo é corrigido; só o envio volta a acusar.
+  email.addEventListener('input', () => {
+    if (validarEmail(email.value).ok) erro(email, erroEmail, undefined);
+  });
+  caixa.addEventListener('change', () => {
+    if (caixa.checked) erro(caixa, erroCaixa, undefined);
   });
 
   form.addEventListener('submit', async (evento) => {
@@ -94,7 +98,7 @@ function iniciar(raiz: HTMLElement): void {
         signal: AbortSignal.timeout(TEMPO_LIMITE_MS),
       });
       if (!resposta.ok) throw new Error(`O endpoint respondeu ${resposta.status}`);
-      registrarPedido(armazenamento(), cidade);
+      registrarPedido(armazenamentoLocal(), cidade);
       concluir(resultado.pedido.email);
     } catch {
       estado('falhou');

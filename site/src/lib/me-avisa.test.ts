@@ -11,7 +11,7 @@ import {
   validarEmail,
   type EntradaFormulario,
 } from './me-avisa.ts';
-import type { Armazenamento } from './minhas-cidades.ts';
+import type { Armazenamento } from './armazenamento.ts';
 
 const memoria = (conteudo?: string): Armazenamento & { gravado: () => string | null } => {
   let valor = conteudo ?? null;
