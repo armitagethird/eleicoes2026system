@@ -15,10 +15,12 @@ interface Props {
 
 const { modo, secoesPct, atualizado } = Astro.props;
 const { pathname } = Astro.url;
+// O ano no fim do nome ("Placar 2026") sai em amarelo: o toque de Brasil do wordmark. Nome sem ano fica todo em --ink.
+const [, nome, ano] = SITE_NAME.match(/^(.*?)(\d{4})$/) ?? [SITE_NAME, SITE_NAME, ''];
 ---
 
 <header class="cabecalho">
-  <a class="marca" href="/" aria-current={pathname === '/' ? 'page' : undefined}>{SITE_NAME}</a>
+  <a class="marca" href="/" aria-current={pathname === '/' ? 'page' : undefined}><span>{nome}{ano && <span class="ano">{ano}</span>}</span></a>
   <p class="pilula" data-modo={modo}>
     {modo === 'live' && <span class="sinal" aria-hidden="true" />}
     <span data-pilula>{pilula(modo, secoesPct, atualizado)}</span>
@@ -59,6 +61,10 @@ const { pathname } = Astro.url;
     font-size: var(--fs-3);
     font-stretch: 125%;
     text-decoration: none;
+  }
+
+  .ano {
+    color: var(--amarelo);
   }
 
   .rankings {
