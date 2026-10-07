@@ -9,8 +9,8 @@ Os valores vivem em `site/src/styles/tokens.css`. Cada linha abaixo diz por que 
 | `--bg` | `#0E1411` | Preto levemente esverdeado: o tema Brasil, leve (decisão do Romero, 06/10). O fundo escuro vem do card (brief, seção 3). |
 | `--ink` | `#F4F1E6` | Branco de papel de cartaz para o texto principal: 16,48:1 contra `--bg`. |
 | `--ink-2` | `#95A097` | Cinza esverdeado para texto secundário: 6,88:1 contra `--bg` e 5,09:1 contra `--surface-2`. |
-| `--cand-13` | `#F2464B` | Vermelho do Lula (decisão do Romero, 06/10: cor fixa por candidato, como Globo, G1 e CNN). Dá 5,17:1 contra `--bg`, o que serve como texto; `--bg` sobre ele também fica em 5,17:1. |
-| `--cand-22` | `#6CC4FF` | Azul claro do Flávio Bolsonaro: 9,86:1 contra `--bg`; `--bg` sobre ele fica em 9,86:1. Tem luminância bem diferente do vermelho (1,91:1 entre os dois), então os dois se distinguem também em escala de cinza e para daltônicos. |
+| `--cand-13` | `#F2464B` | Vermelho do Lula (decisão do Romero, 06/10: cor fixa por candidato, como Globo, G1 e CNN). Dá 5,11:1 contra `--bg`, o que serve como texto; `--bg` sobre ele também fica em 5,11:1. |
+| `--cand-22` | `#6CC4FF` | Azul claro do Flávio Bolsonaro: 9,74:1 contra `--bg`; `--bg` sobre ele fica em 9,74:1. Tem luminância bem diferente do vermelho (1,91:1 entre os dois), então os dois se distinguem também em escala de cinza e para daltônicos. |
 | `--accent` | `#F5C518` | Amarelo-ouro, só no selo: 11,43:1 contra `--bg`, e `--bg` sobre ele também. Não se confunde com o vermelho nem com o azul dos candidatos. |
 | `--verde` | `#2BB673` | Verde da marca (faixa, wordmark, favicon): 7,14:1 contra `--bg`. Nunca em dado. |
 | `--amarelo` | `#F5C518` | Amarelo da marca, o mesmo do acento. Nunca em dado. |
