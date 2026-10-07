@@ -1,0 +1,462 @@
+---
+// PALPITE da cidade (BRIEF, seção 4 e Fase 3; design/DIRECTION.md): só no modo pre, logo depois do Comparativo.
+// O palpite é LOCAL: fica em localStorage, nunca vai a servidor, nunca vira agregado (enquete é proibida no período
+// eleitoral). A interface diz isso em PALPITE_LOCAL. A ilha é Palpite.ts; o card do palpite só carrega ao confirmar.
+// Linguagem FOLHA do card e do Comparativo: 13 vermelho à esquerda, 22 azul claro à direita, cores de lib/cores.ts, e a
+// barra é o próprio slider (o polegar é a costura de 4 px em --bg, com um miolo em --ink). Os percentuais ficam ACIMA da
+// barra: o dedo que arrasta no celular nunca os cobre.
+// Estados (data-palpite-modo na raiz, que a ilha troca):
+//   pre:   pergunta, slider, confirmar; ao confirmar, o card em modo palpite e COMPARTILHAR PALPITE.
+//   final: sem slider; a barra do palpite ao lado da apuração e "você errou por X pontos". Só aparece para quem tem palpite salvo.
+//   live:  escondido (palpite durante a apuração não é palpite).
+// Contrato com a ilha ao vivo: veja o cabeçalho de Palpite.ts (evento "aovivo:modo" no document, detail { modo }).
+import { corCandidato } from '../lib/cores.ts';
+import {
+  FONTE_TSE,
+  PALPITE_COMPARTILHAR,
+  PALPITE_CONFIRMAR,
+  PALPITE_LOCAL,
+  PALPITE_NAO_E_ENQUETE,
+  PALPITE_RESULTADO,
+  PALPITE_TITULO,
+  SELO_PALPITE,
+  palpiteFalado,
+  palpitePergunta,
+} from '../lib/copy.ts';
+import { percentual } from '../lib/format.ts';
+import { PALPITE_INICIAL, PALPITE_MAX, PALPITE_MIN, PALPITE_PASSO, complemento } from '../lib/palpite.ts';
+import Botao from './Botao.astro';
+import type { CardData } from './Card.ts';
+
+interface Props {
+  /** O card base da cidade (nomes, UF, bandeira, domínio): a ilha o usa para gerar o card em modo palpite. */
+  card: CardData;
+  slug: string;
+  /** Prefixo dos ids, para a mesma cidade aparecer mais de uma vez na página (/design/cidade). */
+  id?: string;
+}
+
+const { card, slug, id = 'palpite' } = Astro.props;
+const lados = ([...card.cand].sort((a, b) => a.n - b.n) as CardData['cand']).map((c, i) => ({ ...c, cor: corCandidato(c.n, i === 0 ? 0 : 1).css }));
+// "<" fora do JSON: um nome de cidade nunca fecha o <script> que o carrega.
+const dados = JSON.stringify({ card }).replace(/</g, '\\u003c');
+const semSinal = (pct: number): string => percentual(pct).replace('%', '');
+const valores = [semSinal(PALPITE_INICIAL), semSinal(complemento(PALPITE_INICIAL))];
+---
+
+<section class="palpite" aria-labelledby={`${id}-titulo`} data-palpite={slug} data-palpite-modo="pre">
+  <h2 class="titulo" id={`${id}-titulo`}>{PALPITE_TITULO}</h2>
+  <p class="local">
+    <span>{PALPITE_LOCAL}</span>
+    <span>{PALPITE_NAO_E_ENQUETE}</span>
+  </p>
+
+  <p class="erro" role="status" data-palpite-erro></p>
+
+  <label class="pergunta" for={`${id}-slider`} data-palpite-controle>{palpitePergunta(card.local, card.uf)}</label>
+
+  <div class="legenda">
+    {
+      lados.map((l, i) => (
+        <p class:list={['quem', i === 0 ? 'esq' : 'dir']} style={`--cor:${l.cor}`}>
+          <span class="placa-n">{l.n}</span>
+          <span class="nome">{l.nome}</span>
+          <span class="partido">{l.partido}</span>
+        </p>
+      ))
+    }
+  </div>
+
+  <div class="turno">
+    <h3 class="rotulo rotulo-palpite">{SELO_PALPITE}</h3>
+    <p class="valores">
+      {
+        lados.map((l, i) => (
+          <span class:list={['pct', i === 0 ? 'esq' : 'dir']} style={`--cor:${l.cor}`}>
+            <span class="sr-only">{l.n}: </span><span data-palpite-pct={l.n}>{valores[i]}</span><span class="sinal">%</span>
+          </span>
+        ))
+      }
+    </p>
+    <div class="trilho">
+      <div class="barra" style={`--v:${PALPITE_INICIAL}`} aria-hidden="true" data-palpite-barra="palpite">
+        {lados.map((l, i) => <span class:list={['folha', i === 0 ? 'esq' : 'dir']} style={`--cor:${l.cor}`} />)}
+      </div>
+      <input
+        class="slider"
+        id={`${id}-slider`}
+        type="range"
+        min={PALPITE_MIN}
+        max={PALPITE_MAX}
+        step={PALPITE_PASSO}
+        value={PALPITE_INICIAL}
+        autocomplete="off"
+        aria-valuetext={palpiteFalado(lados[0].nome, lados[1].nome, PALPITE_INICIAL)}
+        data-palpite-slider
+        data-palpite-controle
+      />
+    </div>
+  </div>
+
+  <div class="turno apurado">
+    <h3 class="rotulo">{PALPITE_RESULTADO} · {FONTE_TSE}</h3>
+    <p class="valores">
+      {
+        lados.map((l, i) => (
+          <span class:list={['pct', i === 0 ? 'esq' : 'dir']} style={`--cor:${l.cor}`}>
+            <span class="sr-only">{l.n}: </span><span data-palpite-res={l.n}>—</span><span class="sinal">%</span>
+          </span>
+        ))
+      }
+    </p>
+    <div class="trilho">
+      <div class="barra" style="--v:50" aria-hidden="true" data-palpite-barra="apurado">
+        {lados.map((l, i) => <span class:list={['folha', i === 0 ? 'esq' : 'dir']} style={`--cor:${l.cor}`} />)}
+      </div>
+    </div>
+  </div>
+
+  <div class="acoes" data-palpite-controle>
+    <Botao class="confirmar" data-palpite-confirmar>{PALPITE_CONFIRMAR}</Botao>
+    <p class="estado" role="status" data-palpite-status></p>
+  </div>
+
+  <div class="resultado" data-palpite-resultado hidden>
+    <figure class="card" data-palpite-figura></figure>
+    <Botao class="compartilhar" data-palpite-compartilhar>{PALPITE_COMPARTILHAR}</Botao>
+    <p class="estado" role="status" data-palpite-estado></p>
+  </div>
+
+  <script type="application/json" data-palpite-dados set:html={dados} />
+</section>
+
+<script>
+  import './Palpite.ts';
+</script>
+
+<style>
+  .palpite {
+    --polegar: 20px;
+    container-type: inline-size;
+    display: grid;
+    gap: var(--sp-3);
+    margin-top: var(--sp-5);
+  }
+
+  /* display: grid vence o [hidden] do navegador. */
+  .palpite[hidden],
+  .resultado[hidden] {
+    display: none;
+  }
+
+  .titulo {
+    padding-top: var(--sp-1);
+    border-top: var(--stroke-2) solid var(--ink);
+    font-size: var(--fs-3);
+    font-stretch: 87.5%;
+    letter-spacing: var(--track-caps);
+    text-transform: uppercase;
+  }
+
+  /* A promessa de privacidade fica à vista, sem clique: é o que separa o palpite de uma enquete. */
+  .local {
+    line-height: 1.5;
+    color: var(--ink-2);
+  }
+
+  /* Uma frase por linha: a quebra no meio de "Não é enquete" muda o sentido de relance. */
+  .local span {
+    display: block;
+  }
+
+  .pergunta {
+    max-width: 40ch;
+    line-height: 1.4;
+    text-wrap: balance;
+  }
+
+  /* Em final: o erro do palpite, em --ink (não é de nenhum candidato). */
+  .erro {
+    display: none;
+    font-family: var(--font-display);
+    font-size: clamp(2rem, 11cqi, 3rem);
+    font-weight: 900;
+    font-stretch: 75%;
+    line-height: 1;
+    letter-spacing: var(--track-caps);
+    text-transform: uppercase;
+    text-wrap: balance;
+  }
+
+  .palpite[data-palpite-modo='final'] .erro:not(:empty) {
+    display: block;
+  }
+
+  /* Plaquinha com o número (--bg sobre a cor do candidato) antes do nome, como no card e no Comparativo. */
+  .legenda {
+    display: flex;
+    justify-content: space-between;
+    gap: var(--sp-2);
+  }
+
+  .quem {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0 var(--sp-1);
+    min-width: 0;
+    font-family: var(--font-display);
+    font-size: var(--fs-2);
+    font-weight: 900;
+    font-stretch: 75%;
+    line-height: 1.2;
+    text-transform: uppercase;
+  }
+
+  .quem.dir {
+    justify-content: flex-end;
+    text-align: right;
+  }
+
+  .placa-n {
+    flex: none;
+    padding-inline: 0.3em;
+    background: var(--cor);
+    color: var(--bg);
+  }
+
+  .partido,
+  .rotulo {
+    font-family: var(--font-display);
+    font-size: var(--fs-1);
+    font-weight: 900;
+    line-height: 1.2;
+    letter-spacing: var(--track-caps);
+    text-transform: uppercase;
+    color: var(--ink-2);
+  }
+
+  .partido {
+    font-stretch: 100%;
+  }
+
+  .turno {
+    display: grid;
+    gap: var(--sp-1);
+  }
+
+  /* Só em final os dois turnos precisam de rótulo e o da apuração existe. */
+  .rotulo-palpite,
+  .apurado {
+    display: none;
+  }
+
+  .palpite[data-palpite-modo='final'] .rotulo-palpite {
+    display: block;
+  }
+
+  .palpite[data-palpite-modo='final'] .apurado {
+    display: grid;
+  }
+
+  .palpite[data-palpite-modo='final'] [data-palpite-controle] {
+    display: none;
+  }
+
+  .valores {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    align-items: end;
+    gap: var(--sp-1);
+  }
+
+  .pct {
+    grid-row: 1;
+    font-family: var(--font-display);
+    font-size: clamp(3rem, 22cqi, 5.5rem);
+    font-weight: 900;
+    font-stretch: 75%;
+    line-height: 0.9;
+    white-space: nowrap;
+    color: var(--cor);
+  }
+
+  .pct.esq {
+    grid-column: 1;
+  }
+
+  .pct.dir {
+    grid-column: 2;
+    justify-self: end;
+  }
+
+  .sinal {
+    margin-left: 0.04em;
+    font-size: 0.4em;
+  }
+
+  /* A barra: duas folhas proporcionais, sem preencher nada por JS além de --v (0 a 100, o 13). A folha não muda de largura:
+     escala em X a partir da borda (só transform), e a costura de 4 px em --bg e a marca de 50% são as da barra do card. */
+  .trilho {
+    position: relative;
+    isolation: isolate;
+    margin-block: var(--sp-2);
+  }
+
+  .trilho::before,
+  .trilho::after {
+    content: '';
+    position: absolute;
+    left: calc(50% - 1px);
+    width: var(--stroke-1);
+    height: var(--sp-1);
+    background: var(--ink-2);
+  }
+
+  .trilho::before {
+    bottom: 100%;
+  }
+
+  .trilho::after {
+    top: 100%;
+  }
+
+  .barra {
+    position: relative;
+    height: var(--sp-5);
+    background: var(--bg);
+  }
+
+  .folha {
+    position: absolute;
+    inset-block: 0;
+    width: 100%;
+    background: var(--cor);
+  }
+
+  .folha.esq {
+    left: 0;
+    transform: scaleX(calc(var(--v) / 100));
+    transform-origin: left center;
+  }
+
+  .folha.dir {
+    right: 0;
+    transform: scaleX(calc((100 - var(--v)) / 100));
+    transform-origin: right center;
+  }
+
+  /* Costura entre as folhas; some nas pontas, onde só sobra uma folha. */
+  .barra::after {
+    content: '';
+    position: absolute;
+    inset-block: 0;
+    left: calc(var(--v) * 1%);
+    width: var(--stroke-2);
+    translate: -50% 0;
+    background: var(--bg);
+    opacity: min(1, var(--v) * 100, (100 - var(--v)) * 100);
+  }
+
+  /* O slider fica por cima da barra, 16 px mais alto de cada lado, e mais largo que ela por um polegar: o centro do polegar
+     vai de uma ponta da barra à outra, então o polegar sempre cai na costura. Alvo de toque de 72 px de altura. */
+  .slider {
+    position: absolute;
+    top: calc(var(--sp-2) * -1);
+    left: calc(var(--polegar) / -2);
+    width: calc(100% + var(--polegar));
+    height: calc(var(--sp-5) + var(--sp-4));
+    margin: 0;
+    padding: 0;
+    z-index: 1;
+    appearance: none;
+    background: transparent;
+    cursor: pointer;
+    touch-action: pan-y;
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  /* O polegar é um letreiro em pé: miolo em --ink de 12 px com uma costura de 4 px em --bg de cada lado. Reto, como o resto das folhas. */
+  .slider::-webkit-slider-runnable-track {
+    height: calc(var(--sp-5) + var(--sp-4));
+    background: transparent;
+  }
+
+  .slider::-webkit-slider-thumb {
+    appearance: none;
+    box-sizing: border-box;
+    width: var(--polegar);
+    height: calc(var(--sp-5) + var(--sp-4));
+    border: var(--stroke-2) solid var(--bg);
+    border-radius: 0;
+    background: var(--ink);
+  }
+
+  .slider::-moz-range-track {
+    height: calc(var(--sp-5) + var(--sp-4));
+    background: transparent;
+  }
+
+  .slider::-moz-range-thumb {
+    box-sizing: border-box;
+    width: var(--polegar);
+    height: calc(var(--sp-5) + var(--sp-4));
+    border: var(--stroke-2) solid var(--bg);
+    border-radius: 0;
+    background: var(--ink);
+  }
+
+  .acoes,
+  .resultado {
+    display: grid;
+    gap: var(--sp-1);
+  }
+
+  .acoes :global(.confirmar),
+  .resultado :global(.compartilhar) {
+    width: 100%;
+    min-height: 56px;
+    /* COMPARTILHAR PALPITE cabe numa linha até a 328 px de coluna. */
+    font-size: clamp(var(--fs-2), 5cqi, var(--fs-3));
+  }
+
+  /* O botão do Botao.astro é inline-flex e vence o [hidden]; depois de confirmar, quem manda é COMPARTILHAR. */
+  .acoes :global(.confirmar[hidden]) {
+    display: none;
+  }
+
+  .estado {
+    min-height: 1.5em;
+    font-size: var(--fs-1);
+    color: var(--ink-2);
+  }
+
+  .resultado {
+    gap: var(--sp-2);
+  }
+
+  /* Papel colado no muro, como o card de CidadeAoVivo: filete e, no celular, de borda a borda. */
+  .card {
+    margin-inline: calc(var(--sp-2) * -1);
+    border-block: var(--stroke-1) solid var(--surface-2);
+  }
+
+  .card :global(svg) {
+    width: 100%;
+    height: auto;
+  }
+
+  @media (min-width: 768px) {
+    .card {
+      margin-inline: 0;
+      border: var(--stroke-2) solid var(--surface-2);
+    }
+
+    .acoes :global(.confirmar),
+    .resultado :global(.compartilhar) {
+      width: auto;
+      justify-self: start;
+      padding-inline: var(--sp-5);
+    }
+  }
+</style>
