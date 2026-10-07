@@ -3,7 +3,7 @@
 //
 // CONTRATO COM A ILHA AO VIVO (AoVivo): ela diz o modo no document, na primeira leitura de status.json e a cada mudança:
 //   document.dispatchEvent(new CustomEvent('aovivo:modo', { detail: { modo } }))   // modo: 'pre' | 'live' | 'final'
-// Se o evento não vier, esta ilha lê /data/status.json sozinha ao iniciar. Modo desconhecido vale como 'pre'.
+// Se o evento não vier em 1,5 s, esta ilha lê /data/status.json sozinha. Modo desconhecido vale como 'pre'.
 //   pre:   slider, confirmar e o card do palpite; live: o bloco some; final: só quem tem palpite salvo vê o erro e o card.
 // O card (Card.ts, destino, fonte) fica em palpite-card.ts e só carrega ao confirmar (ou, em final, para quem já tem palpite).
 import {
@@ -19,10 +19,13 @@ import type { Cidade } from '../lib/contratos.ts';
 import { percentual } from '../lib/format.ts';
 import { PALPITE_INICIAL, complemento, erroEmPontos, gravarPalpite, lerPalpite, limitarPalpite } from '../lib/palpite.ts';
 import { parseStatus, type Modo } from '../lib/status.ts';
+import { avisarFalha } from './avisar-falha.ts';
 import type { CardData } from './Card.ts';
 
+/** Quanto esperar o evento do carregador ao vivo antes de ler o status.json por conta própria. */
+const ESPERA_DO_EVENTO_MS = 1500;
+
 const semSinal = (pct: number): string => percentual(pct).replace('%', '');
-const motivo = (erro: unknown): string => (erro instanceof Error ? erro.message : String(erro));
 
 /** Percentual do 13 na apuração final da cidade; null se o JSON não estiver pronto (menos de 100% das seções) ou faltar o campo. */
 async function resultadoDoTreze(slug: string): Promise<number | null> {
@@ -84,8 +87,10 @@ function iniciar(raiz: HTMLElement): void {
     desenhar();
   });
 
+  // aria-disabled, não disabled: um botão desabilitado perde o foco, e na falha o teclado ficaria sem lugar.
   confirmar.addEventListener('click', async () => {
-    confirmar.disabled = true;
+    if (confirmar.getAttribute('aria-busy') === 'true') return;
+    confirmar.setAttribute('aria-disabled', 'true');
     confirmar.setAttribute('aria-busy', 'true');
     try {
       const gravou = valor === salvo || gravarPalpite(slug, valor);
@@ -95,9 +100,9 @@ function iniciar(raiz: HTMLElement): void {
       confirmar.hidden = true;
       compartilhar.focus();
     } catch (falha) {
-      status.textContent = `Não foi possível gerar o card: ${motivo(falha)}`;
+      avisarFalha(status, falha);
     } finally {
-      confirmar.disabled = false;
+      confirmar.removeAttribute('aria-disabled');
       confirmar.removeAttribute('aria-busy');
     }
   });
@@ -105,9 +110,7 @@ function iniciar(raiz: HTMLElement): void {
   compartilhar.addEventListener('click', () => {
     import('./palpite-card.ts')
       .then(({ compartilhar: enviar }) => enviar({ card, slug, pct13: valor, erro: erroFinal }, compartilhar, estado))
-      .catch((falha: unknown) => {
-        estado.textContent = `Não foi possível gerar o card: ${motivo(falha)}`;
-      });
+      .catch((falha: unknown) => avisarFalha(estado, falha));
   });
 
   // Em final, quem tem palpite salvo vê o erro e o card; quem não tem não vê nada (palpite depois do resultado não é palpite).
@@ -132,7 +135,7 @@ function iniciar(raiz: HTMLElement): void {
     try {
       await mostrarCard();
     } catch (falha) {
-      estado.textContent = `Não foi possível gerar o card: ${motivo(falha)}`;
+      avisarFalha(estado, falha);
     }
   };
 
@@ -152,13 +155,18 @@ function iniciar(raiz: HTMLElement): void {
     recebeuEvento = true;
     aplicarModo(parseStatus({ modo: (evento as CustomEvent<{ modo?: unknown }>).detail?.modo }).modo);
   });
-  fetch('/data/status.json', { cache: 'no-cache' })
-    .then((resposta) => resposta.json())
-    .then((bruto: unknown) => {
-      if (!recebeuEvento) aplicarModo(parseStatus(bruto).modo);
-    })
-    // Sem status.json o bloco fica no modo da página (pre), que não afirma nenhum resultado.
-    .catch(() => undefined);
+  // O carregador ao vivo já lê o status.json em toda página de cidade: só se o evento não vier (página sem o carregador, rede
+  // lenta) esta ilha o lê por conta própria, em vez de pedir o mesmo arquivo duas vezes.
+  setTimeout(() => {
+    if (recebeuEvento) return;
+    fetch('/data/status.json', { cache: 'no-cache' })
+      .then((resposta) => resposta.json())
+      .then((bruto: unknown) => {
+        if (!recebeuEvento) aplicarModo(parseStatus(bruto).modo);
+      })
+      // Sem status.json o bloco fica no modo da página (pre), que não afirma nenhum resultado.
+      .catch(() => undefined);
+  }, ESPERA_DO_EVENTO_MS);
 
   desenhar();
   if (salvo !== null) status.textContent = PALPITE_SALVO;

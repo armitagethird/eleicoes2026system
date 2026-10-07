@@ -149,6 +149,11 @@ const valores = [semSinal(PALPITE_INICIAL), semSinal(complemento(PALPITE_INICIAL
     display: none;
   }
 
+  /* Previsão do modo ao vivo (AoVivoPrevisao.astro): palpite durante a apuração não é palpite, então o bloco já nasce escondido. */
+  :global(html[data-vivo]) .palpite[data-palpite-modo='pre'] {
+    display: none;
+  }
+
   .titulo {
     padding-top: var(--sp-1);
     border-top: var(--stroke-2) solid var(--ink);
